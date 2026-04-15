@@ -306,7 +306,7 @@ export default function AdminPage() {
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Logo size="sm" showSubtitle={false} />
+            <Logo size="sm" />
             <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
           </div>
           <button

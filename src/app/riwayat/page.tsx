@@ -82,7 +82,7 @@ export default function RiwayatPage() {
             </button>
             <h1 className="font-bold text-gray-800">Riwayat Absensi</h1>
           </div>
-          <Logo size="sm" showSubtitle={false} />
+          <Logo size="sm" />
         </div>
       </header>
 

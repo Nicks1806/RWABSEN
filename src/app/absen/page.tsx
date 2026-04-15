@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getStoredEmployee, clearEmployee } from "@/lib/auth";
+import { getStoredEmployee, clearEmployee, storeEmployee } from "@/lib/auth";
 import { getCurrentPosition, getDistanceFromLatLng } from "@/lib/geo";
 import { Employee, Attendance, Settings } from "@/lib/types";
 import { format } from "date-fns";
@@ -16,6 +16,8 @@ import {
   History,
   CheckCircle,
   AlertTriangle,
+  Key,
+  X,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -38,6 +40,18 @@ export default function AbsenPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mode, setMode] = useState<"clock_in" | "clock_out">("clock_in");
+
+  // Change PIN modal
+  const [showChangePin, setShowChangePin] = useState(false);
+  const [oldPin, setOldPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinMsg, setPinMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [pinLoading, setPinLoading] = useState(false);
+
+  // GPS permission state
+  const [gpsDenied, setGpsDenied] = useState(false);
+  const [gpsRetrying, setGpsRetrying] = useState(false);
 
   const fetchTodayRecord = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -167,6 +181,12 @@ export default function AbsenPage() {
     }
 
     // 3. Get location
+    await tryGetLocation();
+  }
+
+  async function tryGetLocation() {
+    setGpsRetrying(true);
+    setGpsDenied(false);
     try {
       const pos = await getCurrentPosition();
       const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -176,15 +196,32 @@ export default function AbsenPage() {
         setDistance(Math.round(dist));
         setIsOutsideRadius(dist > settings.radius_meters);
       }
+      setMessage(null);
     } catch (err) {
       const geoErr = err as GeolocationPositionError;
-      let text = "Gagal mendapatkan lokasi. ";
-      if (geoErr?.code === 1) text += "Izin lokasi ditolak - aktifkan di pengaturan browser.";
-      else if (geoErr?.code === 2) text += "GPS tidak tersedia - aktifkan GPS & coba di luar ruangan.";
-      else if (geoErr?.code === 3) text += "Timeout - sinyal GPS lemah, coba lagi.";
-      else text += "Aktifkan GPS dan berikan izin lokasi.";
-      setMessage({ type: "error", text });
+      if (geoErr?.code === 1) {
+        setGpsDenied(true);
+      } else {
+        let text = "Gagal mendapatkan lokasi. ";
+        if (geoErr?.code === 2) text += "GPS tidak tersedia - coba di luar ruangan.";
+        else if (geoErr?.code === 3) text += "Timeout - sinyal GPS lemah, coba lagi.";
+        else text += "Aktifkan GPS.";
+        setMessage({ type: "error", text });
+      }
+    } finally {
+      setGpsRetrying(false);
     }
+  }
+
+  // Submit without GPS (marked as outside radius)
+  function submitWithoutGps() {
+    if (!settings) return;
+    // Use office coordinates with forced "outside radius" flag
+    setLocation({ lat: 0, lng: 0 });
+    setDistance(99999);
+    setIsOutsideRadius(true);
+    setGpsDenied(false);
+    setMessage(null);
   }
 
   function capturePhoto() {
@@ -317,6 +354,57 @@ export default function AbsenPage() {
     router.push("/");
   }
 
+  async function handleChangePin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!employee) return;
+    setPinMsg(null);
+
+    if (oldPin !== employee.pin) {
+      setPinMsg({ type: "error", text: "PIN lama salah" });
+      return;
+    }
+    if (newPin.length < 4) {
+      setPinMsg({ type: "error", text: "PIN baru minimal 4 karakter" });
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinMsg({ type: "error", text: "Konfirmasi PIN tidak cocok" });
+      return;
+    }
+    if (newPin === oldPin) {
+      setPinMsg({ type: "error", text: "PIN baru harus berbeda dari PIN lama" });
+      return;
+    }
+
+    setPinLoading(true);
+    const { error } = await supabase
+      .from("employees")
+      .update({ pin: newPin })
+      .eq("id", employee.id);
+
+    if (error) {
+      setPinMsg({ type: "error", text: "Gagal mengubah PIN" });
+      setPinLoading(false);
+      return;
+    }
+
+    // Update localStorage
+    const updated = { ...employee, pin: newPin };
+    setEmployee(updated);
+    storeEmployee(updated);
+
+    setPinMsg({ type: "success", text: "PIN berhasil diubah!" });
+    setPinLoading(false);
+
+    setTimeout(() => {
+      setShowChangePin(false);
+      setOldPin("");
+      setNewPin("");
+      setConfirmPin("");
+      setPinMsg(null);
+    }, 1500);
+  }
+
   if (!employee) return null;
 
   const alreadyDone = todayRecord?.clock_in && todayRecord?.clock_out;
@@ -326,14 +414,21 @@ export default function AbsenPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <Logo size="sm" showSubtitle={false} />
-          <div className="flex items-center gap-3">
+          <Logo size="sm" />
+          <div className="flex items-center gap-1">
             <button
               onClick={() => router.push("/riwayat")}
               className="p-2 text-gray-500 hover:text-primary transition"
               title="Riwayat"
             >
               <History size={20} />
+            </button>
+            <button
+              onClick={() => setShowChangePin(true)}
+              className="p-2 text-gray-500 hover:text-primary transition"
+              title="Ganti PIN"
+            >
+              <Key size={20} />
             </button>
             <button
               onClick={handleLogout}
@@ -456,6 +551,44 @@ export default function AbsenPage() {
 
             <canvas ref={canvasRef} className="hidden" />
 
+            {/* GPS Denied - Instructions */}
+            {gpsDenied && !location && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-semibold mb-1">Izin lokasi diperlukan</p>
+                    <p className="text-xs">
+                      Untuk mengaktifkan:
+                    </p>
+                    <ol className="text-xs list-decimal list-inside mt-1 space-y-0.5">
+                      <li>Klik ikon <strong>gembok/info</strong> di address bar</li>
+                      <li>Pilih <strong>Lokasi</strong> / <strong>Location</strong></li>
+                      <li>Pilih <strong>Izinkan</strong> / <strong>Allow</strong></li>
+                      <li>Refresh halaman ini</li>
+                    </ol>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={tryGetLocation}
+                    disabled={gpsRetrying}
+                    className="flex-1 py-2 px-3 text-xs bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {gpsRetrying ? "Mencoba..." : "Coba Lagi"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitWithoutGps}
+                    className="flex-1 py-2 px-3 text-xs bg-white border border-amber-300 text-amber-700 rounded-lg font-medium hover:bg-amber-50"
+                  >
+                    Lanjutkan tanpa GPS
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Location Info */}
             {location && (
               <div
@@ -468,7 +601,9 @@ export default function AbsenPage() {
                 <MapPin size={16} />
                 {isOutsideRadius ? (
                   <span>
-                    Di luar radius kantor ({distance}m dari kantor)
+                    {distance && distance < 99999
+                      ? `Di luar radius kantor (${distance}m dari kantor)`
+                      : "Tanpa GPS - wajib isi keterangan"}
                   </span>
                 ) : (
                   <span>
@@ -540,6 +675,94 @@ export default function AbsenPage() {
           </div>
         )}
       </main>
+
+      {/* Change PIN Modal */}
+      {showChangePin && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => !pinLoading && setShowChangePin(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <Key size={18} /> Ganti PIN
+              </h3>
+              <button
+                onClick={() => !pinLoading && setShowChangePin(false)}
+                className="text-gray-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleChangePin} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">PIN Lama</label>
+                <input
+                  type="password"
+                  value={oldPin}
+                  onChange={(e) => setOldPin(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  inputMode="numeric"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">PIN Baru</label>
+                <input
+                  type="password"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  inputMode="numeric"
+                  required
+                  minLength={4}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Konfirmasi PIN Baru</label>
+                <input
+                  type="password"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  inputMode="numeric"
+                  required
+                />
+              </div>
+              {pinMsg && (
+                <p
+                  className={`text-sm ${
+                    pinMsg.type === "success" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {pinMsg.text}
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePin(false)}
+                  disabled={pinLoading}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={pinLoading}
+                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {pinLoading ? "Memproses..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

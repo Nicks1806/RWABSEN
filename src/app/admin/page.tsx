@@ -84,6 +84,9 @@ export default function AdminPage() {
   const [resetPinMsg, setResetPinMsg] = useState("");
   const [showPins, setShowPins] = useState(false);
 
+  // Delete employee confirmation
+  const [deleteEmpTarget, setDeleteEmpTarget] = useState<Employee | null>(null);
+
   // Edit work hours modal
   const [editHoursEmp, setEditHoursEmp] = useState<Employee | null>(null);
   const [editStart, setEditStart] = useState("");
@@ -263,6 +266,13 @@ export default function AdminPage() {
   // Toggle employee active
   async function toggleEmployee(id: string, isActive: boolean) {
     await supabase.from("employees").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  }
+
+  // Delete employee permanently
+  async function deleteEmployee(id: string) {
+    await supabase.from("employees").delete().eq("id", id);
+    setDeleteEmpTarget(null);
     fetchData();
   }
 
@@ -1135,15 +1145,11 @@ export default function AdminPage() {
                                       <Clock3 size={14} />
                                     </button>
                                     <button
-                                      onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                                      className={`w-8 h-8 rounded-lg transition flex items-center justify-center ${
-                                        emp.is_active
-                                          ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-                                          : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
-                                      }`}
-                                      title={emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                      onClick={() => setDeleteEmpTarget(emp)}
+                                      className="w-8 h-8 rounded-lg transition flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
+                                      title="Hapus Karyawan"
                                     >
-                                      {emp.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
+                                      <Trash2 size={14} />
                                     </button>
                                   </>
                                 )}
@@ -1222,14 +1228,10 @@ export default function AdminPage() {
                                   <Clock3 size={12} /> Jam
                                 </button>
                                 <button
-                                  onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                                  className={`col-span-2 text-xs px-3 py-2 rounded-lg ${
-                                    emp.is_active
-                                      ? "bg-red-50 text-red-600"
-                                      : "bg-green-50 text-green-600"
-                                  }`}
+                                  onClick={() => setDeleteEmpTarget(emp)}
+                                  className="col-span-2 text-xs px-3 py-2 rounded-lg bg-red-50 text-red-600 flex items-center justify-center gap-1"
                                 >
-                                  {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                  <Trash2 size={12} /> Hapus
                                 </button>
                               </>
                             )}
@@ -1409,6 +1411,48 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Employee Confirmation Modal */}
+      {deleteEmpTarget && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setDeleteEmpTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <h3 className="font-bold text-gray-800 text-lg">Hapus Karyawan?</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Yakin ingin menghapus <strong className="text-gray-800">{deleteEmpTarget.name}</strong>?
+              </p>
+              <p className="text-xs text-red-500 mt-2">
+                ⚠️ Semua data absensi karyawan ini akan ikut terhapus dan tidak bisa dikembalikan.
+              </p>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setDeleteEmpTarget(null)}
+                className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteEmployee(deleteEmpTarget.id)}
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700"
+              >
+                Hapus Permanen
+              </button>
+            </div>
           </div>
         </div>
       )}

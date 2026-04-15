@@ -127,8 +127,8 @@ export default function AbsenPage() {
       if (data) setSettings(data);
     });
 
-    // Auto-request permissions if not yet granted
-    requestPermissionsIfNeeded();
+    // Only check permission state silently - DO NOT auto-prompt
+    // User will be prompted only when clicking 'Ambil Foto' button (explicit action)
 
     // Pre-warm face detection models in background
     prewarmFaceModels();
@@ -159,53 +159,6 @@ export default function AbsenPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, fetchTodayRecord]);
-
-  async function requestPermissionsIfNeeded() {
-    // Check camera permission
-    let cameraState: PermissionState = "prompt";
-    let geoState: PermissionState = "prompt";
-
-    try {
-      if (navigator.permissions) {
-        const camPerm = await navigator.permissions.query({
-          name: "camera" as PermissionName,
-        });
-        cameraState = camPerm.state;
-
-        const geoPerm = await navigator.permissions.query({
-          name: "geolocation" as PermissionName,
-        });
-        geoState = geoPerm.state;
-      }
-    } catch {
-      // Permissions API not supported - skip silently
-      return;
-    }
-
-    // If camera not granted yet, trigger permission prompt
-    if (cameraState !== "granted") {
-      try {
-        const testStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        testStream.getTracks().forEach((t) => t.stop());
-      } catch {
-        // User denied - will need to enable manually
-      }
-    }
-
-    // If geo not granted yet, trigger permission prompt
-    if (geoState !== "granted") {
-      try {
-        await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 10000,
-          });
-        });
-      } catch {
-        // User denied or timeout
-      }
-    }
-  }
 
   async function startCamera() {
     setMessage(null);

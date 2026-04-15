@@ -911,15 +911,26 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              {r.clock_in_photo && (
-                                <button
-                                  onClick={() => setPhotoModal(r.clock_in_photo!)}
-                                  className="text-blue-500 hover:text-blue-700"
-                                  title="Lihat foto"
-                                >
-                                  <ImageIcon size={16} />
-                                </button>
-                              )}
+                              <div className="inline-flex items-center gap-1">
+                                {r.clock_in_photo && (
+                                  <button
+                                    onClick={() => setPhotoModal(r.clock_in_photo!)}
+                                    className="inline-flex items-center gap-0.5 text-[10px] text-green-600 hover:text-green-800 bg-green-50 px-2 py-1 rounded-lg"
+                                    title="Foto Clock In"
+                                  >
+                                    <ImageIcon size={12} /> In
+                                  </button>
+                                )}
+                                {r.clock_out_photo && (
+                                  <button
+                                    onClick={() => setPhotoModal(r.clock_out_photo!)}
+                                    className="inline-flex items-center gap-0.5 text-[10px] text-orange-600 hover:text-orange-800 bg-orange-50 px-2 py-1 rounded-lg"
+                                    title="Foto Clock Out"
+                                  >
+                                    <ImageIcon size={12} /> Out
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-center">
                               {r.clock_in_lat && (
@@ -1603,7 +1614,7 @@ export default function AdminPage() {
                           <tr key={emp.id} className="hover:bg-gray-50 transition">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                <Avatar name={emp.name} size="sm" />
+                                <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                                 <div>
                                   <p className="font-semibold text-gray-800">{emp.name}</p>
                                   <p className="text-[10px] text-gray-400 capitalize">{emp.role}</p>
@@ -1734,27 +1745,30 @@ export default function AdminPage() {
                       const eff = getEffectiveWorkHours(emp, settings);
                       return (
                         <div key={emp.id} className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <p className="font-semibold">{emp.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">
-                                {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
-                              </p>
-                              {emp.role !== "admin" && (
-                                <p className="text-xs mt-0.5">
-                                  {eff.off ? (
-                                    <span className="text-gray-400 italic">Libur Hari Ini</span>
-                                  ) : (
-                                    <>
-                                      Jam:{" "}
-                                      <span className={isDefault ? "text-gray-600" : "text-primary font-medium"}>
-                                        {eff.start.slice(0, 5)} - {eff.end.slice(0, 5)}
-                                      </span>
-                                      {isDefault && <span className="text-gray-400"> (default)</span>}
-                                    </>
-                                  )}
+                          <div className="flex items-center justify-between mb-2 gap-2">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
+                              <div className="min-w-0">
+                                <p className="font-semibold">{emp.name}</p>
+                                <p className="text-xs text-gray-500 capitalize">
+                                  {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
                                 </p>
-                              )}
+                                {emp.role !== "admin" && (
+                                  <p className="text-xs mt-0.5">
+                                    {eff.off ? (
+                                      <span className="text-gray-400 italic">Libur Hari Ini</span>
+                                    ) : (
+                                      <>
+                                        Jam:{" "}
+                                        <span className={isDefault ? "text-gray-600" : "text-primary font-medium"}>
+                                          {eff.start.slice(0, 5)} - {eff.end.slice(0, 5)}
+                                        </span>
+                                        {isDefault && <span className="text-gray-400"> (default)</span>}
+                                      </>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${

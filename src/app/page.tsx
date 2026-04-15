@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { storeEmployee } from "@/lib/auth";
 import Logo from "@/components/Logo";
+import InstallAppButton from "@/components/InstallAppButton";
 
 export default function LoginPage() {
   const [name, setName] = useState("");
@@ -87,6 +88,14 @@ export default function LoginPage() {
             {loading ? "Memproses..." : "Masuk"}
           </button>
         </form>
+
+        {/* Install App */}
+        <div className="mt-6 text-center">
+          <InstallAppButton />
+          <p className="text-[11px] text-gray-400 mt-2">
+            Pasang aplikasi di HP untuk akses lebih cepat
+          </p>
+        </div>
       </div>
     </div>
   );

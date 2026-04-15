@@ -57,10 +57,14 @@ export default function QRCodePage() {
     return () => clearInterval(interval);
   }, [token]);
 
-  // Render QR to canvas
+  // Render QR to canvas - encodes as URL so scanning via phone camera
+  // redirects to the app automatically, in-app scanner parses same URL format
   useEffect(() => {
     if (!token || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, `REDWINE-ABSEN-${token}`, {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://absensiredwine.vercel.app";
+    const qrData = `${origin}/absen?qr=${token}`;
+    QRCode.toCanvas(canvasRef.current, qrData, {
       width: 320,
       margin: 2,
       color: { dark: "#8B1A1A", light: "#ffffff" },

@@ -132,6 +132,18 @@ export default function AbsenPage() {
     // Pre-warm face detection models in background
     prewarmFaceModels();
 
+    // Auto-verify QR token if present in URL (user scanned QR from phone camera)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qrFromUrl = params.get("qr");
+      if (qrFromUrl) {
+        verifyQRToken(qrFromUrl).then(() => {
+          // Clear URL param after verify
+          router.replace("/absen");
+        });
+      }
+    }
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       clearInterval(timer);
@@ -428,6 +440,23 @@ export default function AbsenPage() {
     router.push("/");
   }
 
+  // Extract token from QR data (supports URL format or legacy plain text)
+  function extractQRToken(data: string): string | null {
+    // URL format: https://.../absen?qr=TOKEN
+    try {
+      const url = new URL(data);
+      const qrParam = url.searchParams.get("qr");
+      if (qrParam) return qrParam;
+    } catch {
+      // Not a URL, continue to legacy check
+    }
+    // Legacy format: REDWINE-ABSEN-TOKEN
+    if (data.startsWith("REDWINE-ABSEN-")) {
+      return data.replace("REDWINE-ABSEN-", "");
+    }
+    return null;
+  }
+
   async function startQRScan() {
     setScanningQR(true);
     setMessage(null);
@@ -453,9 +482,11 @@ export default function AbsenPage() {
         ctx.drawImage(videoRef.current, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code && code.data.startsWith("REDWINE-ABSEN-")) {
-          const token = code.data.replace("REDWINE-ABSEN-", "");
-          await verifyQRToken(token);
+        if (code) {
+          const extracted = extractQRToken(code.data);
+          if (extracted) {
+            await verifyQRToken(extracted);
+          }
         }
       }, 500);
     } catch {

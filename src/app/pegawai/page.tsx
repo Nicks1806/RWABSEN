@@ -81,13 +81,20 @@ export default function PegawaiPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return employees;
-    return employees.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.position && e.position.toLowerCase().includes(q)) ||
-        (e.phone && e.phone.includes(q))
-    );
+    const base = q
+      ? employees.filter(
+          (e) =>
+            e.name.toLowerCase().includes(q) ||
+            (e.position && e.position.toLowerCase().includes(q)) ||
+            (e.phone && e.phone.includes(q))
+        )
+      : employees;
+    // Sort admin first, then by name
+    return [...base].sort((a, b) => {
+      if (a.role === "admin" && b.role !== "admin") return -1;
+      if (b.role === "admin" && a.role !== "admin") return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [employees, search]);
 
   async function addEmployee(e: React.FormEvent) {

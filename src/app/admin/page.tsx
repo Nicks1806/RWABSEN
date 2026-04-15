@@ -1631,13 +1631,16 @@ export default function AdminPage() {
                           return (
                           <tr key={emp.id} className="hover:bg-gray-50 transition">
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => router.push(`/admin/karyawan/${emp.id}`)}
+                                className="flex items-center gap-3 hover:opacity-80 text-left w-full"
+                              >
                                 <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                                 <div>
-                                  <p className="font-semibold text-gray-800">{emp.name}</p>
+                                  <p className="font-semibold text-gray-800 hover:text-primary">{emp.name}</p>
                                   <p className="text-[10px] text-gray-400 capitalize">{emp.role}</p>
                                 </div>
-                              </div>
+                              </button>
                             </td>
                             <td className="px-4 py-3 text-center font-mono text-sm tracking-wider text-gray-600">
                               {showPins ? emp.pin : "••••••"}
@@ -1764,7 +1767,10 @@ export default function AdminPage() {
                       return (
                         <div key={emp.id} className="p-4">
                           <div className="flex items-center justify-between mb-2 gap-2">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <button
+                              onClick={() => router.push(`/admin/karyawan/${emp.id}`)}
+                              className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                            >
                               <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                               <div className="min-w-0">
                                 <p className="font-semibold">{emp.name}</p>
@@ -1787,7 +1793,7 @@ export default function AdminPage() {
                                   </p>
                                 )}
                               </div>
-                            </div>
+                            </button>
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${
                                 emp.is_active

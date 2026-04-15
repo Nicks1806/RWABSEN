@@ -78,3 +78,14 @@ export interface QRToken {
   created_at: string;
   expires_at: string;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  priority: "normal" | "important" | "urgent";
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

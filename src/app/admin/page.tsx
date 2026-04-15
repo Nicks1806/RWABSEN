@@ -40,6 +40,7 @@ import {
   Mail,
   Briefcase,
   QrCode,
+  Megaphone,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
@@ -555,12 +556,20 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => router.push("/admin/pengumuman")}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              title="Pengumuman"
+            >
+              <Megaphone size={16} />
+              <span className="hidden sm:inline">Pengumuman</span>
+            </button>
+            <button
               onClick={() => router.push("/admin/qr")}
               className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
               title="QR Code Absensi"
             >
               <QrCode size={16} />
-              <span className="hidden sm:inline">QR Code</span>
+              <span className="hidden sm:inline">QR</span>
             </button>
             <button
               onClick={handleLogout}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee, storeEmployee } from "@/lib/auth";
-import { Employee, Attendance, Settings } from "@/lib/types";
+import { Employee, Attendance, Settings, Announcement } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -37,12 +37,13 @@ export default function HomePage() {
   const [pendingLeaves, setPendingLeaves] = useState(0);
   const [monthlyHours, setMonthlyHours] = useState(0);
   const [monthlyDays, setMonthlyDays] = useState(0);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   const fetchData = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
     const startOfMonth = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
 
-    const [attRes, setRes, pendingRes, monthRes] = await Promise.all([
+    const [attRes, setRes, pendingRes, monthRes, annRes] = await Promise.all([
       supabase
         .from("attendance")
         .select("*")
@@ -61,6 +62,12 @@ export default function HomePage() {
         .eq("employee_id", empId)
         .gte("date", startOfMonth)
         .lte("date", today),
+      supabase
+        .from("announcements")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
     setTodayRecord(attRes.data || null);
@@ -78,6 +85,7 @@ export default function HomePage() {
     }
     setMonthlyHours(Math.round((totalMins / 60) * 10) / 10);
     setMonthlyDays(presentDays);
+    setAnnouncements(annRes.data || []);
   }, []);
 
   useEffect(() => {
@@ -128,6 +136,11 @@ export default function HomePage() {
           table: "attendance",
           filter: `employee_id=eq.${employee.id}`,
         },
+        () => fetchData(employee.id)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "announcements" },
         () => fetchData(employee.id)
       )
       .subscribe();
@@ -315,15 +328,53 @@ export default function HomePage() {
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
               <Megaphone size={16} className="text-primary" /> Pengumuman
             </h3>
-            <button className="text-xs text-primary font-medium">Lihat semua</button>
+            {announcements.length > 3 && (
+              <button className="text-xs text-primary font-medium">Lihat semua</button>
+            )}
           </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-            <Megaphone size={28} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Belum ada pengumuman</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Pengumuman dari admin akan muncul di sini
-            </p>
-          </div>
+          {announcements.length === 0 ? (
+            <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
+              <Megaphone size={28} className="text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Belum ada pengumuman</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Pengumuman dari admin akan muncul di sini
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {announcements.slice(0, 3).map((a) => {
+                const colors = {
+                  normal: "border-l-blue-400 bg-white",
+                  important: "border-l-amber-500 bg-amber-50",
+                  urgent: "border-l-red-500 bg-red-50",
+                }[a.priority || "normal"];
+                return (
+                  <div
+                    key={a.id}
+                    className={`rounded-2xl shadow-sm border-l-4 p-4 ${colors}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="font-semibold text-sm text-gray-800">{a.title}</p>
+                      {a.priority === "urgent" && (
+                        <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
+                          PENTING
+                        </span>
+                      )}
+                      {a.priority === "important" && (
+                        <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
+                          INFO
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 whitespace-pre-wrap">{a.body}</p>
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      {format(new Date(a.created_at), "dd MMM yyyy • HH:mm", { locale: idLocale })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions Bottom */}

@@ -11,12 +11,7 @@ import {
   LogIn,
   LogOut,
   CalendarDays,
-  History,
-  FileText,
-  User as UserIcon,
   LayoutGrid,
-  MapPin,
-  ChevronRight,
   Megaphone,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -244,36 +239,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Menu Grid - 4 icons (fitur aktif saja) */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <div className="grid grid-cols-4 gap-4">
-            <MenuIcon
-              label="Presensi"
-              icon={<MapPin size={22} className="text-white" />}
-              bg="bg-rose-500"
-              onClick={() => router.push("/absen")}
-            />
-            <MenuIcon
-              label="Pengajuan"
-              icon={<FileText size={22} className="text-white" />}
-              bg="bg-purple-500"
-              onClick={() => router.push("/pengajuan")}
-              badge={pendingLeaves}
-            />
-            <MenuIcon
-              label="Riwayat"
-              icon={<History size={22} className="text-white" />}
-              bg="bg-orange-500"
-              onClick={() => router.push("/riwayat")}
-            />
-            <MenuIcon
-              label="Profil"
-              icon={<UserIcon size={22} className="text-white" />}
-              bg="bg-gray-500"
-              onClick={() => router.push("/profile")}
-            />
-          </div>
-        </div>
 
         {/* Monthly Stats Banner */}
         <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-5 text-white relative overflow-hidden">
@@ -349,33 +314,6 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Quick Actions Bottom */}
-        <div className="bg-white rounded-2xl shadow-sm divide-y">
-          <button
-            onClick={() => router.push("/pengajuan")}
-            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
-                <FileText size={16} className="text-purple-600" />
-              </div>
-              <span className="text-sm font-medium">Ajukan Cuti / Izin</span>
-            </div>
-            <ChevronRight size={16} className="text-gray-400" />
-          </button>
-          <button
-            onClick={() => router.push("/riwayat")}
-            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center">
-                <History size={16} className="text-orange-600" />
-              </div>
-              <span className="text-sm font-medium">Riwayat Absensi</span>
-            </div>
-            <ChevronRight size={16} className="text-gray-400" />
-          </button>
-        </div>
       </main>
 
       <BottomNav />
@@ -383,34 +321,3 @@ export default function HomePage() {
   );
 }
 
-function MenuIcon({
-  label,
-  icon,
-  bg,
-  onClick,
-  badge,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  bg: string;
-  onClick?: () => void;
-  badge?: number;
-}) {
-  return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1.5 group">
-      <div
-        className={`${bg} w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition relative`}
-      >
-        {icon}
-        {badge && badge > 0 ? (
-          <span className="absolute -top-1 -right-1 bg-white text-red-600 text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center border border-red-200">
-            {badge > 9 ? "9+" : badge}
-          </span>
-        ) : null}
-      </div>
-      <span className="text-[11px] text-gray-700 text-center font-medium leading-tight">
-        {label}
-      </span>
-    </button>
-  );
-}

@@ -80,19 +80,37 @@ export interface QRToken {
   expires_at: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface TaskComment {
+  id: string;
+  text: string;
+  by: string; // employee id
+  byName?: string;
+  at: string; // ISO timestamp
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
   status: "brief" | "today" | "done" | "history";
   color: "red" | "yellow" | "green" | "blue" | "purple" | "gray";
-  assignee_id?: string | null;
+  assignee_id?: string | null; // legacy single assignee (kept for backward compat)
+  assignees?: string[] | null; // array of employee IDs (multi-assign)
   created_by?: string | null;
   due_date?: string | null;
   position?: number;
+  checklist?: ChecklistItem[];
+  comments?: TaskComment[];
   created_at: string;
   updated_at: string;
   assignee?: Employee;
+  assigneeObjects?: Employee[];
 }
 
 export interface Reimbursement {

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
+import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks } from "@/lib/permissions";
 
 type ColKey = "brief" | "today" | "done" | "history";
@@ -104,6 +105,9 @@ export default function TasksPage() {
     due_date: "",
   });
   const [loading, setLoading] = useState(false);
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<ColKey | null>(null);
   const colsRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -224,6 +228,41 @@ export default function TasksPage() {
     await supabase.from("tasks").update({ status: order[newIdx], updated_at: new Date().toISOString() }).eq("id", task.id);
   }
 
+  async function moveTaskToColumn(taskId: string, newStatus: ColKey) {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+    );
+    await supabase.from("tasks").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", taskId);
+  }
+
+  function handleDragStart(e: React.DragEvent, taskId: string) {
+    setDraggingTaskId(taskId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
+  }
+
+  function handleDragEnd() {
+    setDraggingTaskId(null);
+    setDragOverCol(null);
+  }
+
+  function handleColDragOver(e: React.DragEvent, col: ColKey) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverCol !== col) setDragOverCol(col);
+  }
+
+  function handleColDrop(e: React.DragEvent, col: ColKey) {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (taskId) moveTaskToColumn(taskId, col);
+    setDraggingTaskId(null);
+    setDragOverCol(null);
+  }
+
   async function deleteTask(id: string) {
     if (!confirm("Hapus task ini?")) return;
     await supabase.from("tasks").delete().eq("id", id);
@@ -260,8 +299,11 @@ export default function TasksPage() {
                     {tasks.length}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Schedule & track task bersama tim
+                <p className="text-xs text-gray-500 hidden sm:block">
+                  Drag card untuk pindah kolom • Tap untuk edit
+                </p>
+                <p className="text-xs text-gray-500 sm:hidden">
+                  Schedule task tim
                 </p>
               </div>
             </div>
@@ -303,7 +345,14 @@ export default function TasksPage() {
             return (
               <div
                 key={col.key}
-                className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full border border-gray-200/80 shadow-sm`}
+                onDragOver={(e) => handleColDragOver(e, col.key)}
+                onDragLeave={() => setDragOverCol((c) => (c === col.key ? null : c))}
+                onDrop={(e) => handleColDrop(e, col.key)}
+                className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full border shadow-sm transition-all ${
+                  dragOverCol === col.key
+                    ? "border-primary border-2 ring-4 ring-primary/20 scale-[1.02]"
+                    : "border-gray-200/80"
+                }`}
               >
                 {/* Column header - premium */}
                 <div className="px-4 py-3.5 flex items-center justify-between border-b border-gray-200/60 sticky top-0 z-10 bg-white/60 backdrop-blur-sm rounded-t-2xl">
@@ -345,10 +394,15 @@ export default function TasksPage() {
                     return (
                       <div
                         key={task.id}
-                        className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden cursor-grab active:cursor-grabbing ${
+                          draggingTaskId === task.id ? "opacity-40 rotate-2" : ""
+                        }`}
                       >
                         <button
-                          onClick={() => openEdit(task)}
+                          onClick={() => setDetailTask(task)}
                           className="w-full text-left px-3.5 pt-3 pb-2"
                         >
                           <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">
@@ -443,6 +497,16 @@ export default function TasksPage() {
       </main>
 
       <BottomNav />
+
+      {/* Task Detail Modal (Trello-like) */}
+      {detailTask && user && (
+        <TaskDetailModal
+          task={tasks.find((t) => t.id === detailTask.id) || detailTask}
+          currentUser={user}
+          employees={employees}
+          onClose={() => setDetailTask(null)}
+        />
+      )}
 
       {/* Form Modal - Professional */}
       {showForm.open && (

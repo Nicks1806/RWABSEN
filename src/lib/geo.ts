@@ -27,9 +27,21 @@ export function getCurrentPosition(): Promise<GeolocationPosition> {
       reject(new Error("Geolocation tidak didukung browser ini"));
       return;
     }
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
+    // Try high accuracy first, fallback to low accuracy if fails
+    navigator.geolocation.getCurrentPosition(resolve, (err) => {
+      if (err.code === 3 || err.code === 2) {
+        // Timeout or unavailable - retry with low accuracy
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 60000,
+        });
+      } else {
+        reject(err);
+      }
+    }, {
       enableHighAccuracy: true,
-      timeout: 10000,
+      timeout: 15000,
       maximumAge: 0,
     });
   });

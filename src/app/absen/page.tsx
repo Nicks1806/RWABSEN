@@ -72,6 +72,13 @@ export default function AbsenPage() {
   }, [router, fetchTodayRecord]);
 
   async function startCamera() {
+    setMessage(null);
+
+    // 1. Activate camera UI first so <video> element is mounted
+    setCameraActive(true);
+    setCapturedPhoto(null);
+
+    // 2. Get camera stream
     try {
       let stream: MediaStream;
       try {
@@ -79,33 +86,52 @@ export default function AbsenPage() {
           video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
         });
       } catch {
-        // Fallback tanpa facingMode jika tidak support
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
       }
       streamRef.current = stream;
+
+      // Wait a tick for video element to mount
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-      }
-      setCameraActive(true);
-      setCapturedPhoto(null);
-
-      // Get location
-      try {
-        const pos = await getCurrentPosition();
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setLocation(loc);
-        if (settings) {
-          const dist = getDistanceFromLatLng(loc.lat, loc.lng, settings.office_lat, settings.office_lng);
-          setDistance(Math.round(dist));
-          setIsOutsideRadius(dist > settings.radius_meters);
+        // Force play for mobile browsers
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn("Video play error:", playErr);
         }
-      } catch {
-        setMessage({ type: "error", text: "Gagal mendapatkan lokasi. Aktifkan GPS." });
       }
-    } catch {
-      setMessage({ type: "error", text: "Gagal mengakses kamera. Berikan izin kamera." });
+    } catch (err) {
+      setCameraActive(false);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setMessage({
+        type: "error",
+        text: `Gagal mengakses kamera: ${msg}. Berikan izin kamera di pengaturan browser.`,
+      });
+      return;
+    }
+
+    // 3. Get location
+    try {
+      const pos = await getCurrentPosition();
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setLocation(loc);
+      if (settings) {
+        const dist = getDistanceFromLatLng(loc.lat, loc.lng, settings.office_lat, settings.office_lng);
+        setDistance(Math.round(dist));
+        setIsOutsideRadius(dist > settings.radius_meters);
+      }
+    } catch (err) {
+      const geoErr = err as GeolocationPositionError;
+      let text = "Gagal mendapatkan lokasi. ";
+      if (geoErr?.code === 1) text += "Izin lokasi ditolak - aktifkan di pengaturan browser.";
+      else if (geoErr?.code === 2) text += "GPS tidak tersedia - aktifkan GPS & coba di luar ruangan.";
+      else if (geoErr?.code === 3) text += "Timeout - sinyal GPS lemah, coba lagi.";
+      else text += "Aktifkan GPS dan berikan izin lokasi.";
+      setMessage({ type: "error", text });
     }
   }
 

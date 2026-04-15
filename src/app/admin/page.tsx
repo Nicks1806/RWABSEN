@@ -1476,6 +1476,24 @@ export default function AdminPage() {
                                     {reimb.description && (
                                       <p className="text-sm text-gray-700 mt-2">{reimb.description}</p>
                                     )}
+                                    {reimb.bank_account && (
+                                      <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                                        <p className="text-[10px] text-blue-600 font-medium uppercase tracking-wide">
+                                          Rekening Transfer
+                                        </p>
+                                        <p className="text-sm text-blue-900 font-mono font-semibold">
+                                          {reimb.bank_account}
+                                        </p>
+                                        <button
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(reimb.bank_account || "");
+                                          }}
+                                          className="text-[10px] text-blue-600 hover:underline mt-0.5"
+                                        >
+                                          Salin
+                                        </button>
+                                      </div>
+                                    )}
                                     {reimb.attachment_url && (
                                       <a
                                         href={reimb.attachment_url}

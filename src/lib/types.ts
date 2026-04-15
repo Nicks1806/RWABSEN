@@ -23,6 +23,7 @@ export interface Employee {
   position?: string | null;
   photo_url?: string | null;
   join_date?: string | null;
+  bank_account?: string | null;
   created_at: string;
 }
 
@@ -87,6 +88,7 @@ export interface Reimbursement {
   amount: number;
   description?: string | null;
   attachment_url?: string | null;
+  bank_account?: string | null;
   status: "pending" | "approved" | "rejected";
   admin_notes?: string | null;
   reviewed_by?: string | null;

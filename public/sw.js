@@ -1,7 +1,7 @@
 // RedWine Attendance - Service Worker
 // Cache static assets + push notifications + auto-update support
 
-const CACHE_NAME = "redwine-v4";
+const CACHE_NAME = "redwine-v5";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
@@ -88,17 +88,22 @@ self.addEventListener("fetch", (event) => {
   // Don't cache Supabase API
   if (url.hostname.includes("supabase.co")) return;
 
-  // Network first for HTML navigation (always check for updates)
+  // Stale-while-revalidate for HTML navigation (instant render, refresh in bg)
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          // Update cache with fresh response
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-          return res;
-        })
-        .catch(() => caches.match(req).then((r) => r || caches.match("/")))
+      caches.match(req).then((cached) => {
+        const networkPromise = fetch(req)
+          .then((res) => {
+            if (res && res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+            }
+            return res;
+          })
+          .catch(() => cached || caches.match("/"));
+        // Return cached immediately if available, else wait for network
+        return cached || networkPromise;
+      })
     );
     return;
   }

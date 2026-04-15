@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
+import { canAccessTasks } from "@/lib/permissions";
 
 type ColKey = "brief" | "today" | "done" | "history";
 
@@ -82,8 +83,22 @@ export default function TasksPage() {
       router.push("/");
       return;
     }
-    setUser(u);
-    fetchData();
+    // Fetch fresh profile to get latest position/role
+    supabase
+      .from("employees")
+      .select("*")
+      .eq("id", u.id)
+      .single()
+      .then(({ data }) => {
+        const fresh = data || u;
+        if (!canAccessTasks(fresh)) {
+          alert("Akses Task Board khusus Admin, Founder, dan GM.");
+          router.push(fresh.role === "admin" ? "/admin" : "/home");
+          return;
+        }
+        setUser(fresh);
+        fetchData();
+      });
   }, [router, fetchData]);
 
   // Realtime

@@ -20,6 +20,7 @@ import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import { getEffectiveWorkHours } from "@/lib/workHours";
+import { canAccessTasks } from "@/lib/permissions";
 
 export default function HomePage() {
   const router = useRouter();
@@ -274,20 +275,22 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Task Board Quick Access */}
-        <button
-          onClick={() => router.push("/tasks")}
-          className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3 hover:shadow-md transition"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white shadow-sm">
-            <ClipboardList size={22} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-semibold text-gray-800">Task Board</p>
-            <p className="text-xs text-gray-500">Schedule tugas — Brief / Today / Done</p>
-          </div>
-          <ChevronRight size={18} className="text-gray-400" />
-        </button>
+        {/* Task Board Quick Access - only for Admin/Founder/GM */}
+        {canAccessTasks(employee) && (
+          <button
+            onClick={() => router.push("/tasks")}
+            className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3 hover:shadow-md transition"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white shadow-sm">
+              <ClipboardList size={22} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-gray-800">Task Board</p>
+              <p className="text-xs text-gray-500">Schedule tugas — Brief / Today / Done</p>
+            </div>
+            <ChevronRight size={18} className="text-gray-400" />
+          </button>
+        )}
 
         {/* Pengumuman */}
         <div>

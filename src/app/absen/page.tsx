@@ -930,101 +930,159 @@ export default function AbsenPage() {
       {/* Leave Request Modal */}
       {showLeaveForm && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
           onClick={() => !leaveLoading && setShowLeaveForm(false)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-sm my-8"
+            className="bg-white w-full md:max-w-sm rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <FileText size={18} /> Ajukan Izin / Cuti / Sakit
-              </h3>
+            {/* Drag handle for mobile */}
+            <div className="md:hidden flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-br from-primary to-primary-dark px-5 pt-5 pb-6 text-white relative">
               <button
                 onClick={() => !leaveLoading && setShowLeaveForm(false)}
-                className="text-gray-400"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Pengajuan Izin</h3>
+                  <p className="text-xs text-white/80">Pilih jenis dan isi detail</p>
+                </div>
+              </div>
             </div>
-            <form onSubmit={submitLeave} className="space-y-3">
+
+            {/* Body */}
+            <form onSubmit={submitLeave} className="p-5 space-y-4">
+              {/* Jenis - visual card selector */}
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Jenis</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Jenis Pengajuan
+                </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["izin", "cuti", "sakit"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setLeaveForm({ ...leaveForm, leave_type: t })}
-                      className={`py-2 rounded-lg text-sm font-medium capitalize transition ${
-                        leaveForm.leave_type === t
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {([
+                    { key: "izin", label: "Izin", emoji: "📝", color: "purple" },
+                    { key: "cuti", label: "Cuti", emoji: "🏖️", color: "blue" },
+                    { key: "sakit", label: "Sakit", emoji: "🏥", color: "orange" },
+                  ] as const).map((t) => {
+                    const active = leaveForm.leave_type === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => setLeaveForm({ ...leaveForm, leave_type: t.key })}
+                        className={`py-3 rounded-xl text-center transition-all ${
+                          active
+                            ? "bg-primary text-white shadow-md scale-105 ring-2 ring-primary/20"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        <div className="text-2xl">{t.emoji}</div>
+                        <div className="text-xs font-semibold mt-0.5">{t.label}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Dari Tanggal</label>
-                  <input
-                    type="date"
-                    value={leaveForm.start_date}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Sampai Tanggal</label>
-                  <input
-                    type="date"
-                    value={leaveForm.end_date}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-              </div>
+
+              {/* Tanggal */}
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Alasan</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Periode
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <label className="block text-[10px] text-gray-500 font-medium mb-1">DARI</label>
+                    <input
+                      type="date"
+                      value={leaveForm.start_date}
+                      onChange={(e) => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
+                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <label className="block text-[10px] text-gray-500 font-medium mb-1">SAMPAI</label>
+                    <input
+                      type="date"
+                      value={leaveForm.end_date}
+                      onChange={(e) => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
+                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                {leaveForm.start_date && leaveForm.end_date && (() => {
+                  const days = Math.round(
+                    (new Date(leaveForm.end_date).getTime() - new Date(leaveForm.start_date).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  ) + 1;
+                  return (
+                    <p className="text-[11px] text-primary font-medium mt-1.5 text-right">
+                      Total: {days} hari
+                    </p>
+                  );
+                })()}
+              </div>
+
+              {/* Alasan */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Alasan
+                </label>
                 <textarea
                   value={leaveForm.reason}
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                   rows={3}
-                  placeholder="Jelaskan alasan..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Contoh: Acara keluarga, sakit flu, keperluan mendesak..."
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition resize-none"
                   required
                 />
               </div>
+
+              {/* Message */}
               {leaveMsg && (
-                <p
-                  className={`text-sm ${
-                    leaveMsg.type === "success" ? "text-green-600" : "text-red-600"
+                <div
+                  className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
+                    leaveMsg.type === "success"
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-700"
                   }`}
                 >
-                  {leaveMsg.text}
-                </p>
+                  {leaveMsg.type === "success" ? (
+                    <CheckCircle size={16} />
+                  ) : (
+                    <AlertTriangle size={16} />
+                  )}
+                  <span className="flex-1">{leaveMsg.text}</span>
+                </div>
               )}
-              <div className="flex gap-2 pt-2">
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowLeaveForm(false)}
                   disabled={leaveLoading}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={leaveLoading}
-                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50"
+                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 shadow-sm transition"
                 >
-                  {leaveLoading ? "Mengirim..." : "Ajukan"}
+                  {leaveLoading ? "Mengirim..." : "Kirim Pengajuan"}
                 </button>
               </div>
             </form>

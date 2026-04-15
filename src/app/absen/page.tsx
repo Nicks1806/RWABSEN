@@ -25,7 +25,6 @@ import {
 import jsQR from "jsqr";
 import { hasFace, prewarmFaceModels } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
-import NotifToggle from "@/components/NotifToggle";
 import BottomNav from "@/components/BottomNav";
 
 export default function AbsenPage() {
@@ -656,8 +655,6 @@ export default function AbsenPage() {
         </div>
 
         {/* Push Notif Toggle */}
-        {employee && <NotifToggle employeeId={employee.id} />}
-
         {/* Today Status */}
         {todayRecord && (
           <div className="bg-white rounded-2xl p-5 shadow-sm">

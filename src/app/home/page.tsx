@@ -214,24 +214,30 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {/* Status text */}
+                {/* Status text - show clock in + clock out times */}
                 {alreadyClockedIn && (
-                  <p className="text-center text-sm text-gray-600 mt-3">
-                    {alreadyClockedOut ? (
-                      <>
-                        Anda telah clock out pada pukul{" "}
-                        <span className="font-semibold text-gray-900">
+                  <div className="mt-3 space-y-1">
+                    <p className="text-center text-sm text-gray-600">
+                      Anda telah berhasil clock in pada pukul{" "}
+                      <span className="font-semibold text-green-600">
+                        {format(new Date(todayRecord!.clock_in!), "HH:mm")}
+                      </span>
+                    </p>
+                    {alreadyClockedOut && (
+                      <p className="text-center text-sm text-gray-600">
+                        Clock out pada pukul{" "}
+                        <span className="font-semibold text-red-600">
                           {format(new Date(todayRecord!.clock_out!), "HH:mm")}
                         </span>
-                      </>
-                    ) : (
-                      <>
-                        Anda telah berhasil clock in pada pukul{" "}
-                        <span className="font-semibold text-gray-900">
-                          {format(new Date(todayRecord!.clock_in!), "HH:mm")}
-                        </span>
-                      </>
+                      </p>
                     )}
+                  </div>
+                )}
+
+                {/* Belum clock in info */}
+                {!alreadyClockedIn && (
+                  <p className="text-center text-sm text-gray-500 mt-3">
+                    Anda belum clock in hari ini
                   </p>
                 )}
               </>

@@ -210,9 +210,9 @@ export default function HomePage() {
                   <div className="w-px h-6 bg-gray-200" />
                   <button
                     onClick={() => router.push("/absen")}
-                    disabled={!alreadyClockedIn || alreadyClockedOut}
+                    disabled={!alreadyClockedIn}
                     className={`flex-1 py-3 flex items-center justify-center gap-2 font-semibold text-sm transition ${
-                      !alreadyClockedIn || alreadyClockedOut
+                      !alreadyClockedIn
                         ? "text-gray-300 cursor-not-allowed"
                         : "text-red-600 hover:bg-red-50"
                     }`}

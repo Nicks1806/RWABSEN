@@ -87,10 +87,9 @@ export default function AbsenPage() {
       .eq("date", today)
       .maybeSingle();
     setTodayRecord(data || null);
-    if (data && data.clock_in && !data.clock_out) {
+    // Mode: if already clocked in, always allow clock_out (even to update time)
+    if (data && data.clock_in) {
       setMode("clock_out");
-    } else if (data && data.clock_out) {
-      setMode("clock_in"); // already done for today
     } else {
       setMode("clock_in");
     }
@@ -593,8 +592,6 @@ export default function AbsenPage() {
 
   if (!employee) return null;
 
-  const alreadyDone = todayRecord?.clock_in && todayRecord?.clock_out;
-
   // Check if today is an off day for this employee
   const todayWorkHours = employee && settings ? getEffectiveWorkHours(employee, settings) : null;
   const isOffDay = todayWorkHours?.off === true;
@@ -702,14 +699,6 @@ export default function AbsenPage() {
             >
               Tetap Absen (Lembur)
             </button>
-          </div>
-        ) : alreadyDone ? (
-          <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
-            <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-            <p className="font-semibold text-gray-700">
-              Absensi hari ini sudah lengkap
-            </p>
-            <p className="text-sm text-gray-400 mt-1">Sampai jumpa besok!</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">

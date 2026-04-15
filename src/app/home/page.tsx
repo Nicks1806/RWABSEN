@@ -163,7 +163,7 @@ export default function HomePage() {
       <main className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Greeting */}
         <div className="flex items-center gap-3 pt-2">
-          <Avatar name={employee.name} size="md" />
+          <Avatar name={employee.name} photoUrl={employee.photo_url} size="md" />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-gray-500">{greeting},</p>
             <p className="font-bold text-gray-800 truncate">{employee.name}</p>

@@ -19,7 +19,10 @@ import {
   Edit3,
   Save,
   X,
+  Camera,
+  Loader2,
 } from "lucide-react";
+import { useRef } from "react";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import NotifToggle from "@/components/NotifToggle";
@@ -32,6 +35,11 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ phone: "", email: "", address: "" });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // Photo upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoMsg, setPhotoMsg] = useState("");
 
   // Change PIN
   const [showPin, setShowPin] = useState(false);
@@ -70,6 +78,79 @@ export default function ProfilePage() {
         }
       });
   }, [router]);
+
+  async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !employee) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoMsg("Harus gambar!");
+      setTimeout(() => setPhotoMsg(""), 2000);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoMsg("Max 5MB");
+      setTimeout(() => setPhotoMsg(""), 2000);
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setPhotoMsg("");
+
+    try {
+      const compressedBlob = await compressImage(file, 400);
+      const filename = `profile/${employee.id}-${Date.now()}.jpg`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("attendance-photos")
+        .upload(filename, compressedBlob, { contentType: "image/jpeg", upsert: true });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
+      const photoUrl = urlData.publicUrl;
+      await supabase.from("employees").update({ photo_url: photoUrl }).eq("id", employee.id);
+
+      const updated = { ...employee, photo_url: photoUrl };
+      setEmployee(updated);
+      storeEmployee(updated);
+      setPhotoMsg("Foto diupdate!");
+    } catch (err) {
+      console.error(err);
+      setPhotoMsg("Gagal: " + (err instanceof Error ? err.message : "Error"));
+    } finally {
+      setUploadingPhoto(false);
+      setTimeout(() => setPhotoMsg(""), 2500);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function compressImage(file: File, maxSize: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("Canvas error");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject("Blob error")), "image/jpeg", 0.85);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
 
   async function saveProfile() {
     if (!employee) return;
@@ -150,7 +231,40 @@ export default function ProfilePage() {
         <div className="max-w-lg mx-auto px-4">
           <h1 className="text-center font-bold text-lg mb-4">Akun Saya</h1>
           <div className="flex flex-col items-center">
-            <Avatar name={employee.name} size="lg" className="ring-4 ring-white/30" />
+            <div className="relative">
+              <Avatar
+                name={employee.name}
+                photoUrl={employee.photo_url}
+                size="lg"
+                className="ring-4 ring-white/30"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center shadow-lg hover:bg-gray-50 disabled:opacity-50"
+                title="Ubah foto"
+              >
+                {uploadingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={uploadPhoto}
+                className="hidden"
+              />
+            </div>
+            {photoMsg && (
+              <p
+                className={`text-xs mt-2 ${
+                  photoMsg.includes("Gagal") || photoMsg.includes("Max") || photoMsg.includes("Harus")
+                    ? "text-red-200"
+                    : "text-green-200"
+                }`}
+              >
+                {photoMsg}
+              </p>
+            )}
             <p className="text-xl font-bold mt-3">{employee.name}</p>
             <p className="text-sm text-white/80">{employee.position || "Karyawan"}</p>
           </div>

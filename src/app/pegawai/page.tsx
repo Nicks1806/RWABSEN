@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { getStoredEmployee } from "@/lib/auth";
 import { Employee } from "@/lib/types";
 import { format } from "date-fns";
-import { Search, Phone, Mail, MessageCircle, UserPlus, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { Search, Phone, Mail, MessageCircle, UserPlus, X, CheckCircle, AlertTriangle, Shield, UserCircle2, Settings2 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 
@@ -23,6 +23,9 @@ export default function PegawaiPage() {
   const [addLoading, setAddLoading] = useState(false);
   const [addMsg, setAddMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Admin change role
+  const [roleTarget, setRoleTarget] = useState<Employee | null>(null);
+
   const fetchData = useCallback(async () => {
     const today = format(new Date(), "yyyy-MM-dd");
 
@@ -31,7 +34,6 @@ export default function PegawaiPage() {
         .from("employees")
         .select("*")
         .eq("is_active", true)
-        .eq("role", "employee")
         .order("name"),
       supabase
         .from("attendance")
@@ -42,11 +44,11 @@ export default function PegawaiPage() {
     const emps = empRes.data || [];
     setEmployees(emps);
 
-    // Figure out who hasn't clocked in today
+    // Figure out who hasn't clocked in today (employee role only, not admin)
     const clockedInIds = new Set(
       (attRes.data || []).filter((a) => a.clock_in).map((a) => a.employee_id)
     );
-    const absent = emps.filter((e) => !clockedInIds.has(e.id));
+    const absent = emps.filter((e) => e.role === "employee" && !clockedInIds.has(e.id));
     setAbsentToday(absent);
   }, []);
 
@@ -112,6 +114,12 @@ export default function PegawaiPage() {
     }, 1000);
   }
 
+  async function changeRole(emp: Employee, newRole: "admin" | "employee") {
+    await supabase.from("employees").update({ role: newRole }).eq("id", emp.id);
+    setRoleTarget(null);
+    fetchData();
+  }
+
   function cleanPhone(p: string): string {
     let phone = p.replace(/\D/g, "");
     if (phone.startsWith("0")) phone = "62" + phone.slice(1);
@@ -163,7 +171,7 @@ export default function PegawaiPage() {
             <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1">
               {absentToday.map((emp) => (
                 <div key={emp.id} className="flex flex-col items-center gap-1.5 shrink-0 w-16">
-                  <Avatar name={emp.name} size="md" />
+                  <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                   <p className="text-[10px] text-center truncate w-full">{emp.name.split(" ")[0]}</p>
                 </div>
               ))}
@@ -180,9 +188,20 @@ export default function PegawaiPage() {
           ) : (
             filtered.map((emp) => (
               <div key={emp.id} className="px-4 py-3 flex items-center gap-3">
-                <Avatar name={emp.name} size="md" />
+                <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{emp.name}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="font-semibold text-sm truncate">{emp.name}</p>
+                    {emp.role === "admin" ? (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold whitespace-nowrap">
+                        <Shield size={9} /> ADMIN
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
+                        <UserCircle2 size={9} /> KARYAWAN
+                      </span>
+                    )}
+                  </div>
                   {emp.position && (
                     <p className="text-[11px] text-gray-500 truncate">{emp.position}</p>
                   )}
@@ -201,19 +220,6 @@ export default function PegawaiPage() {
                       <Phone size={16} />
                     </div>
                   )}
-                  {emp.email ? (
-                    <a
-                      href={`mailto:${emp.email}`}
-                      className="w-9 h-9 rounded-xl border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-50 hover:text-primary transition"
-                      title="Email"
-                    >
-                      <Mail size={16} />
-                    </a>
-                  ) : (
-                    <div className="w-9 h-9 rounded-xl border border-gray-100 text-gray-300 flex items-center justify-center">
-                      <Mail size={16} />
-                    </div>
-                  )}
                   {emp.phone ? (
                     <a
                       href={`https://wa.me/${cleanPhone(emp.phone)}`}
@@ -229,12 +235,99 @@ export default function PegawaiPage() {
                       <MessageCircle size={16} />
                     </div>
                   )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => setRoleTarget(emp)}
+                      className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition"
+                      title="Ubah Role"
+                    >
+                      <Settings2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))
           )}
         </div>
       </main>
+
+      {/* Change Role Modal (Admin only) */}
+      {roleTarget && isAdmin && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setRoleTarget(null)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-sm p-5 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Avatar name={roleTarget.name} photoUrl={roleTarget.photo_url} size="md" />
+                <div>
+                  <p className="font-bold text-gray-800">{roleTarget.name}</p>
+                  <p className="text-xs text-gray-500">Ubah Role / Hak Akses</p>
+                </div>
+              </div>
+              <button onClick={() => setRoleTarget(null)} className="text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => changeRole(roleTarget, "employee")}
+                className={`w-full px-4 py-3 rounded-xl border-2 text-left transition ${
+                  roleTarget.role === "employee"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                    <UserCircle2 size={18} className="text-gray-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">Karyawan</p>
+                    <p className="text-[11px] text-gray-500">Clock in/out, pengajuan cuti</p>
+                  </div>
+                  {roleTarget.role === "employee" && (
+                    <CheckCircle size={18} className="text-primary" />
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => changeRole(roleTarget, "admin")}
+                className={`w-full px-4 py-3 rounded-xl border-2 text-left transition ${
+                  roleTarget.role === "admin"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Shield size={18} className="text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">Admin</p>
+                    <p className="text-[11px] text-gray-500">
+                      Kelola karyawan, approve pengajuan, dashboard
+                    </p>
+                  </div>
+                  {roleTarget.role === "admin" && (
+                    <CheckCircle size={18} className="text-primary" />
+                  )}
+                </div>
+              </button>
+            </div>
+
+            <p className="text-[10px] text-amber-700 bg-amber-50 rounded-lg p-2 mt-3">
+              ⚠️ Admin punya akses penuh ke semua data karyawan, jam kerja, absensi, dll.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Add Employee Modal (Admin only) */}
       {showAdd && isAdmin && (

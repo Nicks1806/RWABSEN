@@ -26,7 +26,7 @@ export default function BottomNav() {
 
   const items = [
     { key: "home", label: "Beranda", icon: Home, path: "/home" },
-    { key: "pegawai", label: "Pegawai", icon: Users, path: "/pegawai" },
+    { key: "karyawan", label: "Karyawan", icon: Users, path: "/pegawai" },
     { key: "pengajuan", label: "Pengajuan", icon: FileText, path: "/pengajuan" },
     {
       key: "inbox",

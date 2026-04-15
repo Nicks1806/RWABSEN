@@ -1,5 +1,6 @@
 interface AvatarProps {
   name: string;
+  photoUrl?: string | null;
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 }
@@ -34,9 +35,20 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
-export default function Avatar({ name, size = "md", className = "" }: AvatarProps) {
+export default function Avatar({ name, photoUrl, size = "md", className = "" }: AvatarProps) {
   const initial = (name || "?").trim().charAt(0).toUpperCase();
   const colorClass = colors[hashCode(name) % colors.length];
+
+  if (photoUrl) {
+    return (
+      <div
+        className={`${sizeMap[size]} rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm ${className}`}
+      >
+        <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`${sizeMap[size]} ${colorClass} rounded-full flex items-center justify-center text-white font-bold shrink-0 ring-2 ring-white shadow-sm ${className}`}

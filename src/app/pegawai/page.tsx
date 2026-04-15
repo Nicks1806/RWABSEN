@@ -61,13 +61,20 @@ export default function PegawaiPage() {
     setCurrentUser(emp);
     fetchData();
 
-    // Realtime
+    // Realtime with debounce (coalesce rapid events)
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const triggerRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchData(), 500);
+    };
+
     const channel = supabase
       .channel("pegawai-list")
-      .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, triggerRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, triggerRefetch)
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [router, fetchData]);

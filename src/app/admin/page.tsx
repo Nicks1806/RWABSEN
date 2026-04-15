@@ -189,65 +189,75 @@ export default function AdminPage() {
     if (admin) fetchData();
   }, [admin, fetchData]);
 
-  // Realtime subscription for attendance
+  // Realtime subscription for attendance (debounced to coalesce rapid events)
   useEffect(() => {
     if (!admin) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const triggerRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchData(), 500);
+    };
+
     const channel = supabase
       .channel("attendance-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "attendance" },
-        () => {
-          fetchData();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "employees" },
-        () => {
-          fetchData();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "leaves" },
-        () => {
-          fetchData();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, triggerRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, triggerRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "leaves" }, triggerRefetch)
       .subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [admin, fetchData]);
 
-  // Auto-refresh every 30s as fallback
+  // Fallback refresh only when tab regains focus (more efficient than 30s polling)
   useEffect(() => {
     if (!admin) return;
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
-    return () => clearInterval(interval);
+    const onFocus = () => fetchData();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [admin, fetchData]);
 
-  // Stats
+  // Stats - memoized to avoid recompute on every render
   const today = format(new Date(), "yyyy-MM-dd");
-  const todayRecords = records.filter((r) => r.date === today);
-  const totalEmployees = employees.filter((e) => e.role === "employee").length;
-  const presentToday = todayRecords.filter((r) => r.clock_in).length;
-  const lateToday = todayRecords.filter((r) => r.status === "late").length;
 
-  // Per-employee monthly hours
-  function getMonthlyHours(empId: string): number {
-    let total = 0;
+  const todayRecords = useMemo(
+    () => records.filter((r) => r.date === today),
+    [records, today]
+  );
+
+  const totalEmployees = useMemo(
+    () => employees.filter((e) => e.role === "employee").length,
+    [employees]
+  );
+
+  const presentToday = useMemo(
+    () => todayRecords.filter((r) => r.clock_in).length,
+    [todayRecords]
+  );
+
+  const lateToday = useMemo(
+    () => todayRecords.filter((r) => r.status === "late").length,
+    [todayRecords]
+  );
+
+  // Per-employee monthly hours (memoized map for O(1) lookup instead of O(n) per call)
+  const monthlyHoursMap = useMemo(() => {
+    const map = new Map<string, number>();
     for (const r of records) {
-      if (r.employee_id === empId && r.clock_in && r.clock_out) {
-        const diff = new Date(r.clock_out).getTime() - new Date(r.clock_in).getTime();
-        total += diff / (1000 * 60 * 60);
-      }
+      if (!r.employee_id || !r.clock_in || !r.clock_out) continue;
+      const diff = new Date(r.clock_out).getTime() - new Date(r.clock_in).getTime();
+      const hours = diff / (1000 * 60 * 60);
+      map.set(r.employee_id, (map.get(r.employee_id) || 0) + hours);
     }
-    return Math.round(total * 10) / 10;
+    // Round values
+    for (const [k, v] of map) map.set(k, Math.round(v * 10) / 10);
+    return map;
+  }, [records]);
+
+  function getMonthlyHours(empId: string): number {
+    return monthlyHoursMap.get(empId) || 0;
   }
 
   // Export Excel

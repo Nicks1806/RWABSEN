@@ -117,6 +117,12 @@ export default function HomePage() {
   // Realtime
   useEffect(() => {
     if (!employee) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const triggerRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchData(employee.id), 500);
+    };
+
     const channel = supabase
       .channel("home-attendance")
       .on(
@@ -127,15 +133,16 @@ export default function HomePage() {
           table: "attendance",
           filter: `employee_id=eq.${employee.id}`,
         },
-        () => fetchData(employee.id)
+        triggerRefetch
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "announcements" },
-        () => fetchData(employee.id)
+        triggerRefetch
       )
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [employee, fetchData]);

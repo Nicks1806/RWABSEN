@@ -48,6 +48,12 @@ export default function PengajuanPage() {
   // Realtime
   useEffect(() => {
     if (!employee) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const triggerRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchLeaves(employee.id), 500);
+    };
+
     const channel = supabase
       .channel("pengajuan-leaves")
       .on(
@@ -58,10 +64,11 @@ export default function PengajuanPage() {
           table: "leaves",
           filter: `employee_id=eq.${employee.id}`,
         },
-        () => fetchLeaves(employee.id)
+        triggerRefetch
       )
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [employee, fetchLeaves]);

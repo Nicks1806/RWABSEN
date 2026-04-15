@@ -23,7 +23,7 @@ import {
   QrCode as QrCodeIcon,
 } from "lucide-react";
 import jsQR from "jsqr";
-import { hasFace, prewarmFaceModels } from "@/lib/faceDetection";
+import { hasFace } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
 
@@ -130,8 +130,8 @@ export default function AbsenPage() {
     // Only check permission state silently - DO NOT auto-prompt
     // User will be prompted only when clicking 'Ambil Foto' button (explicit action)
 
-    // Pre-warm face detection models in background
-    prewarmFaceModels();
+    // Face detection models now lazy-loaded at submit time (not at mount)
+    // - saves ~200KB download per page visit
 
     // Auto-verify QR token if present in URL (user scanned QR from phone camera)
     if (typeof window !== "undefined") {

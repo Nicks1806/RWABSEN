@@ -28,9 +28,14 @@ import {
   TrendingUp,
   Award,
   Timer,
+  Shield,
+  UserCircle2,
+  Plus,
+  UserPlus,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
 import {
   BarChart,
@@ -1020,8 +1025,9 @@ export default function AdminPage() {
                       </thead>
                       <tbody className="divide-y">
                         {employees.map((emp) => {
-                          const effHours = getEffectiveWorkHours(emp, settings);
-                          const isDefault = !emp.work_start && !emp.work_end;
+                          const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
+                          const hasCustomHours = !!emp.work_start && !!emp.work_end;
+                          const isDefault = !hasSchedule && !hasCustomHours;
                           return (
                           <tr key={emp.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-medium">{emp.name}</td>
@@ -1029,10 +1035,22 @@ export default function AdminPage() {
                               {showPins ? emp.pin : "••••••"}
                             </td>
                             <td className="px-4 py-3 text-center text-xs">
-                              <span className={isDefault ? "text-gray-400" : "text-primary font-medium"}>
-                                {effHours.start} - {effHours.end}
-                              </span>
-                              {isDefault && <span className="text-gray-400 block text-[10px]">(default)</span>}
+                              {hasSchedule ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-50 text-purple-700 font-medium text-[11px]">
+                                  <Clock3 size={10} /> Jadwal Per Hari
+                                </span>
+                              ) : hasCustomHours ? (
+                                <span className="text-primary font-medium">
+                                  {emp.work_start?.slice(0, 5)} - {emp.work_end?.slice(0, 5)}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="text-gray-500">
+                                    {settings?.work_start?.slice(0, 5)} - {settings?.work_end?.slice(0, 5)}
+                                  </span>
+                                  <span className="text-gray-400 block text-[10px]">(default)</span>
+                                </>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-center capitalize">{emp.role}</td>
                             <td className="px-4 py-3 text-center">
@@ -1099,8 +1117,8 @@ export default function AdminPage() {
                   {/* Mobile Cards */}
                   <div className="md:hidden divide-y">
                     {employees.map((emp) => {
-                      const effHours = getEffectiveWorkHours(emp, settings);
-                      const isDefault = !emp.work_start && !emp.work_end;
+                      const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
+                      const hasCustomHours = !!emp.work_start && !!emp.work_end;
                       return (
                         <div key={emp.id} className="p-4">
                           <div className="flex items-center justify-between mb-2">
@@ -1110,10 +1128,26 @@ export default function AdminPage() {
                                 {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
                               </p>
                               <p className="text-xs mt-0.5">
-                                Jam: <span className={isDefault ? "text-gray-400" : "text-primary font-medium"}>
-                                  {effHours.start} - {effHours.end}
-                                </span>
-                                {isDefault && <span className="text-gray-400"> (default)</span>}
+                                {hasSchedule ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium text-[10px]">
+                                    <Clock3 size={10} /> Jadwal Per Hari
+                                  </span>
+                                ) : hasCustomHours ? (
+                                  <>
+                                    Jam:{" "}
+                                    <span className="text-primary font-medium">
+                                      {emp.work_start?.slice(0, 5)} - {emp.work_end?.slice(0, 5)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    Jam:{" "}
+                                    <span className="text-gray-500">
+                                      {settings?.work_start?.slice(0, 5)} - {settings?.work_end?.slice(0, 5)}
+                                    </span>
+                                    <span className="text-gray-400"> (default)</span>
+                                  </>
+                                )}
                               </p>
                             </div>
                             <span

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
@@ -199,17 +199,22 @@ export default function AdminPage() {
     setAdmin(emp);
   }, [router]);
 
-  useEffect(() => {
-    if (admin) fetchData();
-  }, [admin, fetchData]);
+  // Keep fetchData in ref so subscription doesn't re-mount on deps change
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
 
-  // Realtime subscription for attendance (debounced to coalesce rapid events)
+  useEffect(() => {
+    if (admin) fetchDataRef.current();
+  }, [admin, month]);
+
+  // Realtime subscription - mounts ONCE when admin loads
+  // Uses fetchDataRef to always call latest version without re-subscribing
   useEffect(() => {
     if (!admin) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const triggerRefetch = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fetchData(), 500);
+      timer = setTimeout(() => fetchDataRef.current(), 500);
     };
 
     const channel = supabase

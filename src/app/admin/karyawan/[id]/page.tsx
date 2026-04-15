@@ -178,19 +178,9 @@ export default function KaryawanDetailPage({ params }: { params: Promise<{ id: s
 
       <main className="max-w-3xl mx-auto px-4 -mt-10 pb-8">
         {/* Stats Summary */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 grid grid-cols-3 divide-x">
-          <div className="text-center">
-            <p className="text-xl font-bold text-green-600">{presentDays}</p>
-            <p className="text-[10px] text-gray-500">Hari Hadir</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-red-600">{lateCount}</p>
-            <p className="text-[10px] text-gray-500">Terlambat</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-primary">{totalHours}</p>
-            <p className="text-[10px] text-gray-500">Jam Kerja</p>
-          </div>
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 text-center">
+          <p className="text-2xl font-bold text-primary">{totalHours} jam</p>
+          <p className="text-xs text-gray-500 mt-1">Total Jam Kerja Bulan Ini</p>
         </div>
 
         {/* Tab Switcher */}

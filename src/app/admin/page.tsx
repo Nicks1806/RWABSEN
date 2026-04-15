@@ -71,6 +71,7 @@ export default function AdminPage() {
     work_start: "",
     work_end: "",
   });
+  const [workDays, setWorkDays] = useState<DayKey[]>([]);
   const [settingsMsg, setSettingsMsg] = useState("");
 
   // Employee form
@@ -123,6 +124,7 @@ export default function AdminPage() {
         work_start: setRes.data.work_start,
         work_end: setRes.data.work_end,
       });
+      setWorkDays(setRes.data.work_days || ["mon", "tue", "wed", "thu", "fri", "sat"]);
     }
     setLoading(false);
   }, [month]);
@@ -232,6 +234,7 @@ export default function AdminPage() {
         radius_meters: parseInt(settingsForm.radius_meters),
         work_start: settingsForm.work_start,
         work_end: settingsForm.work_end,
+        work_days: workDays,
         updated_at: new Date().toISOString(),
       })
       .eq("id", settings.id);
@@ -1259,6 +1262,39 @@ export default function AdminPage() {
                       onChange={(e) => setSettingsForm({ ...settingsForm, work_end: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
+                  </div>
+                </div>
+
+                {/* Default Work Days */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                    Hari Kerja Default
+                  </label>
+                  <p className="text-[11px] text-gray-400 mb-2">
+                    Hari yang tidak dicentang = hari libur (karyawan tidak perlu absen)
+                  </p>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAY_ORDER.map((day) => {
+                      const active = workDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            setWorkDays((prev) =>
+                              active ? prev.filter((d) => d !== day) : [...prev, day]
+                            );
+                          }}
+                          className={`py-2 rounded-lg text-xs font-medium transition ${
+                            active
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                          }`}
+                        >
+                          {DAY_LABELS[day].slice(0, 3)}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

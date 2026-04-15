@@ -45,5 +45,6 @@ export interface Settings {
   radius_meters: number;
   work_start: string;
   work_end: string;
+  work_days?: DayKey[] | null;
   updated_at: string;
 }

@@ -20,7 +20,9 @@ import {
   Key,
   X,
   FileText,
+  QrCode as QrCodeIcon,
 } from "lucide-react";
+import jsQR from "jsqr";
 import Logo from "@/components/Logo";
 
 export default function AbsenPage() {
@@ -57,6 +59,11 @@ export default function AbsenPage() {
 
   // Override off-day (for overtime / emergency)
   const [overrideOffDay, setOverrideOffDay] = useState(false);
+
+  // QR scanner
+  const [scanningQR, setScanningQR] = useState(false);
+  const [qrVerified, setQrVerified] = useState(false);
+  const qrScanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Leave request
   const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -124,7 +131,10 @@ export default function AbsenPage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       clearInterval(timer);
-      // Clean up camera on unmount
+      // Clean up camera + QR scanner on unmount
+      if (qrScanIntervalRef.current) {
+        clearInterval(qrScanIntervalRef.current);
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -401,6 +411,71 @@ export default function AbsenPage() {
     router.push("/");
   }
 
+  async function startQRScan() {
+    setScanningQR(true);
+    setMessage(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      await new Promise((r) => setTimeout(r, 100));
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      // Start scanning loop
+      qrScanIntervalRef.current = setInterval(async () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(videoRef.current, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code && code.data.startsWith("REDWINE-ABSEN-")) {
+          const token = code.data.replace("REDWINE-ABSEN-", "");
+          await verifyQRToken(token);
+        }
+      }, 500);
+    } catch {
+      setScanningQR(false);
+      setMessage({ type: "error", text: "Gagal akses kamera belakang" });
+    }
+  }
+
+  async function verifyQRToken(token: string) {
+    const { data } = await supabase
+      .from("qr_tokens")
+      .select("*")
+      .eq("token", token)
+      .gte("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (data) {
+      // Valid!
+      stopQRScan();
+      setQrVerified(true);
+      setMessage({ type: "success", text: "QR valid! Lanjutkan dengan foto selfie." });
+    }
+    // If invalid, keep scanning
+  }
+
+  function stopQRScan() {
+    if (qrScanIntervalRef.current) {
+      clearInterval(qrScanIntervalRef.current);
+      qrScanIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setScanningQR(false);
+  }
+
   async function submitLeave(e: React.FormEvent) {
     e.preventDefault();
     if (!employee) return;
@@ -616,15 +691,60 @@ export default function AbsenPage() {
               {mode === "clock_in" ? "Clock In" : "Clock Out"}
             </h3>
 
+            {/* QR Scanner or Camera */}
+            {scanningQR && (
+              <div className="space-y-3">
+                <div className="relative rounded-xl overflow-hidden bg-black aspect-square">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-8 border-4 border-primary rounded-2xl pointer-events-none"></div>
+                  <div className="absolute bottom-3 left-0 right-0 text-center text-white text-xs drop-shadow">
+                    Arahkan ke QR Code di kantor
+                  </div>
+                </div>
+                <button
+                  onClick={stopQRScan}
+                  className="w-full py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Batal Scan
+                </button>
+              </div>
+            )}
+
+            {qrVerified && !capturedPhoto && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-sm text-green-700">
+                <CheckCircle size={18} /> QR terverifikasi - lanjutkan foto selfie
+              </div>
+            )}
+
             {/* Camera */}
-            {!capturedPhoto && !cameraActive && (
-              <button
-                onClick={startCamera}
-                className="w-full py-12 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center gap-2 text-gray-500 hover:border-primary hover:text-primary transition"
-              >
-                <Camera size={32} />
-                <span>Ambil Foto</span>
-              </button>
+            {!capturedPhoto && !cameraActive && !scanningQR && (
+              <div className="space-y-2">
+                {settings?.qr_required && !qrVerified && (
+                  <button
+                    onClick={startQRScan}
+                    className="w-full py-12 border-2 border-dashed border-primary rounded-xl flex flex-col items-center gap-2 text-primary hover:bg-primary/5 transition"
+                  >
+                    <QrCodeIcon size={32} />
+                    <span className="font-semibold">Scan QR Code Kantor</span>
+                    <span className="text-xs">Wajib scan QR sebelum foto</span>
+                  </button>
+                )}
+                {(!settings?.qr_required || qrVerified) && (
+                  <button
+                    onClick={startCamera}
+                    className="w-full py-12 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center gap-2 text-gray-500 hover:border-primary hover:text-primary transition"
+                  >
+                    <Camera size={32} />
+                    <span>Ambil Foto Selfie</span>
+                  </button>
+                )}
+              </div>
             )}
 
             {cameraActive && (

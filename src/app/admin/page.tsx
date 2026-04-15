@@ -39,6 +39,7 @@ import {
   Phone,
   Mail,
   Briefcase,
+  QrCode,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
@@ -80,6 +81,7 @@ export default function AdminPage() {
     work_end: "",
   });
   const [workDays, setWorkDays] = useState<DayKey[]>([]);
+  const [qrRequired, setQrRequired] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState("");
 
   // Employee form
@@ -159,6 +161,7 @@ export default function AdminPage() {
         work_end: setRes.data.work_end,
       });
       setWorkDays(setRes.data.work_days || ["mon", "tue", "wed", "thu", "fri", "sat"]);
+      setQrRequired(!!setRes.data.qr_required);
     }
     setLoading(false);
   }, [month]);
@@ -276,6 +279,7 @@ export default function AdminPage() {
         work_start: settingsForm.work_start,
         work_end: settingsForm.work_end,
         work_days: workDays,
+        qr_required: qrRequired,
         updated_at: new Date().toISOString(),
       })
       .eq("id", settings.id);
@@ -487,12 +491,22 @@ export default function AdminPage() {
             <Logo size="sm" />
             <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition"
-          >
-            <LogOut size={16} /> Keluar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/admin/qr")}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              title="QR Code Absensi"
+            >
+              <QrCode size={16} />
+              <span className="hidden sm:inline">QR Code</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition"
+            >
+              <LogOut size={16} /> <span className="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1592,6 +1606,30 @@ export default function AdminPage() {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* QR Code Required */}
+                <div className="flex items-center justify-between bg-gradient-to-r from-primary/5 to-amber-50 rounded-xl p-3 border border-amber-200">
+                  <div>
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
+                      <QrCode size={14} /> Wajib Scan QR Code
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Karyawan harus scan QR di kantor sebelum bisa clock-in
+                    </p>
+                    <p className="text-[10px] text-primary mt-1">
+                      Tampilkan QR di <strong>Menu QR Code</strong> (pojok kanan atas)
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={qrRequired}
+                      onChange={(e) => setQrRequired(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
                 </div>
 
                 <button

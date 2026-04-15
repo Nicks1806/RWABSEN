@@ -68,5 +68,13 @@ export interface Settings {
   work_start: string;
   work_end: string;
   work_days?: DayKey[] | null;
+  qr_required?: boolean;
   updated_at: string;
+}
+
+export interface QRToken {
+  id: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
 }

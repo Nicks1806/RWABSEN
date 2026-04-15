@@ -137,7 +137,7 @@ export default function PegawaiPage() {
       <header className="bg-gray-50 sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center relative">
           <h1 className="font-bold text-lg">
-            Pegawai <span className="text-gray-400 font-medium">{employees.length}</span>
+            Karyawan <span className="text-gray-400 font-medium">{employees.length}</span>
           </h1>
           {isAdmin && (
             <button
@@ -190,18 +190,7 @@ export default function PegawaiPage() {
               <div key={emp.id} className="px-4 py-3 flex items-center gap-3">
                 <Avatar name={emp.name} photoUrl={emp.photo_url} size="md" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="font-semibold text-sm truncate">{emp.name}</p>
-                    {emp.role === "admin" ? (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold whitespace-nowrap">
-                        <Shield size={9} /> ADMIN
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
-                        <UserCircle2 size={9} /> KARYAWAN
-                      </span>
-                    )}
-                  </div>
+                  <p className="font-semibold text-sm truncate">{emp.name}</p>
                   {emp.position && (
                     <p className="text-[11px] text-gray-500 truncate">{emp.position}</p>
                   )}

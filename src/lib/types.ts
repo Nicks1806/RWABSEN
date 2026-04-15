@@ -4,6 +4,8 @@ export interface Employee {
   pin: string;
   role: "employee" | "admin";
   is_active: boolean;
+  work_start?: string | null;
+  work_end?: string | null;
   created_at: string;
 }
 

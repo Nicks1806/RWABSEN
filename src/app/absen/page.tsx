@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee, storeEmployee } from "@/lib/auth";
 import { getCurrentPosition, getDistanceFromLatLng } from "@/lib/geo";
+import { getEffectiveWorkHours } from "@/lib/workHours";
 import { Employee, Attendance, Settings } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -285,10 +286,12 @@ export default function AbsenPage() {
       const now = new Date().toISOString();
       const today = format(new Date(), "yyyy-MM-dd");
 
-      // Determine status
+      // Determine status using employee-specific hours (fallback to settings)
+      const { start: workStartStr, end: workEndStr } = getEffectiveWorkHours(employee, settings);
+
       let status = "present";
-      if (settings && mode === "clock_in") {
-        const [h, m] = settings.work_start.split(":").map(Number);
+      if (mode === "clock_in") {
+        const [h, m] = workStartStr.split(":").map(Number);
         const workStart = new Date();
         workStart.setHours(h, m, 0, 0);
         if (new Date() > workStart) status = "late";
@@ -309,15 +312,13 @@ export default function AbsenPage() {
         setMessage({ type: "success", text: "Clock In berhasil!" });
       } else {
         // Determine early leave
-        if (settings) {
-          const [h, m] = settings.work_end.split(":").map(Number);
-          const workEnd = new Date();
-          workEnd.setHours(h, m, 0, 0);
-          if (new Date() < workEnd && todayRecord?.status !== "late") {
-            status = "early_leave";
-          } else if (todayRecord?.status === "late") {
-            status = "late";
-          }
+        const [h, m] = workEndStr.split(":").map(Number);
+        const workEnd = new Date();
+        workEnd.setHours(h, m, 0, 0);
+        if (new Date() < workEnd && todayRecord?.status !== "late") {
+          status = "early_leave";
+        } else if (todayRecord?.status === "late") {
+          status = "late";
         }
 
         const { error: updateError } = await supabase

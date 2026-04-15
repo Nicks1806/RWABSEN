@@ -24,9 +24,11 @@ import {
   Bell,
   Eye,
   EyeOff,
+  Clock3,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
+import { getEffectiveWorkHours } from "@/lib/workHours";
 
 type Tab = "dashboard" | "karyawan" | "settings";
 
@@ -60,6 +62,12 @@ export default function AdminPage() {
   const [newPin, setNewPin] = useState("");
   const [resetPinMsg, setResetPinMsg] = useState("");
   const [showPins, setShowPins] = useState(false);
+
+  // Edit work hours modal
+  const [editHoursEmp, setEditHoursEmp] = useState<Employee | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [editHoursMsg, setEditHoursMsg] = useState("");
 
   // Filters for Detail Absensi
   const [filterEmployee, setFilterEmployee] = useState("all");
@@ -259,6 +267,27 @@ export default function AdminPage() {
     }
   }
 
+  // Save work hours per employee
+  async function saveWorkHours(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editHoursEmp) return;
+    const { error } = await supabase
+      .from("employees")
+      .update({
+        work_start: editStart || null,
+        work_end: editEnd || null,
+      })
+      .eq("id", editHoursEmp.id);
+    setEditHoursMsg(error ? "Gagal menyimpan" : "Jam kerja tersimpan!");
+    if (!error) {
+      setTimeout(() => {
+        setEditHoursEmp(null);
+        setEditHoursMsg("");
+        fetchData();
+      }, 1200);
+    }
+  }
+
   // Filtered records for Detail Absensi
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
@@ -268,22 +297,26 @@ export default function AdminPage() {
     });
   }, [records, filterEmployee, filterStatus]);
 
-  // Late clock-in notification: employees who should have clocked in but haven't
+  // Late clock-in notification: employees who should have clocked in but haven't (per-employee hours)
   const lateClockIn = useMemo(() => {
     if (!settings) return [];
     const now = new Date();
-    const [sh, sm] = settings.work_start.split(":").map(Number);
-    const [eh, em] = settings.work_end.split(":").map(Number);
-    const workStart = new Date();
-    workStart.setHours(sh, sm, 0, 0);
-    const workEnd = new Date();
-    workEnd.setHours(eh, em, 0, 0);
-
-    // Only show during work hours
-    if (now < workStart || now > workEnd) return [];
-
     const clockedInIds = new Set(todayRecords.filter((r) => r.clock_in).map((r) => r.employee_id));
-    return employees.filter((e) => e.role === "employee" && !clockedInIds.has(e.id));
+
+    return employees.filter((emp) => {
+      if (emp.role !== "employee") return false;
+      if (clockedInIds.has(emp.id)) return false;
+
+      const { start, end } = getEffectiveWorkHours(emp, settings);
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const workStart = new Date();
+      workStart.setHours(sh, sm, 0, 0);
+      const workEnd = new Date();
+      workEnd.setHours(eh, em, 0, 0);
+
+      return now >= workStart && now <= workEnd;
+    });
   }, [settings, employees, todayRecords]);
 
   function handleLogout() {
@@ -726,17 +759,27 @@ export default function AdminPage() {
                         <tr>
                           <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">PIN</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-600">Jam Kerja</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Role</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Aksi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {employees.map((emp) => (
+                        {employees.map((emp) => {
+                          const effHours = getEffectiveWorkHours(emp, settings);
+                          const isDefault = !emp.work_start && !emp.work_end;
+                          return (
                           <tr key={emp.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-medium">{emp.name}</td>
                             <td className="px-4 py-3 text-center font-mono">
                               {showPins ? emp.pin : "••••••"}
+                            </td>
+                            <td className="px-4 py-3 text-center text-xs">
+                              <span className={isDefault ? "text-gray-400" : "text-primary font-medium"}>
+                                {effHours.start} - {effHours.end}
+                              </span>
+                              {isDefault && <span className="text-gray-400 block text-[10px]">(default)</span>}
                             </td>
                             <td className="px-4 py-3 text-center capitalize">{emp.role}</td>
                             <td className="px-4 py-3 text-center">
@@ -751,7 +794,7 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
+                              <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                 <button
                                   onClick={() => {
                                     setResetPinEmp(emp);
@@ -764,72 +807,110 @@ export default function AdminPage() {
                                   <Key size={12} /> PIN
                                 </button>
                                 {emp.role !== "admin" && (
-                                  <button
-                                    onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                                    className={`text-xs px-2 py-1 rounded-lg transition ${
-                                      emp.is_active
-                                        ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                        : "bg-green-50 text-green-600 hover:bg-green-100"
-                                    }`}
-                                  >
-                                    {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditHoursEmp(emp);
+                                        setEditStart(emp.work_start || "");
+                                        setEditEnd(emp.work_end || "");
+                                        setEditHoursMsg("");
+                                      }}
+                                      className="text-xs px-2 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition flex items-center gap-1"
+                                      title="Jam Kerja"
+                                    >
+                                      <Clock3 size={12} /> Jam
+                                    </button>
+                                    <button
+                                      onClick={() => toggleEmployee(emp.id, emp.is_active)}
+                                      className={`text-xs px-2 py-1 rounded-lg transition ${
+                                        emp.is_active
+                                          ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                          : "bg-green-50 text-green-600 hover:bg-green-100"
+                                      }`}
+                                    >
+                                      {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
                   {/* Mobile Cards */}
                   <div className="md:hidden divide-y">
-                    {employees.map((emp) => (
-                      <div key={emp.id} className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="font-semibold">{emp.name}</p>
-                            <p className="text-xs text-gray-500 capitalize">
-                              {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
-                            </p>
-                          </div>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              emp.is_active
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {emp.is_active ? "Aktif" : "Nonaktif"}
-                          </span>
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          <button
-                            onClick={() => {
-                              setResetPinEmp(emp);
-                              setNewPin("");
-                              setResetPinMsg("");
-                            }}
-                            className="flex-1 text-xs px-3 py-2 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center gap-1"
-                          >
-                            <Key size={12} /> Reset PIN
-                          </button>
-                          {emp.role !== "admin" && (
-                            <button
-                              onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                              className={`flex-1 text-xs px-3 py-2 rounded-lg ${
+                    {employees.map((emp) => {
+                      const effHours = getEffectiveWorkHours(emp, settings);
+                      const isDefault = !emp.work_start && !emp.work_end;
+                      return (
+                        <div key={emp.id} className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-semibold">{emp.name}</p>
+                              <p className="text-xs text-gray-500 capitalize">
+                                {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
+                              </p>
+                              <p className="text-xs mt-0.5">
+                                Jam: <span className={isDefault ? "text-gray-400" : "text-primary font-medium"}>
+                                  {effHours.start} - {effHours.end}
+                                </span>
+                                {isDefault && <span className="text-gray-400"> (default)</span>}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
                                 emp.is_active
-                                  ? "bg-red-50 text-red-600"
-                                  : "bg-green-50 text-green-600"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                              {emp.is_active ? "Aktif" : "Nonaktif"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button
+                              onClick={() => {
+                                setResetPinEmp(emp);
+                                setNewPin("");
+                                setResetPinMsg("");
+                              }}
+                              className="text-xs px-3 py-2 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center gap-1"
+                            >
+                              <Key size={12} /> PIN
                             </button>
-                          )}
+                            {emp.role !== "admin" && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditHoursEmp(emp);
+                                    setEditStart(emp.work_start || "");
+                                    setEditEnd(emp.work_end || "");
+                                    setEditHoursMsg("");
+                                  }}
+                                  className="text-xs px-3 py-2 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center gap-1"
+                                >
+                                  <Clock3 size={12} /> Jam
+                                </button>
+                                <button
+                                  onClick={() => toggleEmployee(emp.id, emp.is_active)}
+                                  className={`col-span-2 text-xs px-3 py-2 rounded-lg ${
+                                    emp.is_active
+                                      ? "bg-red-50 text-red-600"
+                                      : "bg-green-50 text-green-600"
+                                  }`}
+                                >
+                                  {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -960,6 +1041,88 @@ export default function AdminPage() {
                   className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
                 >
                   Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Work Hours Modal */}
+      {editHoursEmp && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setEditHoursEmp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <Clock3 size={18} /> Jam Kerja
+              </h3>
+              <button onClick={() => setEditHoursEmp(null)} className="text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={saveWorkHours} className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Karyawan</label>
+                <p className="font-semibold">{editHoursEmp.name}</p>
+              </div>
+              <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+                Kosongkan kedua input untuk pakai jam kerja default:{" "}
+                <strong>
+                  {settings?.work_start} - {settings?.work_end}
+                </strong>
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Jam Masuk</label>
+                  <input
+                    type="time"
+                    value={editStart}
+                    onChange={(e) => setEditStart(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Jam Pulang</label>
+                  <input
+                    type="time"
+                    value={editEnd}
+                    onChange={(e) => setEditEnd(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+              {editHoursMsg && (
+                <p
+                  className={`text-sm ${
+                    editHoursMsg.includes("Gagal") ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {editHoursMsg}
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditStart("");
+                    setEditEnd("");
+                  }}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                  title="Pakai default"
+                >
+                  Pakai Default
                 </button>
                 <button
                   type="submit"

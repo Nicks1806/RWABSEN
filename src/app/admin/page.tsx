@@ -18,6 +18,7 @@ import {
   MapPin,
   Image as ImageIcon,
   X,
+  Trash2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -178,6 +179,13 @@ export default function AdminPage() {
   // Toggle employee active
   async function toggleEmployee(id: string, isActive: boolean) {
     await supabase.from("employees").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  }
+
+  // Delete attendance record
+  async function deleteAttendance(id: string) {
+    if (!confirm("Yakin ingin menghapus data absensi ini?")) return;
+    await supabase.from("attendance").delete().eq("id", id);
     fetchData();
   }
 
@@ -354,6 +362,7 @@ export default function AdminPage() {
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Foto</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Lokasi</th>
                           <th className="text-left px-4 py-3 font-medium text-gray-600">Ket</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-600">Hapus</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -406,6 +415,15 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate">
                               {r.notes || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => deleteAttendance(r.id)}
+                                className="text-red-400 hover:text-red-600 transition"
+                                title="Hapus"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </td>
                           </tr>
                         ))}

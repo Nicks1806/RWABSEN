@@ -16,10 +16,16 @@ export async function POST(req: NextRequest) {
 
     const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@redwine.com";
+    let vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@redwine.com";
 
     if (!vapidPublic || !vapidPrivate) {
       return NextResponse.json({ error: "VAPID keys not configured" }, { status: 500 });
+    }
+
+    // Auto-fix VAPID_SUBJECT: must be URL (mailto: or https://)
+    if (!vapidSubject.startsWith("mailto:") && !vapidSubject.startsWith("http")) {
+      // Looks like plain email → prepend mailto:
+      vapidSubject = vapidSubject.includes("@") ? `mailto:${vapidSubject}` : `mailto:admin@redwine.com`;
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);

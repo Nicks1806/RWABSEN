@@ -352,6 +352,29 @@ export default function AdminPage() {
   }
 
   // Approve / Reject leave
+  async function sendTestNotif(empId: string, empName: string) {
+    try {
+      const res = await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: empId,
+          title: "🔔 Test Notifikasi RedWine",
+          body: `Halo ${empName}! Notifikasi berhasil terkirim 🎉`,
+          url: "/absen",
+        }),
+      });
+      const data = await res.json();
+      if (data.sent > 0) {
+        alert(`✅ Test notif terkirim ke ${empName}!\n\nKalau tidak muncul di HP, cek:\n1. App sudah install (Add to Home Screen)\n2. Notifikasi tidak di-silence\n3. Service worker aktif`);
+      } else {
+        alert(`❌ Gagal kirim.\n\n${data.reason || data.error || "Unknown"}\n\nCek:\n- VAPID env di Vercel\n- Karyawan sudah toggle notif ON`);
+      }
+    } catch (err) {
+      alert(`Error: ${err}`);
+    }
+  }
+
   async function reviewLeave(id: string, status: "approved" | "rejected", notes: string = "") {
     const reviewerId = admin?.id || null;
     // Get leave for notification
@@ -1447,6 +1470,13 @@ export default function AdminPage() {
                                       title="Atur Jam Kerja"
                                     >
                                       <Clock3 size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => sendTestNotif(emp.id, emp.name)}
+                                      className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition flex items-center justify-center"
+                                      title="Test Notifikasi"
+                                    >
+                                      <Bell size={14} />
                                     </button>
                                     <button
                                       onClick={() => setDeleteEmpTarget(emp)}

@@ -797,29 +797,20 @@ export default function AdminPage() {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-600">Hadir</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-600">Terlambat</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Total Jam</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
                         {employees
                           .filter((e) => e.role === "employee")
-                          .map((emp) => {
-                            const empRecords = records.filter((r) => r.employee_id === emp.id);
-                            const presentCount = empRecords.filter((r) => r.clock_in).length;
-                            const lateCount = empRecords.filter((r) => r.status === "late").length;
-                            return (
-                              <tr key={emp.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3 font-medium">{emp.name}</td>
-                                <td className="px-4 py-3 text-center">{presentCount}</td>
-                                <td className="px-4 py-3 text-center text-red-600">{lateCount}</td>
-                                <td className="px-4 py-3 text-center font-semibold text-primary">
-                                  {getMonthlyHours(emp.id)} jam
-                                </td>
-                              </tr>
-                            );
-                          })}
+                          .map((emp) => (
+                            <tr key={emp.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 font-medium">{emp.name}</td>
+                              <td className="px-4 py-3 text-center font-semibold text-primary">
+                                {getMonthlyHours(emp.id)} jam
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
@@ -827,25 +818,14 @@ export default function AdminPage() {
                   <div className="md:hidden divide-y">
                     {employees
                       .filter((e) => e.role === "employee")
-                      .map((emp) => {
-                        const empRecords = records.filter((r) => r.employee_id === emp.id);
-                        const presentCount = empRecords.filter((r) => r.clock_in).length;
-                        const lateCount = empRecords.filter((r) => r.status === "late").length;
-                        return (
-                          <div key={emp.id} className="p-4 flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold">{emp.name}</p>
-                              <p className="text-xs text-gray-500">
-                                Hadir: {presentCount} •{" "}
-                                <span className="text-red-600">Terlambat: {lateCount}</span>
-                              </p>
-                            </div>
-                            <p className="font-bold text-primary">
-                              {getMonthlyHours(emp.id)} jam
-                            </p>
-                          </div>
-                        );
-                      })}
+                      .map((emp) => (
+                        <div key={emp.id} className="p-4 flex items-center justify-between">
+                          <p className="font-semibold">{emp.name}</p>
+                          <p className="font-bold text-primary">
+                            {getMonthlyHours(emp.id)} jam
+                          </p>
+                        </div>
+                      ))}
                   </div>
                 </div>
 

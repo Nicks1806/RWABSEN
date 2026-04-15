@@ -215,8 +215,12 @@ export default function AbsenPage() {
       setLocation(loc);
       if (settings) {
         const dist = getDistanceFromLatLng(loc.lat, loc.lng, settings.office_lat, settings.office_lng);
+        const accuracy = pos.coords.accuracy || 0;
+        // Consider GPS accuracy: effective distance = dist - accuracy margin
+        // If GPS is imprecise (e.g., accuracy 80m), give benefit of doubt
+        const effectiveDist = Math.max(0, dist - accuracy);
         setDistance(Math.round(dist));
-        setIsOutsideRadius(dist > settings.radius_meters);
+        setIsOutsideRadius(effectiveDist > settings.radius_meters);
       }
       setMessage(null);
     } catch (err) {

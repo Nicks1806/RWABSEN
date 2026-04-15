@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
-import { Employee, Attendance, Settings, DayKey, Schedule, Leave } from "@/lib/types";
+import { Employee, Attendance, Settings, DayKey, Schedule, Leave, Reimbursement } from "@/lib/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -101,6 +101,8 @@ export default function AdminPage() {
   // Leaves (Izin/Cuti/Sakit)
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [leaveFilter, setLeaveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [leavesSubTab, setLeavesSubTab] = useState<"izin" | "reimburse">("izin");
+  const [reimbs, setReimbs] = useState<Reimbursement[]>([]);
 
   // Global search
   const [globalSearch, setGlobalSearch] = useState("");
@@ -134,7 +136,7 @@ export default function AdminPage() {
     const start = format(startOfMonth(date), "yyyy-MM-dd");
     const end = format(endOfMonth(date), "yyyy-MM-dd");
 
-    const [empRes, attRes, setRes, leavesRes] = await Promise.all([
+    const [empRes, attRes, setRes, leavesRes, reimbRes] = await Promise.all([
       supabase.from("employees").select("*").eq("is_active", true).order("name"),
       supabase
         .from("attendance")
@@ -145,6 +147,10 @@ export default function AdminPage() {
       supabase.from("settings").select("*").single(),
       supabase
         .from("leaves")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("reimbursements")
         .select("*")
         .order("created_at", { ascending: false }),
     ]);
@@ -161,6 +167,12 @@ export default function AdminPage() {
       employees: empMap.get(l.employee_id) || null,
     }));
     setLeaves(leavesWithEmp);
+
+    const reimbsWithEmp = (reimbRes.data || []).map((r) => ({
+      ...r,
+      employees: empMap.get(r.employee_id) || null,
+    }));
+    setReimbs(reimbsWithEmp);
     if (setRes.data) {
       setSettings(setRes.data);
       setSettingsForm({
@@ -203,6 +215,7 @@ export default function AdminPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, triggerRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, triggerRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "leaves" }, triggerRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "reimbursements" }, triggerRefetch)
       .subscribe();
 
     return () => {
@@ -416,6 +429,40 @@ export default function AdminPage() {
           url: "/absen",
         }),
       }).catch((err) => console.error("Push notification failed:", err));
+    }
+
+    fetchData();
+  }
+
+  // Approve/Reject reimbursement
+  async function reviewReimb(id: string, status: "approved" | "rejected", notes: string = "") {
+    const reviewerId = admin?.id || null;
+    const reimb = reimbs.find((r) => r.id === id);
+    await supabase
+      .from("reimbursements")
+      .update({
+        status,
+        admin_notes: notes || null,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (reimb?.employee_id) {
+      const statusText = status === "approved" ? "Disetujui ✅" : "Ditolak ❌";
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: reimb.employee_id,
+          title: `Reimburse ${statusText}`,
+          body:
+            status === "approved"
+              ? `Reimburse Rp ${Number(reimb.amount).toLocaleString("id-ID")} disetujui.`
+              : `Reimburse ditolak.${notes ? ` ${notes}` : ""}`,
+          url: "/pengajuan",
+        }),
+      }).catch((err) => console.error(err));
     }
 
     fetchData();
@@ -1188,9 +1235,37 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* LEAVES (IZIN/CUTI/SAKIT) TAB */}
+            {/* LEAVES (IZIN/CUTI/SAKIT) + REIMBURSE TAB */}
             {activeTab === "leaves" && (
               <div className="space-y-4">
+                {/* Sub-tab: Izin vs Reimburse */}
+                <div className="bg-white rounded-2xl shadow-sm p-1 grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => {
+                      setLeavesSubTab("izin");
+                      setLeaveFilter("all");
+                    }}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
+                      leavesSubTab === "izin" ? "bg-primary text-white shadow-sm" : "text-gray-500"
+                    }`}
+                  >
+                    <FileTextIcon size={16} /> Izin/Cuti ({leaves.filter((l) => l.status === "pending").length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLeavesSubTab("reimburse");
+                      setLeaveFilter("all");
+                    }}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
+                      leavesSubTab === "reimburse" ? "bg-primary text-white shadow-sm" : "text-gray-500"
+                    }`}
+                  >
+                    💰 Reimburse ({reimbs.filter((r) => r.status === "pending").length})
+                  </button>
+                </div>
+
+                {leavesSubTab === "izin" ? (
+                <>
                 {/* Filter */}
                 <div className="flex gap-2 overflow-x-auto">
                   {[
@@ -1312,6 +1387,132 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+                </>
+                ) : (
+                  /* REIMBURSE SECTION */
+                  <>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {[
+                        { key: "all" as const, label: "Semua", count: reimbs.length },
+                        { key: "pending" as const, label: "Menunggu", count: reimbs.filter((r) => r.status === "pending").length },
+                        { key: "approved" as const, label: "Disetujui", count: reimbs.filter((r) => r.status === "approved").length },
+                        { key: "rejected" as const, label: "Ditolak", count: reimbs.filter((r) => r.status === "rejected").length },
+                      ].map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setLeaveFilter(f.key)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                            leaveFilter === f.key
+                              ? "bg-primary text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-50 border"
+                          }`}
+                        >
+                          {f.label} ({f.count})
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-3">
+                      {reimbs
+                        .filter((r) => leaveFilter === "all" || r.status === leaveFilter)
+                        .filter((r) => {
+                          const search = globalSearch.trim().toLowerCase();
+                          if (!search) return true;
+                          return (
+                            (r as Reimbursement & { employees?: { name: string } }).employees?.name
+                              ?.toLowerCase()
+                              .includes(search) || false
+                          );
+                        })
+                        .map((reimb) => {
+                          const emp = (reimb as Reimbursement & { employees?: { name: string } }).employees;
+                          const statusColor = {
+                            pending: "bg-yellow-50 text-yellow-700",
+                            approved: "bg-green-50 text-green-700",
+                            rejected: "bg-red-50 text-red-700",
+                          }[reimb.status];
+                          const catEmoji = {
+                            umum: "📦",
+                            transport: "🚗",
+                            makanan: "🍱",
+                            medis: "💊",
+                            lainnya: "📋",
+                          }[reimb.category] || "📋";
+
+                          return (
+                            <div key={reimb.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 min-w-0 flex-1">
+                                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                                    {catEmoji}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-semibold">{emp?.name || "-"}</p>
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 capitalize">
+                                        {reimb.category}
+                                      </span>
+                                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                                        {reimb.status === "pending" ? "Menunggu" : reimb.status === "approved" ? "Disetujui" : "Ditolak"}
+                                      </span>
+                                    </div>
+                                    <p className="text-lg font-bold text-primary mt-2">
+                                      Rp {Number(reimb.amount).toLocaleString("id-ID")}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {format(new Date(reimb.transaction_date), "dd MMM yyyy", { locale: idLocale })}
+                                    </p>
+                                    {reimb.description && (
+                                      <p className="text-sm text-gray-700 mt-2">{reimb.description}</p>
+                                    )}
+                                    {reimb.attachment_url && (
+                                      <a
+                                        href={reimb.attachment_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                                      >
+                                        <FileTextIcon size={12} /> Lihat bukti
+                                      </a>
+                                    )}
+                                    {reimb.admin_notes && (
+                                      <p className="text-xs text-gray-500 mt-2 italic">
+                                        Catatan admin: {reimb.admin_notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                {reimb.status === "pending" && (
+                                  <div className="flex flex-col gap-1.5 shrink-0">
+                                    <button
+                                      onClick={() => reviewReimb(reimb.id, "approved")}
+                                      className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                                    >
+                                      <FileCheck size={14} /> Setujui
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const notes = prompt("Alasan penolakan (opsional):") || "";
+                                        reviewReimb(reimb.id, "rejected", notes);
+                                      }}
+                                      className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                                    >
+                                      <FileX size={14} /> Tolak
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      {reimbs.filter((r) => leaveFilter === "all" || r.status === leaveFilter).length === 0 && (
+                        <div className="bg-white rounded-2xl p-8 text-center text-gray-400">
+                          Belum ada pengajuan reimburse
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

@@ -79,6 +79,22 @@ export interface QRToken {
   expires_at: string;
 }
 
+export interface Reimbursement {
+  id: string;
+  employee_id: string;
+  category: string;
+  transaction_date: string;
+  amount: number;
+  description?: string | null;
+  attachment_url?: string | null;
+  status: "pending" | "approved" | "rejected";
+  admin_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  employees?: Employee;
+}
+
 export interface Announcement {
   id: string;
   title: string;

@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { Home, Users, FileText, Bell, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee } from "@/lib/auth";
 
@@ -10,10 +10,17 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [inboxCount, setInboxCount] = useState(0);
+  const lastFetchRef = useRef(0);
 
   useEffect(() => {
     const emp = getStoredEmployee();
     if (!emp) return;
+
+    // Only fetch if 60s passed since last fetch (avoid hammering on every nav)
+    const now = Date.now();
+    if (now - lastFetchRef.current < 60_000) return;
+    lastFetchRef.current = now;
+
     const lastSeen = localStorage.getItem("inbox_last_seen") || "2020-01-01";
     supabase
       .from("leaves")
@@ -28,13 +35,7 @@ export default function BottomNav() {
     { key: "home", label: "Beranda", icon: Home, path: "/home" },
     { key: "karyawan", label: "Karyawan", icon: Users, path: "/pegawai" },
     { key: "pengajuan", label: "Pengajuan", icon: FileText, path: "/pengajuan" },
-    {
-      key: "inbox",
-      label: "Inbox",
-      icon: Bell,
-      path: "/inbox",
-      badge: inboxCount,
-    },
+    { key: "inbox", label: "Inbox", icon: Bell, path: "/inbox", badge: inboxCount },
     { key: "akun", label: "Akun", icon: User, path: "/profile" },
   ];
 
@@ -42,9 +43,7 @@ export default function BottomNav() {
 
   return (
     <>
-      {/* Spacer so content doesn't get covered */}
       <div className="h-16" />
-
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
         <div className="max-w-lg mx-auto grid grid-cols-5 items-center">
           {items.map((it) => {
@@ -67,9 +66,7 @@ export default function BottomNav() {
                     </span>
                   ) : null}
                 </div>
-                <span
-                  className={`text-[10px] mt-1 ${isActive ? "font-semibold" : "font-medium"}`}
-                >
+                <span className={`text-[10px] mt-1 ${isActive ? "font-semibold" : "font-medium"}`}>
                   {it.label}
                 </span>
               </button>

@@ -42,23 +42,25 @@ import {
   QrCode,
   Megaphone,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
-import { exportMonthlyPDF } from "@/lib/pdfExport";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend,
-  CartesianGrid,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+// Lazy-load recharts only when analytics tab is viewed (~400KB bundle)
+const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false });
+const Bar = dynamic(() => import("recharts").then((m) => m.Bar), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((m) => m.ResponsiveContainer),
+  { ssr: false }
+);
+const LineChart = dynamic(() => import("recharts").then((m) => m.LineChart), { ssr: false });
+const Line = dynamic(() => import("recharts").then((m) => m.Line), { ssr: false });
+const Legend = dynamic(() => import("recharts").then((m) => m.Legend), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then((m) => m.CartesianGrid), { ssr: false });
 
 type Tab = "dashboard" | "analytics" | "leaves" | "karyawan" | "settings";
 
@@ -274,7 +276,10 @@ export default function AdminPage() {
   }
 
   // Export Excel
-  function exportExcel() {
+  async function exportExcel() {
+    // Lazy load xlsx (~1MB) only when export clicked
+    const XLSX = await import("xlsx");
+
     const data = records.map((r) => ({
       Tanggal: format(new Date(r.date), "dd/MM/yyyy"),
       Nama: (r as Attendance & { employees?: { name: string } }).employees?.name || "-",
@@ -468,8 +473,9 @@ export default function AdminPage() {
     fetchData();
   }
 
-  // PDF export
-  function exportPDF() {
+  // PDF export - lazy load jspdf (~500KB) only when clicked
+  async function exportPDF() {
+    const { exportMonthlyPDF } = await import("@/lib/pdfExport");
     exportMonthlyPDF({ month, employees, records, settings });
   }
 

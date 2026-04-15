@@ -77,10 +77,20 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   }, [task]);
 
   async function update(patch: Partial<Task>) {
-    await supabase
+    const { error } = await supabase
       .from("tasks")
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", task.id);
+    if (error) {
+      console.error("Task update failed:", error);
+      alert(
+        "Gagal menyimpan: " +
+          error.message +
+          (error.message.includes("assignees") || error.message.includes("column")
+            ? "\n\nKolom database belum dibuat. Jalankan SQL migration di Supabase:\nALTER TABLE tasks ADD COLUMN IF NOT EXISTS assignees UUID[] DEFAULT '{}';"
+            : "")
+      );
+    }
   }
 
   async function saveTitle() {

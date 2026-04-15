@@ -87,8 +87,8 @@ export default function AbsenPage() {
       .eq("date", today)
       .maybeSingle();
     setTodayRecord(data || null);
-    // Mode: if already clocked in, always allow clock_out (even to update time)
-    if (data && data.clock_in) {
+    // Mode: if already clocked in (but not out), go to clock_out; otherwise clock_in
+    if (data && data.clock_in && !data.clock_out) {
       setMode("clock_out");
     } else {
       setMode("clock_in");
@@ -280,6 +280,15 @@ export default function AbsenPage() {
     if (!employee || !capturedPhoto || !location) return;
     if (isOutsideRadius && !notes.trim()) {
       setMessage({ type: "error", text: "Anda di luar radius kantor. Wajib isi keterangan." });
+      return;
+    }
+    // Guard: only 1x per day
+    if (mode === "clock_in" && todayRecord?.clock_in) {
+      setMessage({ type: "error", text: "Anda sudah clock in hari ini." });
+      return;
+    }
+    if (mode === "clock_out" && todayRecord?.clock_out) {
+      setMessage({ type: "error", text: "Anda sudah clock out hari ini." });
       return;
     }
 
@@ -687,7 +696,18 @@ export default function AbsenPage() {
         )}
 
         {/* Attendance Action */}
-        {isOffDay && !todayRecord && !overrideOffDay ? (
+        {todayRecord?.clock_in && todayRecord?.clock_out ? (
+          <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-green-100">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle size={32} className="text-green-600" />
+            </div>
+            <p className="font-bold text-green-700 text-lg">Absensi Selesai</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Clock in & clock out hari ini sudah tercatat
+            </p>
+            <p className="text-xs text-gray-400 mt-2">Sampai jumpa besok!</p>
+          </div>
+        ) : isOffDay && !todayRecord && !overrideOffDay ? (
           <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-purple-100">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Clock size={32} className="text-purple-600" />

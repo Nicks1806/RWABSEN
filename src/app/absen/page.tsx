@@ -23,6 +23,7 @@ import {
   QrCode as QrCodeIcon,
 } from "lucide-react";
 import jsQR from "jsqr";
+import { hasFace, prewarmFaceModels } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
 
 export default function AbsenPage() {
@@ -127,6 +128,9 @@ export default function AbsenPage() {
 
     // Auto-request permissions if not yet granted
     requestPermissionsIfNeeded();
+
+    // Pre-warm face detection models in background
+    prewarmFaceModels();
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
@@ -311,6 +315,19 @@ export default function AbsenPage() {
     }
 
     setLoading(true);
+    setMessage(null);
+
+    // Face detection check - ensure photo contains a human face
+    setMessage({ type: "success", text: "Memverifikasi foto..." });
+    const faceOk = await hasFace(capturedPhoto);
+    if (!faceOk) {
+      setMessage({
+        type: "error",
+        text: "Wajah tidak terdeteksi di foto. Pastikan wajah terlihat jelas dan ambil ulang.",
+      });
+      setLoading(false);
+      return;
+    }
     setMessage(null);
 
     try {

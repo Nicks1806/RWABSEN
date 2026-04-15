@@ -1643,6 +1643,32 @@ export default function AdminPage() {
                 )}
               </form>
             )}
+
+            {/* Google Sheets Sync - inside settings */}
+            {activeTab === "settings" && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm mt-4 max-w-lg">
+                <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FileTextIcon size={16} /> Google Sheets Live Sync
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  Sinkronkan data absensi ke Google Sheets pakai formula <code className="bg-gray-100 px-1 rounded text-[10px]">=IMPORTDATA()</code>.
+                  Data auto-update setiap 1 jam.
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-600">Langkah:</p>
+                  <ol className="text-xs text-gray-600 list-decimal list-inside space-y-1">
+                    <li>Set env <code className="bg-white px-1 rounded">CSV_EXPORT_KEY</code> di Vercel (nilai bebas, jadikan password)</li>
+                    <li>Di Google Sheets, cell A1 ketik formula:</li>
+                  </ol>
+                  <div className="bg-gray-900 text-green-400 text-[10px] p-2 rounded font-mono break-all">
+                    =IMPORTDATA(&quot;https://absensiredwine.vercel.app/api/attendance-csv?month={month}&amp;key=YOUR_SECRET&quot;)
+                  </div>
+                  <p className="text-[10px] text-gray-400">
+                    Ganti YOUR_SECRET dengan nilai env, dan {"{month}"} dengan format yyyy-MM (misal: 2026-04)
+                  </p>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>

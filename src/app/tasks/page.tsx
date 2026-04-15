@@ -49,23 +49,23 @@ const COLUMNS: {
   label: string;
   desc: string;
   bg: string;
-  headerBg: string;
+  topBar: string;
   icon: typeof Inbox;
   iconColor: string;
 }[] = [
-  { key: "brief", label: "Brief", desc: "Belum dikerjakan", bg: "bg-rose-50/60", headerBg: "bg-rose-500", icon: Inbox, iconColor: "text-rose-500" },
-  { key: "today", label: "Today", desc: "Hari ini", bg: "bg-amber-50/60", headerBg: "bg-amber-500", icon: Zap, iconColor: "text-amber-500" },
-  { key: "done", label: "Done", desc: "Selesai", bg: "bg-emerald-50/60", headerBg: "bg-emerald-500", icon: CheckCircle2, iconColor: "text-emerald-500" },
-  { key: "history", label: "History", desc: "Arsip", bg: "bg-slate-100/60", headerBg: "bg-slate-500", icon: Archive, iconColor: "text-slate-500" },
+  { key: "brief", label: "Brief", desc: "Belum dikerjakan", bg: "bg-[#1e2025]", topBar: "bg-rose-500", icon: Inbox, iconColor: "text-rose-400" },
+  { key: "today", label: "Today", desc: "Hari ini", bg: "bg-[#1e2025]", topBar: "bg-amber-400", icon: Zap, iconColor: "text-amber-400" },
+  { key: "done", label: "Done", desc: "Selesai", bg: "bg-[#1e2025]", topBar: "bg-emerald-500", icon: CheckCircle2, iconColor: "text-emerald-400" },
+  { key: "history", label: "History", desc: "Arsip", bg: "bg-[#1e2025]", topBar: "bg-slate-500", icon: Archive, iconColor: "text-slate-400" },
 ];
 
-const CARD_COLORS: { key: Task["color"]; bg: string; border: string }[] = [
-  { key: "red", bg: "bg-rose-50", border: "border-l-rose-500" },
-  { key: "yellow", bg: "bg-amber-50", border: "border-l-amber-500" },
-  { key: "green", bg: "bg-emerald-50", border: "border-l-emerald-500" },
-  { key: "blue", bg: "bg-blue-50", border: "border-l-blue-500" },
-  { key: "purple", bg: "bg-purple-50", border: "border-l-purple-500" },
-  { key: "gray", bg: "bg-gray-50", border: "border-l-gray-400" },
+const CARD_COLORS: { key: Task["color"]; dot: string; border: string }[] = [
+  { key: "red", dot: "bg-rose-500", border: "border-l-rose-500" },
+  { key: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
+  { key: "green", dot: "bg-emerald-500", border: "border-l-emerald-500" },
+  { key: "blue", dot: "bg-blue-500", border: "border-l-blue-500" },
+  { key: "purple", dot: "bg-purple-500", border: "border-l-purple-500" },
+  { key: "gray", dot: "bg-gray-400", border: "border-l-gray-400" },
 ];
 
 // ============= Sub-components for dnd-kit =============
@@ -85,7 +85,7 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
     <div
       ref={setNodeRef}
       style={{ opacity: isDragging ? 0 : 1 }}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} transition-shadow hover:shadow-md overflow-hidden touch-none`}
+      className={`bg-[#22272b] rounded-xl shadow-sm border border-white/5 border-l-4 ${cardColor.border} transition-all hover:bg-[#282e33] hover:ring-2 hover:ring-white/10 overflow-hidden touch-none`}
     >
       {/* Drag handle area (top + middle) */}
       <div
@@ -95,9 +95,9 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
         className="cursor-grab active:cursor-grabbing select-none"
       >
         <div className="px-3.5 pt-3 pb-2">
-          <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
+          <p className="font-semibold text-sm text-gray-100 leading-snug line-clamp-2">{task.title}</p>
           {task.description && (
-            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+            <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
           )}
         </div>
 
@@ -108,7 +108,7 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
               a.type === "image" ? (
                 <div
                   key={a.id}
-                  className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
+                  className="w-12 h-12 rounded-md overflow-hidden bg-black/30 border border-white/10"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.url} alt="" className="w-full h-full object-cover" />
@@ -116,7 +116,7 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
               ) : (
                 <span
                   key={a.id}
-                  className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium max-w-[140px] truncate"
+                  className="inline-flex items-center gap-1 text-[10px] bg-blue-500/20 text-blue-300 px-2 py-1 rounded-md font-medium max-w-[140px] truncate"
                 >
                   <LinkIcon size={10} />
                   {a.name || a.url.replace(/^https?:\/\//, "").slice(0, 18)}
@@ -124,7 +124,7 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
               )
             )}
             {attachCount > 3 && (
-              <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-medium">
+              <span className="text-[10px] bg-white/10 text-gray-300 px-2 py-1 rounded-md font-medium">
                 +{attachCount - 3}
               </span>
             )}
@@ -152,32 +152,32 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
         )}
 
         {/* Footer: assignees */}
-        <div className="px-3.5 py-2 bg-gray-50/60 border-t border-gray-100 flex items-center justify-between gap-2">
+        <div className="px-3.5 py-2 bg-black/20 border-t border-white/5 flex items-center justify-between gap-2">
           {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
             <div className="flex items-center gap-1.5 min-w-0">
               <div className="flex -space-x-1.5">
                 {task.assigneeObjects.slice(0, 3).map((emp) => (
-                  <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
+                  <div key={emp.id} className="ring-2 ring-[#22272b] rounded-full" title={emp.name}>
                     <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
                   </div>
                 ))}
                 {task.assigneeObjects.length > 3 && (
-                  <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                  <div className="w-6 h-6 rounded-full bg-gray-600 ring-2 ring-[#22272b] flex items-center justify-center text-[9px] font-bold text-gray-200">
                     +{task.assigneeObjects.length - 3}
                   </div>
                 )}
               </div>
               {task.assigneeObjects.length === 1 && (
-                <span className="text-[11px] text-gray-700 font-medium truncate">
+                <span className="text-[11px] text-gray-300 font-medium truncate">
                   {task.assigneeObjects[0].name.split(" ")[0]}
                 </span>
               )}
             </div>
           ) : (
-            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
+            <span className="text-[10px] text-gray-500 italic">Belum di-assign</span>
           )}
           {attachCount > 0 && (
-            <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">
+            <span className="text-[10px] text-gray-400 inline-flex items-center gap-0.5">
               <Paperclip size={10} /> {attachCount}
             </span>
           )}
@@ -201,7 +201,7 @@ function ColumnDroppable({
     <div
       ref={setNodeRef}
       className={`flex-1 overflow-y-auto px-3 py-3 space-y-2.5 transition-all ${
-        isOver ? "bg-primary/5" : ""
+        isOver ? "bg-white/5" : ""
       }`}
     >
       {children}
@@ -213,12 +213,12 @@ function CardOverlay({ task }: { task: Task }) {
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
   return (
     <div
-      className={`bg-white rounded-xl shadow-2xl border border-gray-200/60 border-l-4 ${cardColor.border} overflow-hidden w-72 rotate-3 cursor-grabbing`}
+      className={`bg-[#22272b] rounded-xl shadow-2xl ring-2 ring-primary/40 border-l-4 ${cardColor.border} overflow-hidden w-72 rotate-3 cursor-grabbing`}
     >
       <div className="px-3.5 pt-3 pb-2">
-        <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
+        <p className="font-semibold text-sm text-gray-100 leading-snug line-clamp-2">{task.title}</p>
         {task.description && (
-          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+          <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
         )}
       </div>
     </div>
@@ -426,31 +426,31 @@ export default function TasksPage() {
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 flex flex-col">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-[#0d1117] via-[#161b22] to-[#1c1f26] flex flex-col">
+      <header className="bg-[#0d1117]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => router.back()}
-                className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition"
+                className="w-9 h-9 rounded-lg hover:bg-white/10 text-gray-300 flex items-center justify-center transition"
               >
                 <ArrowLeft size={18} />
               </button>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-lg text-gray-900">Task Board</h1>
-                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                  <h1 className="font-bold text-lg text-white">Task Board</h1>
+                  <span className="text-[10px] bg-white/10 text-gray-200 px-2 py-0.5 rounded-full font-semibold">
                     {tasks.length}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">Drag card untuk pindah kolom • Tap untuk edit</p>
+                <p className="text-xs text-gray-400">Drag card untuk pindah kolom • Tap untuk edit</p>
               </div>
             </div>
             <button
               onClick={() => setFilterMine(!filterMine)}
               className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
-                filterMine ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                filterMine ? "bg-primary text-white shadow-sm" : "bg-white/10 text-gray-300 hover:bg-white/20"
               }`}
             >
               <Filter size={13} /> {filterMine ? "Tugas Saya" : "Semua"}
@@ -486,21 +486,19 @@ export default function TasksPage() {
               return (
                 <div
                   key={col.key}
-                  className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full border shadow-sm transition-all ${
-                    isOverThis ? "border-primary border-2 ring-4 ring-primary/20" : "border-gray-200/80"
+                  className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full overflow-hidden border transition-all ${
+                    isOverThis ? "border-primary ring-4 ring-primary/30" : "border-white/5"
                   }`}
                 >
-                  <div className="px-4 py-3.5 flex items-center justify-between border-b border-gray-200/60 sticky top-0 z-10 bg-white/60 backdrop-blur-sm rounded-t-2xl">
+                  {/* Trello-style colored top bar */}
+                  <div className={`h-1.5 ${col.topBar}`} />
+                  <div className="px-4 py-3.5 flex items-center justify-between border-b border-white/5 sticky top-0 z-10 bg-[#1e2025]/95 backdrop-blur-sm">
                     <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-8 h-8 rounded-lg ${col.headerBg} flex items-center justify-center text-white shadow-sm`}
-                      >
-                        <Icon size={15} />
-                      </div>
+                      <Icon size={16} className={col.iconColor} />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-sm text-gray-800">{col.label}</h3>
-                          <span className="text-[10px] bg-gray-900/10 text-gray-700 px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
+                          <h3 className="font-bold text-sm text-gray-100">{col.label}</h3>
+                          <span className="text-[10px] bg-white/10 text-gray-300 px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
                             {colTasks.length}
                           </span>
                         </div>
@@ -512,9 +510,9 @@ export default function TasksPage() {
                   <ColumnDroppable colKey={col.key} isOver={isOverThis}>
                     {colTasks.length === 0 && (
                       <div className="text-center py-8 px-4 pointer-events-none">
-                        <Icon size={32} className={`${col.iconColor} mx-auto mb-2 opacity-40`} />
-                        <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
-                        <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
+                        <Icon size={32} className={`${col.iconColor} mx-auto mb-2 opacity-30`} />
+                        <p className="text-xs text-gray-500 font-medium">Belum ada task</p>
+                        <p className="text-[10px] text-gray-600 mt-1">Drag card ke sini atau tap +</p>
                       </div>
                     )}
                     {colTasks.map((task) => (
@@ -522,7 +520,7 @@ export default function TasksPage() {
                     ))}
                     <button
                       onClick={() => openCreate(col.key)}
-                      className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium mt-1"
+                      className="w-full py-2.5 rounded-xl text-xs text-gray-400 hover:bg-white/5 hover:text-white transition-all border border-dashed border-white/10 hover:border-white/30 flex items-center justify-center gap-1 font-medium mt-1"
                     >
                       <Plus size={14} /> Tambah task
                     </button>
@@ -566,7 +564,7 @@ export default function TasksPage() {
               const colInfo = COLUMNS.find((c) => c.key === showForm.status)!;
               const ColIcon = colInfo.icon;
               return (
-                <div className={`${colInfo.headerBg} px-5 pt-5 pb-6 text-white relative`}>
+                <div className={`${colInfo.topBar.replace("h-1.5 ", "")} px-5 pt-5 pb-6 text-white relative`}>
                   <button
                     onClick={() => setShowForm({ open: false, status: "brief" })}
                     className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
@@ -629,8 +627,8 @@ export default function TasksPage() {
                         key={c.key}
                         type="button"
                         onClick={() => setForm({ ...form, color: c.key })}
-                        className={`w-10 h-10 rounded-xl border-l-4 ${c.border} ${c.bg} transition-all ${
-                          active ? "ring-2 ring-offset-2 ring-gray-800 scale-105 shadow-md" : "hover:scale-105"
+                        className={`w-10 h-10 rounded-xl ${c.dot} transition-all ${
+                          active ? "ring-2 ring-offset-2 ring-white scale-110 shadow-md" : "hover:scale-105 opacity-80"
                         }`}
                       />
                     );
@@ -737,10 +735,10 @@ function StatPill({
   color: "primary" | "amber" | "red" | "gray";
 }) {
   const colorMap = {
-    primary: "bg-primary/10 text-primary border-primary/20",
-    amber: "bg-amber-50 text-amber-700 border-amber-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-    gray: "bg-gray-50 text-gray-600 border-gray-200",
+    primary: "bg-primary/15 text-primary border-primary/25",
+    amber: "bg-amber-500/15 text-amber-300 border-amber-500/25",
+    red: "bg-red-500/15 text-red-300 border-red-500/25",
+    gray: "bg-white/5 text-gray-400 border-white/10",
   };
   return (
     <div className={`rounded-xl border px-3 py-2 ${colorMap[color]}`}>

@@ -262,6 +262,19 @@ export default function AdminPage() {
     [todayRecords]
   );
 
+  // Per-employee stats (present count + late count) - single pass O(n)
+  const empStatsMap = useMemo(() => {
+    const map = new Map<string, { present: number; late: number }>();
+    for (const r of records) {
+      if (!r.employee_id) continue;
+      const cur = map.get(r.employee_id) || { present: 0, late: 0 };
+      if (r.clock_in) cur.present++;
+      if (r.status === "late") cur.late++;
+      map.set(r.employee_id, cur);
+    }
+    return map;
+  }, [records]);
+
   // Per-employee monthly hours (memoized map for O(1) lookup instead of O(n) per call)
   const monthlyHoursMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -797,20 +810,27 @@ export default function AdminPage() {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-600">Hadir</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-600">Terlambat</th>
                           <th className="text-center px-4 py-3 font-medium text-gray-600">Total Jam</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
                         {employees
                           .filter((e) => e.role === "employee")
-                          .map((emp) => (
-                            <tr key={emp.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 font-medium">{emp.name}</td>
-                              <td className="px-4 py-3 text-center font-semibold text-primary">
-                                {getMonthlyHours(emp.id)} jam
-                              </td>
-                            </tr>
-                          ))}
+                          .map((emp) => {
+                            const stats = empStatsMap.get(emp.id) || { present: 0, late: 0 };
+                            return (
+                              <tr key={emp.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 font-medium">{emp.name}</td>
+                                <td className="px-4 py-3 text-center">{stats.present}</td>
+                                <td className="px-4 py-3 text-center text-red-600">{stats.late}</td>
+                                <td className="px-4 py-3 text-center font-semibold text-primary">
+                                  {getMonthlyHours(emp.id)} jam
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
                   </div>
@@ -818,14 +838,23 @@ export default function AdminPage() {
                   <div className="md:hidden divide-y">
                     {employees
                       .filter((e) => e.role === "employee")
-                      .map((emp) => (
-                        <div key={emp.id} className="p-4 flex items-center justify-between">
-                          <p className="font-semibold">{emp.name}</p>
-                          <p className="font-bold text-primary">
-                            {getMonthlyHours(emp.id)} jam
-                          </p>
-                        </div>
-                      ))}
+                      .map((emp) => {
+                        const stats = empStatsMap.get(emp.id) || { present: 0, late: 0 };
+                        return (
+                          <div key={emp.id} className="p-4 flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{emp.name}</p>
+                              <p className="text-xs text-gray-500">
+                                Hadir: {stats.present} •{" "}
+                                <span className="text-red-600">Terlambat: {stats.late}</span>
+                              </p>
+                            </div>
+                            <p className="font-bold text-primary">
+                              {getMonthlyHours(emp.id)} jam
+                            </p>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Employee, Task } from "@/lib/types";
+import { Employee, Task, TaskAttachment } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -13,6 +13,11 @@ import {
   Calendar as CalendarIcon,
   AlignLeft,
   Check,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Paperclip,
+  Upload,
+  ExternalLink,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 
@@ -43,7 +48,13 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
   })();
   const [assigneeIds, setAssigneeIds] = useState<string[]>(initialAssignees);
   const [dueDate, setDueDate] = useState(task.due_date || "");
+  const [attachments, setAttachments] = useState<TaskAttachment[]>(task.attachments || []);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkName, setLinkName] = useState("");
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(task.title);
@@ -53,6 +64,7 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
     if (task.assignee_id && !arr.includes(task.assignee_id)) setAssigneeIds([task.assignee_id, ...arr]);
     else setAssigneeIds(arr);
     setDueDate(task.due_date || "");
+    setAttachments(task.attachments || []);
   }, [task]);
 
   async function saveAll() {
@@ -70,6 +82,7 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
         assignees: assigneeIds,
         assignee_id: assigneeIds[0] || null,
         due_date: dueDate || null,
+        attachments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", task.id);
@@ -79,6 +92,90 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
       return;
     }
     onClose();
+  }
+
+  // ===== Attachments =====
+  async function handleImageUpload(file: File) {
+    if (!file.type.startsWith("image/")) {
+      alert("Hanya file gambar yang didukung");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ukuran maksimal 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filename = `tasks/${task.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("attendance-photos")
+        .upload(filename, file, { contentType: file.type, cacheControl: "3600" });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
+      const newAttachment: TaskAttachment = {
+        id: crypto.randomUUID(),
+        type: "image",
+        url: urlData.publicUrl,
+        name: file.name,
+        added_at: new Date().toISOString(),
+      };
+      const updated = [...attachments, newAttachment];
+      setAttachments(updated);
+      // Auto-save attachments immediately
+      await supabase
+        .from("tasks")
+        .update({ attachments: updated, updated_at: new Date().toISOString() })
+        .eq("id", task.id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert("Upload gagal: " + msg);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function addLink() {
+    if (!linkUrl.trim()) return;
+    let url = linkUrl.trim();
+    if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    const newAttachment: TaskAttachment = {
+      id: crypto.randomUUID(),
+      type: "link",
+      url,
+      name: linkName.trim() || url.replace(/^https?:\/\//, "").split("/")[0],
+      added_at: new Date().toISOString(),
+    };
+    const updated = [...attachments, newAttachment];
+    setAttachments(updated);
+    setLinkUrl("");
+    setLinkName("");
+    setShowLinkForm(false);
+    await supabase
+      .from("tasks")
+      .update({ attachments: updated, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
+  }
+
+  async function removeAttachment(id: string) {
+    if (!confirm("Hapus attachment ini?")) return;
+    const target = attachments.find((a) => a.id === id);
+    const updated = attachments.filter((a) => a.id !== id);
+    setAttachments(updated);
+    // Best-effort delete from storage
+    if (target?.type === "image" && target.url.includes("attendance-photos/")) {
+      try {
+        const path = target.url.split("/attendance-photos/")[1]?.split("?")[0];
+        if (path) await supabase.storage.from("attendance-photos").remove([path]);
+      } catch {
+        /* ignore */
+      }
+    }
+    await supabase
+      .from("tasks")
+      .update({ attachments: updated, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
   }
 
   async function deleteTask() {
@@ -229,6 +326,157 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
                   );
                 })}
             </div>
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
+              <Paperclip size={12} /> Attachment ({attachments.length})
+            </label>
+
+            {/* Existing attachments */}
+            {attachments.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {attachments.map((a) =>
+                  a.type === "image" ? (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-xl group"
+                    >
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-12 h-12 rounded-md overflow-hidden bg-white border border-gray-200 shrink-0 hover:opacity-80"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={a.url} alt={a.name || ""} className="w-full h-full object-cover" />
+                      </a>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-700 truncate">{a.name || "Gambar"}</p>
+                        <p className="text-[10px] text-gray-400">
+                          {format(new Date(a.added_at), "dd MMM • HH:mm", { locale: idLocale })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeAttachment(a.id)}
+                        className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
+                        title="Hapus"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-xl group"
+                    >
+                      <div className="w-10 h-10 rounded-md bg-white border border-blue-200 flex items-center justify-center shrink-0">
+                        <LinkIcon size={16} className="text-blue-600" />
+                      </div>
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 min-w-0 hover:underline"
+                      >
+                        <p className="text-xs font-medium text-blue-700 truncate inline-flex items-center gap-1">
+                          {a.name || a.url}
+                          <ExternalLink size={10} className="shrink-0" />
+                        </p>
+                        <p className="text-[10px] text-blue-500/80 truncate">{a.url}</p>
+                      </a>
+                      <button
+                        onClick={() => removeAttachment(a.id)}
+                        className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
+                        title="Hapus"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Add buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-3 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl text-xs font-medium text-gray-700 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <Upload size={14} className="animate-pulse" /> Upload...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon size={14} /> Tambah Gambar
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowLinkForm(!showLinkForm)}
+                className={`px-3 py-2.5 border rounded-xl text-xs font-medium inline-flex items-center justify-center gap-1.5 transition ${
+                  showLinkForm
+                    ? "bg-blue-50 border-blue-300 text-blue-700"
+                    : "bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                <LinkIcon size={14} /> Tambah Link
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImageUpload(f);
+              }}
+            />
+
+            {/* Link form */}
+            {showLinkForm && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-300"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={linkName}
+                  onChange={(e) => setLinkName(e.target.value)}
+                  placeholder="Nama (opsional)"
+                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowLinkForm(false);
+                      setLinkUrl("");
+                      setLinkName("");
+                    }}
+                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-700"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={addLink}
+                    disabled={!linkUrl.trim()}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    Tambah
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

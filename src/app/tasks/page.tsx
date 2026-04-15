@@ -116,10 +116,18 @@ export default function TasksPage() {
       supabase.from("employees").select("*").eq("is_active", true).order("name"),
     ]);
     const empMap = new Map((eRes.data || []).map((e) => [e.id, e]));
-    const tasksWithAssignee = (tRes.data || []).map((t) => ({
-      ...t,
-      assignee: t.assignee_id ? empMap.get(t.assignee_id) || undefined : undefined,
-    }));
+    const tasksWithAssignee = (tRes.data || []).map((t) => {
+      // Union of assignees[] + legacy assignee_id
+      const ids: string[] = Array.isArray(t.assignees) ? [...t.assignees] : [];
+      if (t.assignee_id && !ids.includes(t.assignee_id)) ids.unshift(t.assignee_id);
+      const assigneeObjects = ids.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
+      return {
+        ...t,
+        assignees: ids,
+        assigneeObjects,
+        assignee: assigneeObjects[0],
+      };
+    });
     setTasks(tasksWithAssignee);
     setEmployees(eRes.data || []);
   }, []);
@@ -268,12 +276,14 @@ export default function TasksPage() {
     await supabase.from("tasks").delete().eq("id", id);
   }
 
-  const filteredTasks = filterMine && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks;
+  const isMine = (t: Task) =>
+    t.assignee_id === user?.id || (Array.isArray(t.assignees) && t.assignees.includes(user?.id || ""));
+  const filteredTasks = filterMine && user ? tasks.filter(isMine) : tasks;
 
   if (!user) return null;
 
   // Calc stats
-  const myCount = user ? tasks.filter((t) => t.assignee_id === user.id).length : 0;
+  const myCount = user ? tasks.filter(isMine).length : 0;
   const overdueCount = tasks.filter(
     (t) => t.status !== "done" && t.status !== "history" && t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date))
   ).length;
@@ -433,18 +443,31 @@ export default function TasksPage() {
                           </div>
                         )}
 
-                        {/* Footer: assignee + actions */}
+                        {/* Footer: assignees + actions */}
                         <div className="px-3.5 py-2 bg-gray-50/60 border-t border-gray-100 flex items-center justify-between gap-2">
-                          {task.assignee ? (
+                          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <Avatar
-                                name={task.assignee.name}
-                                photoUrl={task.assignee.photo_url}
-                                size="xs"
-                              />
-                              <span className="text-[11px] text-gray-700 font-medium truncate">
-                                {task.assignee.name.split(" ")[0]}
-                              </span>
+                              <div className="flex -space-x-1.5">
+                                {task.assigneeObjects.slice(0, 3).map((emp) => (
+                                  <div
+                                    key={emp.id}
+                                    className="ring-2 ring-white rounded-full"
+                                    title={emp.name}
+                                  >
+                                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+                                  </div>
+                                ))}
+                                {task.assigneeObjects.length > 3 && (
+                                  <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                                    +{task.assigneeObjects.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                              {task.assigneeObjects.length === 1 && (
+                                <span className="text-[11px] text-gray-700 font-medium truncate">
+                                  {task.assigneeObjects[0].name.split(" ")[0]}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>

@@ -48,7 +48,15 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   const [comments, setComments] = useState<TaskComment[]>(task.comments || []);
   const [newComment, setNewComment] = useState("");
   const [color, setColor] = useState<Task["color"]>(task.color);
-  const [assigneeId, setAssigneeId] = useState(task.assignee_id || "");
+  // Multi-assign: union of assignees array + legacy assignee_id for backward compat
+  const initialAssignees: string[] = (() => {
+    const arr = task.assignees || [];
+    if (task.assignee_id && !arr.includes(task.assignee_id)) {
+      return [task.assignee_id, ...arr];
+    }
+    return arr;
+  })();
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(initialAssignees);
   const [dueDate, setDueDate] = useState(task.due_date || "");
   const [showAssignee, setShowAssignee] = useState(false);
 
@@ -59,7 +67,12 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
     setChecklist(task.checklist || []);
     setComments(task.comments || []);
     setColor(task.color);
-    setAssigneeId(task.assignee_id || "");
+    const arr = task.assignees || [];
+    if (task.assignee_id && !arr.includes(task.assignee_id)) {
+      setAssigneeIds([task.assignee_id, ...arr]);
+    } else {
+      setAssigneeIds(arr);
+    }
     setDueDate(task.due_date || "");
   }, [task]);
 
@@ -90,10 +103,20 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
     await update({ color: c });
   }
 
-  async function saveAssignee(id: string) {
-    setAssigneeId(id);
-    setShowAssignee(false);
-    await update({ assignee_id: id || null });
+  async function toggleAssignee(id: string) {
+    const isSelected = assigneeIds.includes(id);
+    const updated = isSelected ? assigneeIds.filter((x) => x !== id) : [...assigneeIds, id];
+    setAssigneeIds(updated);
+    // Also set legacy assignee_id to first one for backward compat
+    await update({
+      assignees: updated,
+      assignee_id: updated[0] || null,
+    } as Partial<Task>);
+  }
+
+  async function clearAssignees() {
+    setAssigneeIds([]);
+    await update({ assignees: [], assignee_id: null } as Partial<Task>);
   }
 
   async function saveDueDate(d: string) {
@@ -152,7 +175,6 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
   const doneCount = checklist.filter((i) => i.done).length;
   const progress = checklist.length > 0 ? (doneCount / checklist.length) * 100 : 0;
-  const assignee = employees.find((e) => e.id === assigneeId);
   const currentColor = CARD_COLORS.find((c) => c.key === color) || CARD_COLORS[0];
 
   return (
@@ -453,45 +475,67 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               </button>
               {showAssignee && (
                 <div className="mt-1.5 space-y-1 max-h-60 overflow-y-auto bg-white p-1.5 rounded-lg border">
-                  <button
-                    onClick={() => saveAssignee("")}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
-                      !assigneeId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
-                      <UserIcon size={12} className="text-gray-400" />
-                    </div>
-                    <span className="flex-1 text-left">Tidak di-assign</span>
-                  </button>
+                  {assigneeIds.length > 0 && (
+                    <button
+                      onClick={clearAssignees}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition hover:bg-gray-50 text-gray-500"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
+                        <X size={12} className="text-gray-400" />
+                      </div>
+                      <span className="flex-1 text-left italic">Hapus semua</span>
+                    </button>
+                  )}
                   {employees
                     .filter((e) => e.is_active)
-                    .map((e) => (
-                      <button
-                        key={e.id}
-                        onClick={() => saveAssignee(e.id)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
-                          assigneeId === e.id ? "bg-primary/10 font-semibold" : "hover:bg-gray-50"
-                        }`}
-                      >
-                        <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
-                        <div className="flex-1 text-left min-w-0">
-                          <p className="text-sm truncate">{e.name}</p>
-                          {e.position && <p className="text-[10px] text-gray-500 truncate">{e.position}</p>}
-                        </div>
-                      </button>
-                    ))}
+                    .map((e) => {
+                      const selected = assigneeIds.includes(e.id);
+                      return (
+                        <button
+                          key={e.id}
+                          onClick={() => toggleAssignee(e.id)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
+                            selected ? "bg-primary/10 font-semibold ring-1 ring-primary/30" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="text-sm truncate">{e.name}</p>
+                            {e.position && <p className="text-[10px] text-gray-500 truncate">{e.position}</p>}
+                          </div>
+                          {selected && <CheckCircle2 size={16} className="text-primary shrink-0" />}
+                        </button>
+                      );
+                    })}
                 </div>
               )}
-              {assignee && (
-                <div className="mt-1.5 flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border">
-                  <Avatar name={assignee.name} photoUrl={assignee.photo_url} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 truncate">{assignee.name}</p>
-                    {assignee.position && (
-                      <p className="text-[10px] text-gray-500 truncate">{assignee.position}</p>
-                    )}
-                  </div>
+              {assigneeIds.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {assigneeIds.map((id) => {
+                    const emp = employees.find((e) => e.id === id);
+                    if (!emp) return null;
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border group"
+                      >
+                        <Avatar name={emp.name} photoUrl={emp.photo_url} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{emp.name}</p>
+                          {emp.position && (
+                            <p className="text-[10px] text-gray-500 truncate">{emp.position}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => toggleAssignee(id)}
+                          className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                          title="Hapus"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

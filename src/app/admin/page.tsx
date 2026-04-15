@@ -41,6 +41,7 @@ import {
   Briefcase,
   QrCode,
   Megaphone,
+  ClipboardList,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
@@ -637,6 +638,14 @@ export default function AdminPage() {
             <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/tasks")}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              title="Task Board"
+            >
+              <ClipboardList size={16} />
+              <span className="hidden sm:inline">Tasks</span>
+            </button>
             <button
               onClick={() => router.push("/admin/pengumuman")}
               className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"

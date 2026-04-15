@@ -1031,6 +1031,7 @@ export default function AdminPage() {
                           const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
                           const hasCustomHours = !!emp.work_start && !!emp.work_end;
                           const isDefault = !hasSchedule && !hasCustomHours;
+                          const eff = getEffectiveWorkHours(emp, settings);
                           return (
                           <tr key={emp.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-medium">{emp.name}</td>
@@ -1038,20 +1039,18 @@ export default function AdminPage() {
                               {showPins ? emp.pin : "••••••"}
                             </td>
                             <td className="px-4 py-3 text-center text-xs">
-                              {hasSchedule ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-50 text-purple-700 font-medium text-[11px]">
-                                  <Clock3 size={10} /> Jadwal Per Hari
-                                </span>
-                              ) : hasCustomHours ? (
-                                <span className="text-primary font-medium">
-                                  {emp.work_start?.slice(0, 5)} - {emp.work_end?.slice(0, 5)}
-                                </span>
+                              {emp.role === "admin" ? (
+                                <span className="text-gray-300">-</span>
+                              ) : eff.off ? (
+                                <span className="text-gray-400 italic">Libur Hari Ini</span>
                               ) : (
                                 <>
-                                  <span className="text-gray-500">
-                                    {settings?.work_start?.slice(0, 5)} - {settings?.work_end?.slice(0, 5)}
+                                  <span className={isDefault ? "text-gray-600" : "text-primary font-medium"}>
+                                    {eff.start.slice(0, 5)} - {eff.end.slice(0, 5)}
                                   </span>
-                                  <span className="text-gray-400 block text-[10px]">(default)</span>
+                                  {isDefault && (
+                                    <span className="text-gray-400 block text-[10px]">(default)</span>
+                                  )}
                                 </>
                               )}
                             </td>
@@ -1122,6 +1121,8 @@ export default function AdminPage() {
                     {employees.map((emp) => {
                       const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
                       const hasCustomHours = !!emp.work_start && !!emp.work_end;
+                      const isDefault = !hasSchedule && !hasCustomHours;
+                      const eff = getEffectiveWorkHours(emp, settings);
                       return (
                         <div key={emp.id} className="p-4">
                           <div className="flex items-center justify-between mb-2">
@@ -1130,28 +1131,21 @@ export default function AdminPage() {
                               <p className="text-xs text-gray-500 capitalize">
                                 {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
                               </p>
-                              <p className="text-xs mt-0.5">
-                                {hasSchedule ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium text-[10px]">
-                                    <Clock3 size={10} /> Jadwal Per Hari
-                                  </span>
-                                ) : hasCustomHours ? (
-                                  <>
-                                    Jam:{" "}
-                                    <span className="text-primary font-medium">
-                                      {emp.work_start?.slice(0, 5)} - {emp.work_end?.slice(0, 5)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    Jam:{" "}
-                                    <span className="text-gray-500">
-                                      {settings?.work_start?.slice(0, 5)} - {settings?.work_end?.slice(0, 5)}
-                                    </span>
-                                    <span className="text-gray-400"> (default)</span>
-                                  </>
-                                )}
-                              </p>
+                              {emp.role !== "admin" && (
+                                <p className="text-xs mt-0.5">
+                                  {eff.off ? (
+                                    <span className="text-gray-400 italic">Libur Hari Ini</span>
+                                  ) : (
+                                    <>
+                                      Jam:{" "}
+                                      <span className={isDefault ? "text-gray-600" : "text-primary font-medium"}>
+                                        {eff.start.slice(0, 5)} - {eff.end.slice(0, 5)}
+                                      </span>
+                                      {isDefault && <span className="text-gray-400"> (default)</span>}
+                                    </>
+                                  )}
+                                </p>
+                              )}
                             </div>
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${

@@ -144,13 +144,22 @@ export default function AdminPage() {
       supabase.from("settings").select("*").single(),
       supabase
         .from("leaves")
-        .select("*, employees(name)")
+        .select("*")
         .order("created_at", { ascending: false }),
     ]);
 
+    if (leavesRes.error) console.error("Leaves fetch error:", leavesRes.error);
+
     setEmployees(empRes.data || []);
     setRecords(attRes.data || []);
-    setLeaves(leavesRes.data || []);
+
+    // Manually attach employee name (more robust than FK auto-join)
+    const empMap = new Map((empRes.data || []).map((e) => [e.id, e]));
+    const leavesWithEmp = (leavesRes.data || []).map((l) => ({
+      ...l,
+      employees: empMap.get(l.employee_id) || null,
+    }));
+    setLeaves(leavesWithEmp);
     if (setRes.data) {
       setSettings(setRes.data);
       setSettingsForm({

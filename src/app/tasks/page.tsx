@@ -397,14 +397,12 @@ export default function TasksPage() {
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onDragEnd={handleDragEnd}
-                        className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden cursor-grab active:cursor-grabbing ${
+                        onClick={() => setDetailTask(task)}
+                        className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden cursor-grab active:cursor-grabbing select-none ${
                           draggingTaskId === task.id ? "opacity-40 rotate-2" : ""
                         }`}
                       >
-                        <button
-                          onClick={() => setDetailTask(task)}
-                          className="w-full text-left px-3.5 pt-3 pb-2"
-                        >
+                        <div className="px-3.5 pt-3 pb-2">
                           <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">
                             {task.title}
                           </p>
@@ -413,27 +411,25 @@ export default function TasksPage() {
                               {task.description}
                             </p>
                           )}
-                        </button>
+                        </div>
 
                         {/* Meta row */}
-                        {(task.assignee || task.due_date) && (
+                        {task.due_date && (
                           <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
-                            {task.due_date && (
-                              <span
-                                className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                                  overdue
-                                    ? "bg-red-100 text-red-700"
-                                    : todayDue
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-slate-100 text-slate-600"
-                                }`}
-                              >
-                                <CalendarIcon size={10} />
-                                {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
-                                {overdue && " • Lewat"}
-                                {todayDue && " • Hari ini"}
-                              </span>
-                            )}
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+                                overdue
+                                  ? "bg-red-100 text-red-700"
+                                  : todayDue
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              <CalendarIcon size={10} />
+                              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
+                              {overdue && " • Lewat"}
+                              {todayDue && " • Hari ini"}
+                            </span>
                           </div>
                         )}
 
@@ -454,23 +450,35 @@ export default function TasksPage() {
                             <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
                           )}
 
-                          <div className="flex items-center gap-0.5">
+                          <div
+                            className="flex items-center gap-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
-                              onClick={() => moveTask(task, "left")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveTask(task, "left");
+                              }}
                               className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
                               title="Pindah kiri"
                             >
                               <ChevronLeft size={14} />
                             </button>
                             <button
-                              onClick={() => moveTask(task, "right")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveTask(task, "right");
+                              }}
                               className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
                               title="Pindah kanan"
                             >
                               <ChevronRight size={14} />
                             </button>
                             <button
-                              onClick={() => deleteTask(task.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTask(task.id);
+                              }}
                               className="w-6 h-6 rounded-md hover:bg-red-100 hover:text-red-600 text-gray-400 flex items-center justify-center transition"
                               title="Hapus"
                             >

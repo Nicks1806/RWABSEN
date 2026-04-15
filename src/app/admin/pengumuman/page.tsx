@@ -32,6 +32,8 @@ export default function AdminAnnouncementsPage() {
     priority: "normal" as "normal" | "important" | "urgent",
     is_active: true,
     sendNotif: true,
+    start_date: "",
+    end_date: "",
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -67,7 +69,15 @@ export default function AdminAnnouncementsPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ title: "", body: "", priority: "normal", is_active: true, sendNotif: true });
+    setForm({
+      title: "",
+      body: "",
+      priority: "normal",
+      is_active: true,
+      sendNotif: true,
+      start_date: "",
+      end_date: "",
+    });
     setShowForm(true);
     setMsg(null);
   }
@@ -80,6 +90,8 @@ export default function AdminAnnouncementsPage() {
       priority: a.priority,
       is_active: a.is_active,
       sendNotif: false,
+      start_date: a.start_date || "",
+      end_date: a.end_date || "",
     });
     setShowForm(true);
     setMsg(null);
@@ -103,6 +115,8 @@ export default function AdminAnnouncementsPage() {
           body: form.body.trim(),
           priority: form.priority,
           is_active: form.is_active,
+          start_date: form.start_date || null,
+          end_date: form.end_date || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", editing.id);
@@ -120,6 +134,8 @@ export default function AdminAnnouncementsPage() {
           body: form.body.trim(),
           priority: form.priority,
           is_active: form.is_active,
+          start_date: form.start_date || null,
+          end_date: form.end_date || null,
           created_by: admin.id,
         })
         .select()
@@ -361,6 +377,36 @@ export default function AdminAnnouncementsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Period / Jadwal tampil */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Periode Tayang (Opsional)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-gray-50 rounded-xl p-2.5">
+                    <label className="block text-[10px] text-gray-500 font-medium mb-1">DARI TANGGAL</label>
+                    <input
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-2.5">
+                    <label className="block text-[10px] text-gray-500 font-medium mb-1">SAMPAI TANGGAL</label>
+                    <input
+                      type="date"
+                      value={form.end_date}
+                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Kosongkan untuk tampil selamanya. Contoh: promo 10-20 April atau libur 1-7 Mei.
+                </p>
               </div>
 
               {/* Active toggle */}

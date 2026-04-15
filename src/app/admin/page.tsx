@@ -495,7 +495,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Logo size="sm" />
             <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
@@ -521,7 +521,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="bg-white border-b sticky top-[52px] z-10">
-        <div className="max-w-5xl mx-auto px-4 flex gap-1">
+        <div className="max-w-5xl mx-auto px-2 md:px-4 flex gap-0.5 md:gap-1 overflow-x-auto scrollbar-hide">
           {[
             { key: "dashboard" as Tab, label: "Dashboard", icon: <Clock size={16} /> },
             { key: "analytics" as Tab, label: "Analitik", icon: <TrendingUp size={16} /> },
@@ -537,7 +537,7 @@ export default function AdminPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition relative ${
+              className={`shrink-0 flex items-center gap-1 md:gap-1.5 px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 transition relative whitespace-nowrap ${
                 activeTab === tab.key
                   ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-700"
@@ -554,7 +554,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-6 overflow-x-hidden">
         {loading ? (
           <div className="text-center py-12 text-gray-400">Memuat data...</div>
         ) : (
@@ -588,7 +588,7 @@ export default function AdminPage() {
                 )}
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center gap-2 text-blue-600 mb-2">
                       <Users size={18} />

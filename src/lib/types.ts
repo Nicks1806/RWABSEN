@@ -102,12 +102,15 @@ export interface TaskAttachment {
   added_at: string;
 }
 
+export type TaskLabel = "red" | "yellow" | "green" | "blue" | "purple" | "gray";
+
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
   status: "brief" | "today" | "done" | "history";
-  color: "red" | "yellow" | "green" | "blue" | "purple" | "gray";
+  color: TaskLabel; // primary/legacy single color (kept for backward compat)
+  labels?: TaskLabel[] | null; // array of label colors (multi-label)
   assignee_id?: string | null; // legacy single assignee (kept for backward compat)
   assignees?: string[] | null; // array of employee IDs (multi-assign)
   created_by?: string | null;
@@ -116,6 +119,7 @@ export interface Task {
   checklist?: ChecklistItem[];
   comments?: TaskComment[];
   attachments?: TaskAttachment[];
+  cover_url?: string | null; // optional cover image URL (auto-set from first image attachment)
   created_at: string;
   updated_at: string;
   assignee?: Employee;

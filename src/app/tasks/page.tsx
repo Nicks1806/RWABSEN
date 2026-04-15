@@ -80,6 +80,19 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
   const overdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
   const todayDue = task.due_date && isToday(new Date(task.due_date));
   const attachCount = task.attachments?.length || 0;
+  // Auto-cover: explicit cover_url OR first image attachment
+  const coverUrl =
+    task.cover_url ||
+    task.attachments?.find((a) => a.type === "image")?.url ||
+    null;
+  // Labels: union of `labels[]` array + legacy `color` (dedupe)
+  const labelSet = new Set<string>(task.labels || []);
+  if (task.color) labelSet.add(task.color);
+  const labels: string[] = Array.from(labelSet);
+  // Checklist progress
+  const checklist = task.checklist || [];
+  const doneCount = checklist.filter((i) => i.done).length;
+  const totalCount = checklist.length;
 
   return (
     <div
@@ -94,7 +107,32 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
         onClick={onClick}
         className="cursor-grab active:cursor-grabbing select-none"
       >
-        <div className="px-3.5 pt-3 pb-2">
+        {/* Cover image (Trello-style) */}
+        {coverUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverUrl}
+            alt=""
+            className="w-full h-28 object-cover bg-black/30"
+            draggable={false}
+          />
+        )}
+        {/* Multi-label color chips */}
+        {labels.length > 0 && (
+          <div className="px-3.5 pt-2.5 pb-1 flex gap-1 flex-wrap">
+            {labels.map((l) => {
+              const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
+              return (
+                <span
+                  key={l}
+                  className={`h-1.5 w-10 rounded-full ${lc.dot}`}
+                  title={l}
+                />
+              );
+            })}
+          </div>
+        )}
+        <div className="px-3.5 pt-2 pb-2">
           <p className="font-semibold text-sm text-gray-100 leading-snug line-clamp-2">{task.title}</p>
           {task.description && (
             <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
@@ -131,23 +169,38 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
           </div>
         )}
 
-        {/* Meta row */}
-        {task.due_date && (
-          <div className="px-3.5 pb-2">
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                overdue
-                  ? "bg-red-100 text-red-700"
-                  : todayDue
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              <CalendarIcon size={10} />
-              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
-              {overdue && " • Lewat"}
-              {todayDue && " • Hari ini"}
-            </span>
+        {/* Meta row: due date + checklist progress */}
+        {(task.due_date || totalCount > 0) && (
+          <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
+            {task.due_date && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+                  overdue
+                    ? "bg-red-500/20 text-red-300"
+                    : todayDue
+                    ? "bg-amber-500/20 text-amber-300"
+                    : "bg-white/10 text-gray-300"
+                }`}
+              >
+                <CalendarIcon size={10} />
+                {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
+                {overdue && " • Lewat"}
+                {todayDue && " • Hari ini"}
+              </span>
+            )}
+            {totalCount > 0 && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+                  doneCount === totalCount
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-white/10 text-gray-300"
+                }`}
+                title="Checklist"
+              >
+                <CheckCircle2 size={10} />
+                {doneCount}/{totalCount}
+              </span>
+            )}
           </div>
         )}
 

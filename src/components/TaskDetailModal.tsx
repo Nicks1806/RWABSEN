@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Employee, Task, TaskAttachment } from "@/lib/types";
+import { Employee, Task, TaskAttachment, TaskLabel, ChecklistItem } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -18,6 +18,10 @@ import {
   Paperclip,
   Upload,
   ExternalLink,
+  ListChecks,
+  Plus,
+  Tag,
+  Square,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 
@@ -40,7 +44,13 @@ interface Props {
 export default function TaskDetailModal({ task, employees, onClose }: Props) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
-  const [color, setColor] = useState<Task["color"]>(task.color);
+  // Labels: union of `labels[]` + legacy `color`
+  const initialLabels: TaskLabel[] = (() => {
+    const set = new Set<TaskLabel>(task.labels || []);
+    if (task.color) set.add(task.color);
+    return Array.from(set);
+  })();
+  const [labels, setLabels] = useState<TaskLabel[]>(initialLabels);
   const initialAssignees: string[] = (() => {
     const arr = task.assignees || [];
     if (task.assignee_id && !arr.includes(task.assignee_id)) return [task.assignee_id, ...arr];
@@ -49,6 +59,8 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
   const [assigneeIds, setAssigneeIds] = useState<string[]>(initialAssignees);
   const [dueDate, setDueDate] = useState(task.due_date || "");
   const [attachments, setAttachments] = useState<TaskAttachment[]>(task.attachments || []);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(task.checklist || []);
+  const [newChecklistText, setNewChecklistText] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -59,12 +71,15 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
   useEffect(() => {
     setTitle(task.title);
     setDescription(task.description || "");
-    setColor(task.color);
+    const set = new Set<TaskLabel>(task.labels || []);
+    if (task.color) set.add(task.color);
+    setLabels(Array.from(set));
     const arr = task.assignees || [];
     if (task.assignee_id && !arr.includes(task.assignee_id)) setAssigneeIds([task.assignee_id, ...arr]);
     else setAssigneeIds(arr);
     setDueDate(task.due_date || "");
     setAttachments(task.attachments || []);
+    setChecklist(task.checklist || []);
   }, [task]);
 
   async function saveAll() {
@@ -78,11 +93,13 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
       .update({
         title: title.trim(),
         description: description.trim() || null,
-        color,
+        color: labels[0] || "gray", // primary color = first label
+        labels,
         assignees: assigneeIds,
         assignee_id: assigneeIds[0] || null,
         due_date: dueDate || null,
         attachments,
+        checklist,
         updated_at: new Date().toISOString(),
       })
       .eq("id", task.id);
@@ -92,6 +109,36 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
       return;
     }
     onClose();
+  }
+
+  function toggleLabel(l: TaskLabel) {
+    setLabels((prev) => (prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]));
+  }
+
+  // Checklist (auto-save individual mutations)
+  async function persistChecklist(updated: ChecklistItem[]) {
+    setChecklist(updated);
+    await supabase
+      .from("tasks")
+      .update({ checklist: updated, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
+  }
+  async function addChecklistItem() {
+    if (!newChecklistText.trim()) return;
+    const item: ChecklistItem = {
+      id: crypto.randomUUID(),
+      text: newChecklistText.trim(),
+      done: false,
+    };
+    setNewChecklistText("");
+    await persistChecklist([...checklist, item]);
+  }
+  async function toggleChecklistItem(id: string) {
+    const updated = checklist.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
+    await persistChecklist(updated);
+  }
+  async function removeChecklistItem(id: string) {
+    await persistChecklist(checklist.filter((i) => i.id !== id));
   }
 
   // ===== Attachments =====
@@ -190,7 +237,8 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
     );
   }
 
-  const currentColor = CARD_COLORS.find((c) => c.key === color) || CARD_COLORS[0];
+  const primaryLabel = labels[0] || task.color;
+  const currentColor = CARD_COLORS.find((c) => c.key === primaryLabel) || CARD_COLORS[0];
 
   return (
     <div
@@ -273,24 +321,28 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
             )}
           </div>
 
-          {/* Color */}
+          {/* Labels (multi-select) */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-              Warna Label
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
+              <Tag size={12} /> Label ({labels.length})
             </label>
             <div className="flex gap-2 flex-wrap">
-              {CARD_COLORS.map((c) => (
-                <button
-                  key={c.key}
-                  onClick={() => setColor(c.key)}
-                  className={`w-10 h-10 rounded-xl ${c.bg} border-l-4 ${c.border} transition-all ${
-                    color === c.key
-                      ? "ring-2 ring-offset-2 ring-gray-800 scale-105 shadow-md"
-                      : "hover:scale-105"
-                  }`}
-                  title={c.label}
-                />
-              ))}
+              {CARD_COLORS.map((c) => {
+                const active = labels.includes(c.key);
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => toggleLabel(c.key)}
+                    className={`h-9 px-3 rounded-lg ${c.dot} text-white text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+                      active ? "ring-2 ring-offset-2 ring-gray-800 scale-105" : "opacity-60 hover:opacity-100"
+                    }`}
+                    title={c.label}
+                  >
+                    {active && <Check size={12} />}
+                    {c.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -325,6 +377,104 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
                     </button>
                   );
                 })}
+            </div>
+          </div>
+
+          {/* Checklist (Trello-style) */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
+              <ListChecks size={12} /> Checklist
+              {checklist.length > 0 && (
+                <span className="ml-auto text-[10px] text-gray-500 normal-case tracking-normal">
+                  {checklist.filter((i) => i.done).length} / {checklist.length} selesai
+                </span>
+              )}
+            </label>
+
+            {/* Progress bar */}
+            {checklist.length > 0 && (() => {
+              const done = checklist.filter((i) => i.done).length;
+              const pct = Math.round((done / checklist.length) * 100);
+              return (
+                <div className="mb-2">
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        pct === 100 ? "bg-emerald-500" : "bg-primary"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1 font-medium">{pct}%</p>
+                </div>
+              );
+            })()}
+
+            {/* Items */}
+            {checklist.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {checklist.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg group transition ${
+                      item.done ? "bg-emerald-50/60" : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                  >
+                    <button
+                      onClick={() => toggleChecklistItem(item.id)}
+                      className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${
+                        item.done
+                          ? "bg-emerald-500 border-emerald-500"
+                          : "bg-white border-gray-300 hover:border-primary"
+                      }`}
+                    >
+                      {item.done ? (
+                        <Check size={12} className="text-white" strokeWidth={3} />
+                      ) : (
+                        <Square size={12} className="text-transparent" />
+                      )}
+                    </button>
+                    <span
+                      className={`flex-1 text-sm ${
+                        item.done ? "text-gray-400 line-through" : "text-gray-700"
+                      }`}
+                    >
+                      {item.text}
+                    </span>
+                    <button
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition w-6 h-6 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
+                      title="Hapus"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new item */}
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={newChecklistText}
+                onChange={(e) => setNewChecklistText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addChecklistItem();
+                  }
+                }}
+                placeholder="Tambah item checklist & Enter..."
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+              />
+              <button
+                onClick={addChecklistItem}
+                disabled={!newChecklistText.trim()}
+                className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 inline-flex items-center gap-1"
+              >
+                <Plus size={14} />
+              </button>
             </div>
           </div>
 

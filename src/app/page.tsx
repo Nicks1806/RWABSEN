@@ -1,0 +1,99 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { storeEmployee } from "@/lib/auth";
+
+export default function LoginPage() {
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const { data, error: dbError } = await supabase
+      .from("employees")
+      .select("*")
+      .ilike("name", name.trim())
+      .eq("pin", pin)
+      .eq("is_active", true)
+      .single();
+
+    if (dbError || !data) {
+      setError("Nama atau PIN salah");
+      setLoading(false);
+      return;
+    }
+
+    storeEmployee(data);
+
+    if (data.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/absen");
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold">
+            <span className="text-primary">Red</span>
+            <span className="text-gray-800">Wine</span>
+          </h1>
+          <p className="text-gray-500 text-sm tracking-[0.3em] mt-1">
+            SHOES &amp; BAGS
+          </p>
+          <div className="mt-4 h-0.5 w-16 bg-primary mx-auto" />
+          <p className="text-gray-600 mt-4 text-sm">Sistem Absensi Karyawan</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Masukkan nama"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">PIN</label>
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="Masukkan PIN"
+              inputMode="numeric"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-600 text-sm text-center">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50"
+          >
+            {loading ? "Memproses..." : "Masuk"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

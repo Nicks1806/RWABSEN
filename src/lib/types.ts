@@ -80,6 +80,21 @@ export interface QRToken {
   expires_at: string;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: "brief" | "today" | "done" | "history";
+  color: "red" | "yellow" | "green" | "blue" | "purple" | "gray";
+  assignee_id?: string | null;
+  created_by?: string | null;
+  due_date?: string | null;
+  position?: number;
+  created_at: string;
+  updated_at: string;
+  assignee?: Employee;
+}
+
 export interface Reimbursement {
   id: string;
   employee_id: string;

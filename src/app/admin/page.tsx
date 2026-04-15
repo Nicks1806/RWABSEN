@@ -45,6 +45,7 @@ import {
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
+import { POSITIONS, getPositionColor } from "@/lib/positions";
 import dynamic from "next/dynamic";
 
 // Lazy-load recharts only when analytics tab is viewed (~400KB bundle)
@@ -1689,8 +1690,8 @@ export default function AdminPage() {
                                   <Shield size={11} /> Admin
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-medium">
-                                  <UserCircle2 size={11} /> Employee
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${getPositionColor(emp.position)}`}>
+                                  <UserCircle2 size={11} /> {emp.position || "Karyawan"}
                                 </span>
                               )}
                             </td>
@@ -2045,15 +2046,24 @@ export default function AdminPage() {
             <form onSubmit={saveProfile} className="space-y-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
-                  <Briefcase size={12} /> Posisi / Jabatan
+                  <Briefcase size={12} /> Posisi / Role
                 </label>
                 <input
                   type="text"
                   value={profileForm.position}
                   onChange={(e) => setProfileForm({ ...profileForm, position: e.target.value })}
-                  placeholder="misal: Sales, Kasir, Stock"
+                  placeholder="Pilih atau ketik custom..."
+                  list="position-suggestions"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
                 />
+                <datalist id="position-suggestions">
+                  {POSITIONS.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Pilih dari daftar atau ketik role baru
+                </p>
               </div>
               <div>
                 <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">

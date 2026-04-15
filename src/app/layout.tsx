@@ -10,6 +10,15 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "RedWine Attendance",
   description: "Sistem Absensi Karyawan RedWine Shoes & Bags",
+  icons: {
+    icon: [
+      { url: "/icon.png?v=2", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/icon.png?v=2",
+  },
 };
 
 export default function RootLayout({

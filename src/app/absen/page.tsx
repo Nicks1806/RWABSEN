@@ -25,6 +25,7 @@ import {
 import jsQR from "jsqr";
 import { hasFace, prewarmFaceModels } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
+import NotifToggle from "@/components/NotifToggle";
 
 export default function AbsenPage() {
   const router = useRouter();
@@ -551,6 +552,29 @@ export default function AbsenPage() {
       return;
     }
     setLeaveMsg({ type: "success", text: "Pengajuan berhasil dikirim! Menunggu approval admin." });
+
+    // Notify admin(s) via push
+    try {
+      const { data: admins } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("role", "admin");
+      if (admins && admins.length > 0) {
+        const typeName = leaveForm.leave_type === "cuti" ? "Cuti" : leaveForm.leave_type === "sakit" ? "Sakit" : "Izin";
+        await fetch("/api/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employee_ids: admins.map((a) => a.id),
+            title: `Pengajuan ${typeName} Baru`,
+            body: `${employee.name} mengajukan ${typeName.toLowerCase()} — butuh approval.`,
+            url: "/admin",
+          }),
+        });
+      }
+    } catch (err) {
+      console.error("Notify admin failed:", err);
+    }
     setTimeout(() => {
       setShowLeaveForm(false);
       setLeaveForm({
@@ -676,6 +700,9 @@ export default function AbsenPage() {
             {format(currentTime, "EEEE, dd MMMM yyyy", { locale: idLocale })}
           </p>
         </div>
+
+        {/* Push Notif Toggle */}
+        {employee && <NotifToggle employeeId={employee.id} />}
 
         {/* Today Status */}
         {todayRecord && (

@@ -354,6 +354,8 @@ export default function AdminPage() {
   // Approve / Reject leave
   async function reviewLeave(id: string, status: "approved" | "rejected", notes: string = "") {
     const reviewerId = admin?.id || null;
+    // Get leave for notification
+    const leave = leaves.find((l) => l.id === id);
     await supabase
       .from("leaves")
       .update({
@@ -363,6 +365,25 @@ export default function AdminPage() {
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
+
+    // Send push notification to employee
+    if (leave?.employee_id) {
+      const typeName = leave.leave_type === "cuti" ? "Cuti" : leave.leave_type === "sakit" ? "Sakit" : "Izin";
+      const statusText = status === "approved" ? "Disetujui ✅" : "Ditolak ❌";
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: leave.employee_id,
+          title: `Pengajuan ${typeName} ${statusText}`,
+          body: status === "approved"
+            ? `Pengajuan ${typeName} Anda telah disetujui oleh admin.`
+            : `Pengajuan ${typeName} Anda ditolak.${notes ? ` Catatan: ${notes}` : ""}`,
+          url: "/absen",
+        }),
+      }).catch((err) => console.error("Push notification failed:", err));
+    }
+
     fetchData();
   }
 

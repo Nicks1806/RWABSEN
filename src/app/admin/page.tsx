@@ -971,42 +971,60 @@ export default function AdminPage() {
             {activeTab === "karyawan" && (
               <div className="space-y-6">
                 {/* Add Employee */}
-                <form onSubmit={addEmployee} className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-                  <h3 className="font-semibold text-gray-700">Tambah Karyawan</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <form onSubmit={addEmployee} className="bg-white rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                      <UserPlus size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Tambah Karyawan Baru</h3>
+                      <p className="text-xs text-gray-400">Karyawan bisa langsung login dengan nama & PIN</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
                     <input
                       type="text"
-                      placeholder="Nama"
+                      placeholder="Nama karyawan"
                       value={newEmployee.name}
                       onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                      className="px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="px-4 py-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                       required
                     />
                     <input
                       type="text"
-                      placeholder="PIN"
+                      placeholder="PIN (min 4 digit)"
                       value={newEmployee.pin}
                       onChange={(e) => setNewEmployee({ ...newEmployee, pin: e.target.value })}
-                      className="px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="px-4 py-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono"
                       required
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition text-sm"
+                      className="px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition text-sm inline-flex items-center gap-1.5 justify-center"
                     >
-                      Tambah
+                      <Plus size={16} /> Tambah
                     </button>
                   </div>
-                  {empMsg && <p className="text-sm text-green-600">{empMsg}</p>}
+                  {empMsg && (
+                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                      <CheckCircle size={14} /> {empMsg}
+                    </p>
+                  )}
                 </form>
 
                 {/* Employee List */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-700">Daftar Karyawan</h3>
+                  <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex items-center gap-2">
+                      <Users size={18} className="text-gray-500" />
+                      <h3 className="font-semibold text-gray-800">Daftar Karyawan</h3>
+                      <span className="text-xs text-gray-400 bg-white px-2 py-0.5 rounded-full border">
+                        {employees.length}
+                      </span>
+                    </div>
                     <button
                       onClick={() => setShowPins(!showPins)}
-                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary"
+                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary bg-white px-3 py-1.5 rounded-lg border hover:border-primary transition"
                     >
                       {showPins ? <EyeOff size={14} /> : <Eye size={14} />}
                       {showPins ? "Sembunyikan PIN" : "Tampilkan PIN"}
@@ -1033,19 +1051,29 @@ export default function AdminPage() {
                           const isDefault = !hasSchedule && !hasCustomHours;
                           const eff = getEffectiveWorkHours(emp, settings);
                           return (
-                          <tr key={emp.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 font-medium">{emp.name}</td>
-                            <td className="px-4 py-3 text-center font-mono">
+                          <tr key={emp.id} className="hover:bg-gray-50 transition">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar name={emp.name} size="sm" />
+                                <div>
+                                  <p className="font-semibold text-gray-800">{emp.name}</p>
+                                  <p className="text-[10px] text-gray-400 capitalize">{emp.role}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center font-mono text-sm tracking-wider text-gray-600">
                               {showPins ? emp.pin : "••••••"}
                             </td>
                             <td className="px-4 py-3 text-center text-xs">
                               {emp.role === "admin" ? (
                                 <span className="text-gray-300">-</span>
                               ) : eff.off ? (
-                                <span className="text-gray-400 italic">Libur Hari Ini</span>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium text-[11px]">
+                                  Libur Hari Ini
+                                </span>
                               ) : (
                                 <>
-                                  <span className={isDefault ? "text-gray-600" : "text-primary font-medium"}>
+                                  <span className={isDefault ? "text-gray-700" : "text-primary font-semibold"}>
                                     {eff.start.slice(0, 5)} - {eff.end.slice(0, 5)}
                                   </span>
                                   {isDefault && (
@@ -1054,30 +1082,41 @@ export default function AdminPage() {
                                 </>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center capitalize">{emp.role}</td>
+                            <td className="px-4 py-3 text-center">
+                              {emp.role === "admin" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+                                  <Shield size={11} /> Admin
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-medium">
+                                  <UserCircle2 size={11} /> Employee
+                                </span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-center">
                               <span
-                                className={`text-xs px-2 py-1 rounded-full ${
+                                className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium ${
                                   emp.is_active
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
+                                    ? "bg-green-50 text-green-700"
+                                    : "bg-red-50 text-red-600"
                                 }`}
                               >
+                                <span className={`w-1.5 h-1.5 rounded-full ${emp.is_active ? "bg-green-500" : "bg-red-500"}`}></span>
                                 {emp.is_active ? "Aktif" : "Nonaktif"}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-1">
                                 <button
                                   onClick={() => {
                                     setResetPinEmp(emp);
                                     setNewPin("");
                                     setResetPinMsg("");
                                   }}
-                                  className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition flex items-center gap-1"
+                                  className="group w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition flex items-center justify-center"
                                   title="Reset PIN"
                                 >
-                                  <Key size={12} /> PIN
+                                  <Key size={14} />
                                 </button>
                                 {emp.role !== "admin" && (
                                   <>
@@ -1090,20 +1129,21 @@ export default function AdminPage() {
                                         setUseCustomSchedule(!!emp.schedule);
                                         setEditHoursMsg("");
                                       }}
-                                      className="text-xs px-2 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition flex items-center gap-1"
-                                      title="Jam Kerja"
+                                      className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition flex items-center justify-center"
+                                      title="Atur Jam Kerja"
                                     >
-                                      <Clock3 size={12} /> Jam
+                                      <Clock3 size={14} />
                                     </button>
                                     <button
                                       onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                                      className={`text-xs px-2 py-1 rounded-lg transition ${
+                                      className={`w-8 h-8 rounded-lg transition flex items-center justify-center ${
                                         emp.is_active
-                                          ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                          : "bg-green-50 text-green-600 hover:bg-green-100"
+                                          ? "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
+                                          : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
                                       }`}
+                                      title={emp.is_active ? "Nonaktifkan" : "Aktifkan"}
                                     >
-                                      {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                      {emp.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
                                     </button>
                                   </>
                                 )}

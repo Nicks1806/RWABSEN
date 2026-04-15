@@ -54,6 +54,9 @@ export default function AbsenPage() {
   const [gpsDenied, setGpsDenied] = useState(false);
   const [gpsRetrying, setGpsRetrying] = useState(false);
 
+  // Override off-day (for overtime / emergency)
+  const [overrideOffDay, setOverrideOffDay] = useState(false);
+
   const fetchTodayRecord = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
     const { data } = await supabase
@@ -524,7 +527,7 @@ export default function AbsenPage() {
         )}
 
         {/* Attendance Action */}
-        {isOffDay && !todayRecord ? (
+        {isOffDay && !todayRecord && !overrideOffDay ? (
           <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-purple-100">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Clock size={32} className="text-purple-600" />
@@ -533,7 +536,13 @@ export default function AbsenPage() {
             <p className="text-sm text-gray-500 mt-1">
               Hari ini bukan jadwal kerja Anda
             </p>
-            <p className="text-xs text-gray-400 mt-2">Selamat beristirahat!</p>
+            <p className="text-xs text-gray-400 mt-2 mb-4">Selamat beristirahat!</p>
+            <button
+              onClick={() => setOverrideOffDay(true)}
+              className="text-xs px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+            >
+              Tetap Absen (Lembur)
+            </button>
           </div>
         ) : alreadyDone ? (
           <div className="bg-white rounded-2xl p-8 shadow-sm text-center">

@@ -1,36 +1,80 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee } from "@/lib/auth";
 import QRCode from "qrcode";
-import { ArrowLeft, RefreshCw, QrCode } from "lucide-react";
+import { ArrowLeft, RefreshCw, QrCode, Printer, Download } from "lucide-react";
 import Logo from "@/components/Logo";
+
+// QR valid for 10 years - effectively permanent for physical print
+const QR_VALIDITY_YEARS = 10;
 
 export default function QRCodePage() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [token, setToken] = useState("");
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [loading, setLoading] = useState(true);
+  const [regenLoading, setRegenLoading] = useState(false);
 
-  async function generateToken() {
-    // Generate a random token
-    const tokenValue = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const expiresAt = new Date(Date.now() + 30_000).toISOString();
+  // Fetch existing permanent token or create one
+  const fetchOrCreateToken = useCallback(async () => {
+    setLoading(true);
 
-    // Delete expired tokens
-    await supabase.from("qr_tokens").delete().lt("expires_at", new Date().toISOString());
+    // Look for any valid token (expires more than 1 year away = permanent)
+    const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: existing } = await supabase
+      .from("qr_tokens")
+      .select("*")
+      .gte("expires_at", oneYearFromNow)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Insert new token
+    if (existing) {
+      setToken(existing.token);
+      setLoading(false);
+      return;
+    }
+
+    // No permanent token exists, create one
+    await createPermanentToken();
+    setLoading(false);
+  }, []);
+
+  async function createPermanentToken() {
+    const tokenValue =
+      Math.random().toString(36).substring(2) +
+      Math.random().toString(36).substring(2) +
+      Date.now().toString(36);
+    const expiresAt = new Date(
+      Date.now() + QR_VALIDITY_YEARS * 365 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
     const { error } = await supabase
       .from("qr_tokens")
       .insert({ token: tokenValue, expires_at: expiresAt });
 
     if (!error) {
       setToken(tokenValue);
-      setTimeLeft(30);
     }
+  }
+
+  async function regenerateToken() {
+    const confirmed = window.confirm(
+      "Ganti QR Code?\n\nQR lama akan tidak valid lagi. Semua QR yang sudah di-print harus diganti dengan yang baru."
+    );
+    if (!confirmed) return;
+    setRegenLoading(true);
+
+    // Delete all existing permanent tokens
+    const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("qr_tokens").delete().gte("expires_at", oneYearFromNow);
+
+    // Create new one
+    await createPermanentToken();
+    setRegenLoading(false);
   }
 
   useEffect(() => {
@@ -39,41 +83,37 @@ export default function QRCodePage() {
       router.push("/");
       return;
     }
-    generateToken();
-  }, [router]);
+    fetchOrCreateToken();
+  }, [router, fetchOrCreateToken]);
 
-  // Auto-regenerate every 30s
-  useEffect(() => {
-    if (!token) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          generateToken();
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [token]);
-
-  // Render QR to canvas - encodes as URL so scanning via phone camera
-  // redirects to the app automatically, in-app scanner parses same URL format
+  // Render QR to canvas
   useEffect(() => {
     if (!token || !canvasRef.current) return;
     const origin =
       typeof window !== "undefined" ? window.location.origin : "https://absensiredwine.vercel.app";
     const qrData = `${origin}/absen?qr=${token}`;
     QRCode.toCanvas(canvasRef.current, qrData, {
-      width: 320,
+      width: 400,
       margin: 2,
       color: { dark: "#8B1A1A", light: "#ffffff" },
     });
   }, [token]);
 
+  function downloadQR() {
+    if (!canvasRef.current) return;
+    const link = document.createElement("a");
+    link.download = `RedWine-QR-Absen.png`;
+    link.href = canvasRef.current.toDataURL("image/png");
+    link.click();
+  }
+
+  function printQR() {
+    window.print();
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-white">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-white print:bg-white">
+      <header className="bg-white shadow-sm sticky top-0 z-10 print:hidden">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -90,49 +130,85 @@ export default function QRCodePage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-3xl shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800">Scan untuk Clock In</h2>
-          <p className="text-sm text-gray-500 mt-2">
-            Tampilkan layar ini. Karyawan scan pakai HP masing-masing saat absen.
+      <main className="max-w-2xl mx-auto px-4 py-8 print:py-0 print:px-0">
+        <div className="bg-white rounded-3xl shadow-lg p-8 text-center print:shadow-none print:rounded-none print:p-4">
+          {/* Print-only header */}
+          <div className="hidden print:block mb-4">
+            <Logo size="xl" />
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800 print:text-3xl">Scan untuk Absen</h2>
+          <p className="text-sm text-gray-500 mt-2 print:text-base">
+            Scan QR pakai kamera HP untuk clock in / clock out
           </p>
 
-          <div className="mt-6 flex justify-center">
-            <div className="p-6 bg-white rounded-3xl border-4 border-primary/20">
-              <canvas ref={canvasRef} />
+          {loading ? (
+            <div className="mt-6 flex justify-center">
+              <div className="w-[400px] h-[400px] bg-gray-100 rounded-3xl animate-pulse" />
             </div>
+          ) : (
+            <div className="mt-6 flex justify-center">
+              <div className="p-6 bg-white rounded-3xl border-4 border-primary/20 print:border-primary print:border-8">
+                <canvas ref={canvasRef} />
+              </div>
+            </div>
+          )}
+
+          {/* Permanent label */}
+          <div className="mt-4 inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-1.5 rounded-full text-xs font-medium print:hidden">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            QR Permanen - Siap Dicetak
           </div>
 
-          {/* Countdown */}
-          <div className="mt-6">
-            <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-full text-sm font-medium">
-              <RefreshCw
-                size={14}
-                className={timeLeft <= 5 ? "animate-spin" : ""}
-              />
-              QR berubah dalam <span className="font-bold">{timeLeft}s</span>
-            </div>
+          {/* Print-only footer */}
+          <div className="hidden print:block mt-6">
+            <p className="text-sm font-semibold text-gray-700">RedWine Shoes & Bags</p>
+            <p className="text-xs text-gray-500">Scan untuk absen masuk/pulang</p>
           </div>
 
-          <button
-            onClick={generateToken}
-            className="mt-4 text-sm text-primary hover:underline"
-          >
-            Refresh sekarang
-          </button>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 justify-center mt-6 print:hidden">
+            <button
+              onClick={downloadQR}
+              className="inline-flex items-center gap-1.5 text-sm px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition"
+            >
+              <Download size={16} /> Download PNG
+            </button>
+            <button
+              onClick={printQR}
+              className="inline-flex items-center gap-1.5 text-sm px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition"
+            >
+              <Printer size={16} /> Print QR
+            </button>
+            <button
+              onClick={regenerateToken}
+              disabled={regenLoading}
+              className="inline-flex items-center gap-1.5 text-sm px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium hover:bg-amber-100 transition disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={regenLoading ? "animate-spin" : ""} />
+              {regenLoading ? "Memproses..." : "Ganti QR"}
+            </button>
+          </div>
 
-          <div className="mt-8 text-left bg-gray-50 rounded-2xl p-4">
+          <div className="mt-8 text-left bg-gray-50 rounded-2xl p-4 print:hidden">
             <p className="text-xs font-semibold text-gray-600 mb-2">📋 Cara Pakai:</p>
             <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-              <li>Buka halaman ini di TV/laptop di kantor</li>
-              <li>Karyawan buka app RedWine di HP</li>
-              <li>Saat Clock In, klik tombol &ldquo;Scan QR&rdquo;</li>
-              <li>Arahkan kamera HP ke QR di layar ini</li>
-              <li>Clock In otomatis berhasil tanpa perlu foto manual</li>
+              <li>
+                <strong>Download</strong> atau <strong>Print</strong> QR ini
+              </li>
+              <li>Tempel di dinding kantor / tempat strategis</li>
+              <li>Karyawan scan pakai kamera HP (bukan Google app)</li>
+              <li>Link auto-terbuka → app RedWine → QR ter-verify</li>
+              <li>Lanjut foto selfie → Clock In berhasil</li>
             </ol>
-            <p className="text-[10px] text-gray-400 mt-3">
-              💡 Tips: QR berubah setiap 30 detik untuk mencegah screenshot dipakai ulang.
-              Aktifkan di <strong>Pengaturan → QR Required</strong> agar clock-in wajib scan.
+            <p className="text-[10px] text-amber-700 mt-3 bg-amber-50 p-2 rounded">
+              ⚠️ <strong>QR permanen</strong> - bisa di-print dan pakai jangka panjang. Klik
+              &ldquo;Ganti QR&rdquo; hanya kalau QR lama bocor/dipakai orang lain (QR lama akan
+              langsung tidak valid).
+            </p>
+            <p className="text-[10px] text-gray-400 mt-2">
+              💡 Kombinasikan dengan radius GPS agar absen wajib dari lokasi fisik kantor.
+              Aktifkan di <strong>Pengaturan → Wajib Scan QR</strong>.
             </p>
           </div>
         </div>

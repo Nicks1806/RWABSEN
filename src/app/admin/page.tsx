@@ -750,6 +750,15 @@ export default function AdminPage() {
             {/* ANALYTICS TAB */}
             {activeTab === "analytics" && (
               <div className="space-y-6">
+                {records.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
+                    <TrendingUp size={32} className="text-amber-500 mx-auto mb-2" />
+                    <p className="font-semibold text-amber-800">Belum ada data absensi</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Grafik akan muncul setelah karyawan mulai absen. Pilih bulan lain di Dashboard jika perlu.
+                    </p>
+                  </div>
+                )}
                 {/* Ranking Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {(() => {

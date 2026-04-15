@@ -61,12 +61,14 @@ export default function AbsenPage() {
       .select("*")
       .eq("employee_id", empId)
       .eq("date", today)
-      .single();
+      .maybeSingle();
     setTodayRecord(data || null);
     if (data && data.clock_in && !data.clock_out) {
       setMode("clock_out");
     } else if (data && data.clock_out) {
       setMode("clock_in"); // already done for today
+    } else {
+      setMode("clock_in");
     }
   }, []);
 
@@ -79,6 +81,24 @@ export default function AbsenPage() {
     setEmployee(emp);
     fetchTodayRecord(emp.id);
 
+    // Fetch FRESH employee data (in case admin updated work_hours/schedule)
+    supabase
+      .from("employees")
+      .select("*")
+      .eq("id", emp.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setEmployee(data);
+          storeEmployee(data); // update localStorage
+          if (!data.is_active) {
+            alert("Akun Anda sudah dinonaktifkan. Hubungi admin.");
+            clearEmployee();
+            router.push("/");
+          }
+        }
+      });
+
     supabase.from("settings").select("*").single().then(({ data }) => {
       if (data) setSettings(data);
     });
@@ -87,7 +107,14 @@ export default function AbsenPage() {
     requestPermissionsIfNeeded();
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      // Clean up camera on unmount
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, fetchTodayRecord]);
 
@@ -214,11 +241,11 @@ export default function AbsenPage() {
     }
   }
 
-  // Submit without GPS (marked as outside radius)
+  // Submit without GPS (marked as outside radius, coords saved as null)
   function submitWithoutGps() {
     if (!settings) return;
-    // Use office coordinates with forced "outside radius" flag
-    setLocation({ lat: 0, lng: 0 });
+    // Use sentinel NaN to mark as "no GPS" - will be converted to null before save
+    setLocation({ lat: NaN, lng: NaN });
     setDistance(99999);
     setIsOutsideRadius(true);
     setGpsDenied(false);
@@ -297,14 +324,18 @@ export default function AbsenPage() {
         if (new Date() > workStart) status = "late";
       }
 
+      // Convert NaN coords to null (when submitted without GPS)
+      const safeLat = Number.isFinite(location.lat) ? location.lat : null;
+      const safeLng = Number.isFinite(location.lng) ? location.lng : null;
+
       if (mode === "clock_in") {
         const { error: insertError } = await supabase.from("attendance").insert({
           employee_id: employee.id,
           date: today,
           clock_in: now,
           clock_in_photo: photoUrl,
-          clock_in_lat: location.lat,
-          clock_in_lng: location.lng,
+          clock_in_lat: safeLat,
+          clock_in_lng: safeLng,
           status,
           notes: notes.trim() || null,
         });
@@ -326,8 +357,8 @@ export default function AbsenPage() {
           .update({
             clock_out: now,
             clock_out_photo: photoUrl,
-            clock_out_lat: location.lat,
-            clock_out_lng: location.lng,
+            clock_out_lat: safeLat,
+            clock_out_lng: safeLng,
             status,
             notes: todayRecord?.notes
               ? `${todayRecord.notes} | ${notes.trim()}`
@@ -410,6 +441,10 @@ export default function AbsenPage() {
 
   const alreadyDone = todayRecord?.clock_in && todayRecord?.clock_out;
 
+  // Check if today is an off day for this employee
+  const todayWorkHours = employee && settings ? getEffectiveWorkHours(employee, settings) : null;
+  const isOffDay = todayWorkHours?.off === true;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -489,7 +524,18 @@ export default function AbsenPage() {
         )}
 
         {/* Attendance Action */}
-        {alreadyDone ? (
+        {isOffDay && !todayRecord ? (
+          <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-purple-100">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Clock size={32} className="text-purple-600" />
+            </div>
+            <p className="font-bold text-purple-700 text-lg">Hari Libur</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Hari ini bukan jadwal kerja Anda
+            </p>
+            <p className="text-xs text-gray-400 mt-2">Selamat beristirahat!</p>
+          </div>
+        ) : alreadyDone ? (
           <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
             <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
             <p className="font-semibold text-gray-700">

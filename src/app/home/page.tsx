@@ -8,16 +8,20 @@ import { Employee, Attendance, Settings } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
-  Clock,
   LogIn,
   LogOut,
   CalendarDays,
   History,
   FileText,
   User as UserIcon,
-  QrCode,
+  Calendar,
+  Receipt,
+  Wallet,
+  FolderClosed,
+  LayoutGrid,
+  MapPin,
+  ChevronRight,
   Megaphone,
-  Bell,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
@@ -31,10 +35,14 @@ export default function HomePage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [pendingLeaves, setPendingLeaves] = useState(0);
+  const [monthlyHours, setMonthlyHours] = useState(0);
+  const [monthlyDays, setMonthlyDays] = useState(0);
 
   const fetchData = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const [attRes, setRes, pendingRes] = await Promise.all([
+    const startOfMonth = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+
+    const [attRes, setRes, pendingRes, monthRes] = await Promise.all([
       supabase
         .from("attendance")
         .select("*")
@@ -47,11 +55,29 @@ export default function HomePage() {
         .select("id", { count: "exact", head: true })
         .eq("employee_id", empId)
         .eq("status", "pending"),
+      supabase
+        .from("attendance")
+        .select("clock_in, clock_out")
+        .eq("employee_id", empId)
+        .gte("date", startOfMonth)
+        .lte("date", today),
     ]);
 
     setTodayRecord(attRes.data || null);
     if (setRes.data) setSettings(setRes.data);
     setPendingLeaves(pendingRes.count || 0);
+
+    // Calc monthly hours
+    let totalMins = 0;
+    let presentDays = 0;
+    for (const r of monthRes.data || []) {
+      if (r.clock_in) presentDays++;
+      if (r.clock_in && r.clock_out) {
+        totalMins += (new Date(r.clock_out).getTime() - new Date(r.clock_in).getTime()) / 60000;
+      }
+    }
+    setMonthlyHours(Math.round((totalMins / 60) * 10) / 10);
+    setMonthlyDays(presentDays);
   }, []);
 
   useEffect(() => {
@@ -64,11 +90,10 @@ export default function HomePage() {
       router.push("/admin");
       return;
     }
-
     setEmployee(emp);
     fetchData(emp.id);
 
-    // Refresh employee profile from DB (in case admin updated)
+    // Refresh profile
     supabase
       .from("employees")
       .select("*")
@@ -79,7 +104,7 @@ export default function HomePage() {
           setEmployee(data);
           storeEmployee(data);
           if (!data.is_active) {
-            alert("Akun Anda sudah dinonaktifkan. Hubungi admin.");
+            alert("Akun Anda dinonaktifkan.");
             clearEmployee();
             router.push("/");
           }
@@ -90,7 +115,7 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [router, fetchData]);
 
-  // Realtime attendance updates
+  // Realtime
   useEffect(() => {
     if (!employee) return;
     const channel = supabase
@@ -124,107 +149,99 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+      {/* Status bar-like header */}
+      <div className="bg-gray-50">
+        <div className="max-w-lg mx-auto px-4 pt-4 pb-2 flex items-center justify-between">
           <Logo size="sm" />
-          <button
-            onClick={() => router.push("/inbox")}
-            className="relative p-2 text-gray-500"
-          >
-            <Bell size={22} />
-          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-lg mx-auto px-4 pt-2 pb-4 space-y-4">
+      <main className="max-w-lg mx-auto px-4 pb-4 space-y-4">
         {/* Greeting */}
-        <div className="flex items-center gap-3 py-2">
-          <Avatar name={employee.name} size="lg" />
-          <div>
-            <p className="text-sm text-gray-500">{greeting},</p>
-            <p className="text-lg font-bold text-gray-800">{employee.name}</p>
+        <div className="flex items-center gap-3 pt-2">
+          <Avatar name={employee.name} size="md" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-gray-500">{greeting},</p>
+            <p className="font-bold text-gray-800 truncate">{employee.name}</p>
           </div>
         </div>
 
-        {/* Shift Card */}
-        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl overflow-hidden shadow-lg text-white">
-          <div className="px-5 py-3 bg-black/10 backdrop-blur-sm text-center text-sm font-medium">
-            Jadwal shift {format(currentTime, "EEEE, dd MMM yyyy", { locale: idLocale })}
+        {/* Shift Card - Talenta-style */}
+        <div className="bg-primary rounded-3xl overflow-hidden shadow-lg">
+          <div className="px-5 py-3 text-center text-white text-sm font-medium">
+            Jadwal shift untuk {format(currentTime, "EEE, dd MMM yyyy", { locale: idLocale })}
           </div>
-          <div className="bg-white/95 text-gray-800 p-5">
+          <div className="bg-red-50 pt-5 pb-5 px-5 rounded-t-3xl">
             {isOffDay ? (
               <div className="text-center py-3">
-                <CalendarDays size={32} className="text-purple-500 mx-auto mb-2" />
+                <CalendarDays size={36} className="text-purple-500 mx-auto mb-2" />
                 <p className="font-bold text-lg text-purple-700">Hari Libur</p>
-                <p className="text-xs text-gray-500 mt-1">Hari ini bukan jadwal kerja Anda</p>
+                <p className="text-xs text-gray-500 mt-1">Bukan jadwal kerja Anda hari ini</p>
               </div>
             ) : (
               <>
-                <div className="text-center mb-4">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-                    RedWine Office
-                  </p>
-                  <p className="text-2xl font-bold text-primary mt-1">
-                    {effHours?.start.slice(0, 5)} - {effHours?.end.slice(0, 5)}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+                <p className="text-center text-gray-700 font-semibold">HO</p>
+                <p className="text-center text-2xl font-bold text-gray-900 mt-1">
+                  {effHours?.start.slice(0, 5)} - {effHours?.end.slice(0, 5)}
+                </p>
+
+                {/* Clock in / out buttons - side by side with divider */}
+                <div className="mt-5 bg-white rounded-full border border-gray-200 flex items-center overflow-hidden shadow-sm">
                   <button
                     onClick={() => router.push("/absen")}
                     disabled={alreadyClockedIn}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
-                      alreadyClockedIn
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white"
+                    className={`flex-1 py-3 flex items-center justify-center gap-2 font-semibold text-sm transition ${
+                      alreadyClockedIn ? "text-gray-300 cursor-not-allowed" : "text-primary hover:bg-red-50"
                     }`}
                   >
                     <LogIn size={18} /> Clock in
                   </button>
+                  <div className="w-px h-6 bg-gray-200" />
                   <button
                     onClick={() => router.push("/absen")}
                     disabled={!alreadyClockedIn || alreadyClockedOut}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
+                    className={`flex-1 py-3 flex items-center justify-center gap-2 font-semibold text-sm transition ${
                       !alreadyClockedIn || alreadyClockedOut
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-white border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "text-red-600 hover:bg-red-50"
                     }`}
                   >
                     <LogOut size={18} /> Clock out
                   </button>
                 </div>
-                {(alreadyClockedIn || alreadyClockedOut) && (
-                  <div className="mt-3 text-center text-xs text-gray-500">
-                    {alreadyClockedIn && (
-                      <p>
-                        Clock in:{" "}
-                        <span className="font-semibold text-green-600">
-                          {format(new Date(todayRecord!.clock_in!), "HH:mm")}
-                        </span>
-                      </p>
-                    )}
-                    {alreadyClockedOut && (
-                      <p>
-                        Clock out:{" "}
-                        <span className="font-semibold text-orange-600">
+
+                {/* Status text */}
+                {alreadyClockedIn && (
+                  <p className="text-center text-sm text-gray-600 mt-3">
+                    {alreadyClockedOut ? (
+                      <>
+                        Anda telah clock out pada pukul{" "}
+                        <span className="font-semibold text-gray-900">
                           {format(new Date(todayRecord!.clock_out!), "HH:mm")}
                         </span>
-                      </p>
+                      </>
+                    ) : (
+                      <>
+                        Anda telah berhasil clock in pada pukul{" "}
+                        <span className="font-semibold text-gray-900">
+                          {format(new Date(todayRecord!.clock_in!), "HH:mm")}
+                        </span>
+                      </>
                     )}
-                  </div>
+                  </p>
                 )}
               </>
             )}
           </div>
         </div>
 
-        {/* Quick Menu Grid */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="grid grid-cols-4 gap-3">
+        {/* Menu Grid 4x2 - 8 icons */}
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <div className="grid grid-cols-4 gap-4">
             <MenuIcon
-              label="Absen"
-              icon={<Clock size={22} className="text-white" />}
-              bg="bg-blue-500"
+              label="Presensi"
+              icon={<MapPin size={22} className="text-white" />}
+              bg="bg-rose-500"
               onClick={() => router.push("/absen")}
             />
             <MenuIcon
@@ -241,51 +258,100 @@ export default function HomePage() {
               onClick={() => router.push("/riwayat")}
             />
             <MenuIcon
+              label="Kalender"
+              icon={<Calendar size={22} className="text-white" />}
+              bg="bg-pink-500"
+              onClick={() => router.push("/riwayat")}
+            />
+            <MenuIcon
+              label="Reimburse"
+              icon={<Receipt size={22} className="text-white" />}
+              bg="bg-teal-500"
+              soon
+            />
+            <MenuIcon
+              label="Slip Gaji"
+              icon={<Wallet size={22} className="text-white" />}
+              bg="bg-indigo-600"
+              soon
+            />
+            <MenuIcon
+              label="File"
+              icon={<FolderClosed size={22} className="text-white" />}
+              bg="bg-amber-500"
+              soon
+            />
+            <MenuIcon
               label="Profil"
               icon={<UserIcon size={22} className="text-white" />}
-              bg="bg-pink-500"
+              bg="bg-gray-500"
               onClick={() => router.push("/profile")}
             />
           </div>
         </div>
 
-        {/* Info Card - Jam Kerja */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <QrCode size={16} className="text-primary" />
-            <h3 className="font-semibold text-sm text-gray-700">Info Kantor</h3>
+        {/* Monthly Stats Banner */}
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-5 text-white relative overflow-hidden">
+          <div className="absolute -right-4 -bottom-4 opacity-10">
+            <LayoutGrid size={100} />
           </div>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Lokasi</span>
-              <span className="font-medium text-gray-700">Thamrin City</span>
+          <p className="text-xs text-white/80 mb-1">Rangkuman Bulan Ini</p>
+          <div className="flex items-end gap-6 mt-2">
+            <div>
+              <p className="text-3xl font-bold">{monthlyDays}</p>
+              <p className="text-xs text-white/80">Hari hadir</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Radius absen</span>
-              <span className="font-medium text-gray-700">
-                {settings?.radius_meters || 100}m
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Jam kerja Anda</span>
-              <span className="font-medium text-primary">
-                {effHours?.off
-                  ? "Libur hari ini"
-                  : `${effHours?.start.slice(0, 5)} - ${effHours?.end.slice(0, 5)}`}
-              </span>
+            <div className="h-10 w-px bg-white/30" />
+            <div>
+              <p className="text-3xl font-bold">{monthlyHours}</p>
+              <p className="text-xs text-white/80">Jam kerja</p>
             </div>
           </div>
         </div>
 
-        {/* Announcement placeholder */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <Megaphone size={16} className="text-primary" />
-            <h3 className="font-semibold text-sm text-gray-700">Pengumuman</h3>
+        {/* Pengumuman */}
+        <div>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+              <Megaphone size={16} className="text-primary" /> Pengumuman
+            </h3>
+            <button className="text-xs text-primary font-medium">Lihat semua</button>
           </div>
-          <div className="text-center py-4 text-xs text-gray-400">
-            Belum ada pengumuman
+          <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
+            <Megaphone size={28} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">Belum ada pengumuman</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Pengumuman dari admin akan muncul di sini
+            </p>
           </div>
+        </div>
+
+        {/* Quick Actions Bottom */}
+        <div className="bg-white rounded-2xl shadow-sm divide-y">
+          <button
+            onClick={() => router.push("/pengajuan")}
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
+                <FileText size={16} className="text-purple-600" />
+              </div>
+              <span className="text-sm font-medium">Ajukan Cuti / Izin</span>
+            </div>
+            <ChevronRight size={16} className="text-gray-400" />
+          </button>
+          <button
+            onClick={() => router.push("/riwayat")}
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center">
+                <History size={16} className="text-orange-600" />
+              </div>
+              <span className="text-sm font-medium">Riwayat Absensi</span>
+            </div>
+            <ChevronRight size={16} className="text-gray-400" />
+          </button>
         </div>
       </main>
 
@@ -300,26 +366,40 @@ function MenuIcon({
   bg,
   onClick,
   badge,
+  soon,
 }: {
   label: string;
   icon: React.ReactNode;
   bg: string;
-  onClick: () => void;
+  onClick?: () => void;
   badge?: number;
+  soon?: boolean;
 }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1.5 group">
+    <button
+      onClick={soon ? () => alert("Fitur ini segera hadir!") : onClick}
+      className="flex flex-col items-center gap-1.5 group"
+    >
       <div
-        className={`${bg} w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition relative`}
+        className={`${bg} w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition relative ${
+          soon ? "opacity-60" : ""
+        }`}
       >
         {icon}
         {badge && badge > 0 ? (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-white text-red-600 text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center border border-red-200">
             {badge > 9 ? "9+" : badge}
           </span>
         ) : null}
+        {soon && (
+          <span className="absolute -bottom-1 -right-1 bg-amber-400 text-white text-[8px] font-bold px-1 rounded-full">
+            SOON
+          </span>
+        )}
       </div>
-      <span className="text-[11px] text-gray-600 text-center font-medium">{label}</span>
+      <span className="text-[11px] text-gray-700 text-center font-medium leading-tight">
+        {label}
+      </span>
     </button>
   );
 }

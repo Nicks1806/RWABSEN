@@ -292,7 +292,7 @@ export default function AdminPage() {
         updated_at: new Date().toISOString(),
       })
       .eq("id", settings.id);
-    setSettingsMsg(error ? "Gagal menyimpan" : "Tersimpan!");
+    setSettingsMsg(error ? `Gagal menyimpan: ${error.message}` : "Tersimpan!");
     if (!error) fetchData();
     setTimeout(() => setSettingsMsg(""), 3000);
   }

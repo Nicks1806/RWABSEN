@@ -14,9 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing title or body" }, { status: 400 });
     }
 
-    const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-    let vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@redwine.com";
+    // Strip trailing '=' padding (URL-safe Base64 required by web-push)
+    const vapidPublic = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").trim().replace(/=+$/, "");
+    const vapidPrivate = (process.env.VAPID_PRIVATE_KEY || "").trim().replace(/=+$/, "");
+    let vapidSubject = (process.env.VAPID_SUBJECT || "mailto:admin@redwine.com").trim();
 
     if (!vapidPublic || !vapidPrivate) {
       return NextResponse.json({ error: "VAPID keys not configured" }, { status: 500 });

@@ -17,7 +17,29 @@ export interface Employee {
   work_start?: string | null;
   work_end?: string | null;
   schedule?: Schedule | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  position?: string | null;
+  photo_url?: string | null;
+  join_date?: string | null;
   created_at: string;
+}
+
+export interface Leave {
+  id: string;
+  employee_id: string;
+  leave_type: "cuti" | "sakit" | "izin";
+  start_date: string;
+  end_date: string;
+  reason: string;
+  attachment_url?: string | null;
+  status: "pending" | "approved" | "rejected";
+  admin_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  employees?: Employee;
 }
 
 export interface Attendance {

@@ -1,6 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  themeColor: "#8B1A1A",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -10,6 +17,12 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "RedWine Attendance",
   description: "Sistem Absensi Karyawan RedWine Shoes & Bags",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RedWine",
+  },
   icons: {
     icon: [
       { url: "/icon.png?v=2", type: "image/png" },

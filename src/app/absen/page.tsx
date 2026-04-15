@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Key,
   X,
+  FileText,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -56,6 +57,17 @@ export default function AbsenPage() {
 
   // Override off-day (for overtime / emergency)
   const [overrideOffDay, setOverrideOffDay] = useState(false);
+
+  // Leave request
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    leave_type: "izin" as "cuti" | "sakit" | "izin",
+    start_date: format(new Date(), "yyyy-MM-dd"),
+    end_date: format(new Date(), "yyyy-MM-dd"),
+    reason: "",
+  });
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveMsg, setLeaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchTodayRecord = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -389,6 +401,45 @@ export default function AbsenPage() {
     router.push("/");
   }
 
+  async function submitLeave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!employee) return;
+    setLeaveMsg(null);
+    if (!leaveForm.reason.trim()) {
+      setLeaveMsg({ type: "error", text: "Alasan wajib diisi" });
+      return;
+    }
+    if (leaveForm.end_date < leaveForm.start_date) {
+      setLeaveMsg({ type: "error", text: "Tanggal selesai tidak boleh sebelum tanggal mulai" });
+      return;
+    }
+    setLeaveLoading(true);
+    const { error } = await supabase.from("leaves").insert({
+      employee_id: employee.id,
+      leave_type: leaveForm.leave_type,
+      start_date: leaveForm.start_date,
+      end_date: leaveForm.end_date,
+      reason: leaveForm.reason.trim(),
+      status: "pending",
+    });
+    setLeaveLoading(false);
+    if (error) {
+      setLeaveMsg({ type: "error", text: "Gagal mengirim: " + error.message });
+      return;
+    }
+    setLeaveMsg({ type: "success", text: "Pengajuan berhasil dikirim! Menunggu approval admin." });
+    setTimeout(() => {
+      setShowLeaveForm(false);
+      setLeaveForm({
+        leave_type: "izin",
+        start_date: format(new Date(), "yyyy-MM-dd"),
+        end_date: format(new Date(), "yyyy-MM-dd"),
+        reason: "",
+      });
+      setLeaveMsg(null);
+    }, 1500);
+  }
+
   async function handleChangePin(e: React.FormEvent) {
     e.preventDefault();
     if (!employee) return;
@@ -461,6 +512,13 @@ export default function AbsenPage() {
               title="Riwayat"
             >
               <History size={20} />
+            </button>
+            <button
+              onClick={() => setShowLeaveForm(true)}
+              className="p-2 text-gray-500 hover:text-primary transition"
+              title="Ajukan Izin"
+            >
+              <FileText size={20} />
             </button>
             <button
               onClick={() => setShowChangePin(true)}
@@ -731,6 +789,111 @@ export default function AbsenPage() {
           </div>
         )}
       </main>
+
+      {/* Leave Request Modal */}
+      {showLeaveForm && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
+          onClick={() => !leaveLoading && setShowLeaveForm(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-sm my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <FileText size={18} /> Ajukan Izin / Cuti / Sakit
+              </h3>
+              <button
+                onClick={() => !leaveLoading && setShowLeaveForm(false)}
+                className="text-gray-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={submitLeave} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Jenis</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["izin", "cuti", "sakit"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setLeaveForm({ ...leaveForm, leave_type: t })}
+                      className={`py-2 rounded-lg text-sm font-medium capitalize transition ${
+                        leaveForm.leave_type === t
+                          ? "bg-primary text-white"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Dari Tanggal</label>
+                  <input
+                    type="date"
+                    value={leaveForm.start_date}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Sampai Tanggal</label>
+                  <input
+                    type="date"
+                    value={leaveForm.end_date}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Alasan</label>
+                <textarea
+                  value={leaveForm.reason}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                  rows={3}
+                  placeholder="Jelaskan alasan..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              {leaveMsg && (
+                <p
+                  className={`text-sm ${
+                    leaveMsg.type === "success" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {leaveMsg.text}
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveForm(false)}
+                  disabled={leaveLoading}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={leaveLoading}
+                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {leaveLoading ? "Mengirim..." : "Ajukan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Change PIN Modal */}
       {showChangePin && (

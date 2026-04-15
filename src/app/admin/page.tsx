@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
-import { Employee, Attendance, Settings, DayKey, Schedule } from "@/lib/types";
+import { Employee, Attendance, Settings, DayKey, Schedule, Leave } from "@/lib/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -32,11 +32,19 @@ import {
   UserCircle2,
   Plus,
   UserPlus,
+  FileText as FileTextIcon,
+  Search,
+  FileCheck,
+  FileX,
+  Phone,
+  Mail,
+  Briefcase,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
+import { exportMonthlyPDF } from "@/lib/pdfExport";
 import {
   BarChart,
   Bar,
@@ -50,7 +58,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-type Tab = "dashboard" | "analytics" | "karyawan" | "settings";
+type Tab = "dashboard" | "analytics" | "leaves" | "karyawan" | "settings";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -87,6 +95,24 @@ export default function AdminPage() {
   // Delete employee confirmation
   const [deleteEmpTarget, setDeleteEmpTarget] = useState<Employee | null>(null);
 
+  // Leaves (Izin/Cuti/Sakit)
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [leaveFilter, setLeaveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+
+  // Global search
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  // Edit profile modal
+  const [editProfileEmp, setEditProfileEmp] = useState<Employee | null>(null);
+  const [profileForm, setProfileForm] = useState({
+    phone: "",
+    email: "",
+    position: "",
+    address: "",
+    join_date: "",
+  });
+  const [profileMsg, setProfileMsg] = useState("");
+
   // Edit work hours modal
   const [editHoursEmp, setEditHoursEmp] = useState<Employee | null>(null);
   const [editStart, setEditStart] = useState("");
@@ -105,7 +131,7 @@ export default function AdminPage() {
     const start = format(startOfMonth(date), "yyyy-MM-dd");
     const end = format(endOfMonth(date), "yyyy-MM-dd");
 
-    const [empRes, attRes, setRes] = await Promise.all([
+    const [empRes, attRes, setRes, leavesRes] = await Promise.all([
       supabase.from("employees").select("*").eq("is_active", true).order("name"),
       supabase
         .from("attendance")
@@ -114,10 +140,15 @@ export default function AdminPage() {
         .lte("date", end)
         .order("date", { ascending: false }),
       supabase.from("settings").select("*").single(),
+      supabase
+        .from("leaves")
+        .select("*, employees(name)")
+        .order("created_at", { ascending: false }),
     ]);
 
     setEmployees(empRes.data || []);
     setRecords(attRes.data || []);
+    setLeaves(leavesRes.data || []);
     if (setRes.data) {
       setSettings(setRes.data);
       setSettingsForm({
@@ -160,6 +191,13 @@ export default function AdminPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "employees" },
+        () => {
+          fetchData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leaves" },
         () => {
           fetchData();
         }
@@ -276,6 +314,50 @@ export default function AdminPage() {
     fetchData();
   }
 
+  // Save employee profile
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editProfileEmp) return;
+    const { error } = await supabase
+      .from("employees")
+      .update({
+        phone: profileForm.phone || null,
+        email: profileForm.email || null,
+        position: profileForm.position || null,
+        address: profileForm.address || null,
+        join_date: profileForm.join_date || null,
+      })
+      .eq("id", editProfileEmp.id);
+    setProfileMsg(error ? "Gagal menyimpan" : "Profile tersimpan!");
+    if (!error) {
+      setTimeout(() => {
+        setEditProfileEmp(null);
+        setProfileMsg("");
+        fetchData();
+      }, 1000);
+    }
+  }
+
+  // Approve / Reject leave
+  async function reviewLeave(id: string, status: "approved" | "rejected", notes: string = "") {
+    const reviewerId = admin?.id || null;
+    await supabase
+      .from("leaves")
+      .update({
+        status,
+        admin_notes: notes || null,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    fetchData();
+  }
+
+  // PDF export
+  function exportPDF() {
+    exportMonthlyPDF({ month, employees, records, settings });
+  }
+
   // Delete attendance record
   async function deleteAttendance(id: string) {
     if (!confirm("Yakin ingin menghapus data absensi ini?")) return;
@@ -348,12 +430,17 @@ export default function AdminPage() {
 
   // Filtered records for Detail Absensi
   const filteredRecords = useMemo(() => {
+    const search = globalSearch.trim().toLowerCase();
     return records.filter((r) => {
       if (filterEmployee !== "all" && r.employee_id !== filterEmployee) return false;
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
+      if (search) {
+        const name = (r as Attendance & { employees?: { name: string } }).employees?.name || "";
+        if (!name.toLowerCase().includes(search)) return false;
+      }
       return true;
     });
-  }, [records, filterEmployee, filterStatus]);
+  }, [records, filterEmployee, filterStatus, globalSearch]);
 
   // Late clock-in notification: employees who should have clocked in but haven't (per-employee hours)
   const lateClockIn = useMemo(() => {
@@ -415,19 +502,30 @@ export default function AdminPage() {
           {[
             { key: "dashboard" as Tab, label: "Dashboard", icon: <Clock size={16} /> },
             { key: "analytics" as Tab, label: "Analitik", icon: <TrendingUp size={16} /> },
+            {
+              key: "leaves" as Tab,
+              label: "Izin",
+              icon: <FileTextIcon size={16} />,
+              badge: leaves.filter((l) => l.status === "pending").length,
+            },
             { key: "karyawan" as Tab, label: "Karyawan", icon: <Users size={16} /> },
             { key: "settings" as Tab, label: "Pengaturan", icon: <SettingsIcon size={16} /> },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition ${
+              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition relative ${
                 activeTab === tab.key
                   ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.icon} {tab.label}
+              {"badge" in tab && tab.badge && tab.badge > 0 ? (
+                <span className="ml-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center">
+                  {tab.badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -500,20 +598,38 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Month Selector + Export */}
-                <div className="flex items-center justify-between">
+                {/* Month Selector + Export + Search */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:justify-between">
                   <input
                     type="month"
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
                     className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <button
-                    onClick={exportExcel}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
-                  >
-                    <Download size={16} /> Export Excel
-                  </button>
+                  <div className="flex-1 relative md:max-w-xs">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari nama karyawan..."
+                      value={globalSearch}
+                      onChange={(e) => setGlobalSearch(e.target.value)}
+                      className="w-full text-sm border border-gray-300 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={exportPDF}
+                      className="flex-1 md:flex-none flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition"
+                    >
+                      <FileTextIcon size={16} /> PDF
+                    </button>
+                    <button
+                      onClick={exportExcel}
+                      className="flex-1 md:flex-none flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+                    >
+                      <Download size={16} /> Excel
+                    </button>
+                  </div>
                 </div>
 
                 {/* Monthly Hours Summary */}
@@ -977,6 +1093,133 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* LEAVES (IZIN/CUTI/SAKIT) TAB */}
+            {activeTab === "leaves" && (
+              <div className="space-y-4">
+                {/* Filter */}
+                <div className="flex gap-2 overflow-x-auto">
+                  {[
+                    { key: "all" as const, label: "Semua", count: leaves.length },
+                    { key: "pending" as const, label: "Menunggu", count: leaves.filter((l) => l.status === "pending").length },
+                    { key: "approved" as const, label: "Disetujui", count: leaves.filter((l) => l.status === "approved").length },
+                    { key: "rejected" as const, label: "Ditolak", count: leaves.filter((l) => l.status === "rejected").length },
+                  ].map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setLeaveFilter(f.key)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                        leaveFilter === f.key
+                          ? "bg-primary text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50 border"
+                      }`}
+                    >
+                      {f.label} ({f.count})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Leave List */}
+                <div className="space-y-3">
+                  {leaves
+                    .filter((l) => leaveFilter === "all" || l.status === leaveFilter)
+                    .filter((l) => {
+                      const search = globalSearch.trim().toLowerCase();
+                      if (!search) return true;
+                      return (
+                        (l as Leave & { employees?: { name: string } }).employees?.name
+                          ?.toLowerCase()
+                          .includes(search) || false
+                      );
+                    })
+                    .map((leave) => {
+                      const emp = (leave as Leave & { employees?: { name: string } }).employees;
+                      const typeColor = {
+                        cuti: "bg-blue-50 text-blue-700",
+                        sakit: "bg-orange-50 text-orange-700",
+                        izin: "bg-purple-50 text-purple-700",
+                      }[leave.leave_type];
+                      const statusColor = {
+                        pending: "bg-yellow-50 text-yellow-700",
+                        approved: "bg-green-50 text-green-700",
+                        rejected: "bg-red-50 text-red-700",
+                      }[leave.status];
+                      const statusLabel = {
+                        pending: "Menunggu",
+                        approved: "Disetujui",
+                        rejected: "Ditolak",
+                      }[leave.status];
+
+                      return (
+                        <div key={leave.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <Avatar name={emp?.name || "?"} size="md" />
+                              <div className="min-w-0">
+                                <p className="font-semibold">{emp?.name || "-"}</p>
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${typeColor}`}>
+                                    {leave.leave_type}
+                                  </span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                                    {statusLabel}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1.5">
+                                  {format(new Date(leave.start_date), "dd MMM yyyy", { locale: idLocale })}
+                                  {leave.start_date !== leave.end_date &&
+                                    ` - ${format(new Date(leave.end_date), "dd MMM yyyy", { locale: idLocale })}`}
+                                </p>
+                                <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{leave.reason}</p>
+                                {leave.attachment_url && (
+                                  <a
+                                    href={leave.attachment_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                                  >
+                                    <FileTextIcon size={12} /> Lihat lampiran
+                                  </a>
+                                )}
+                                {leave.admin_notes && (
+                                  <p className="text-xs text-gray-500 mt-2 italic">
+                                    Catatan admin: {leave.admin_notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {leave.status === "pending" && (
+                              <div className="flex flex-col gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => reviewLeave(leave.id, "approved")}
+                                  className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                                >
+                                  <FileCheck size={14} /> Setujui
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const notes = prompt("Alasan penolakan (opsional):") || "";
+                                    reviewLeave(leave.id, "rejected", notes);
+                                  }}
+                                  className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                                >
+                                  <FileX size={14} /> Tolak
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {leaves.filter((l) => leaveFilter === "all" || l.status === leaveFilter).length ===
+                    0 && (
+                    <div className="bg-white rounded-2xl p-8 text-center text-gray-400">
+                      Belum ada pengajuan izin
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* KARYAWAN TAB */}
             {activeTab === "karyawan" && (
               <div className="space-y-6">
@@ -1130,6 +1373,23 @@ export default function AdminPage() {
                                 </button>
                                 {emp.role !== "admin" && (
                                   <>
+                                    <button
+                                      onClick={() => {
+                                        setEditProfileEmp(emp);
+                                        setProfileForm({
+                                          phone: emp.phone || "",
+                                          email: emp.email || "",
+                                          position: emp.position || "",
+                                          address: emp.address || "",
+                                          join_date: emp.join_date || "",
+                                        });
+                                        setProfileMsg("");
+                                      }}
+                                      className="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-600 hover:text-white transition flex items-center justify-center"
+                                      title="Profile"
+                                    >
+                                      <UserCircle2 size={14} />
+                                    </button>
                                     <button
                                       onClick={() => {
                                         setEditHoursEmp(emp);
@@ -1348,6 +1608,108 @@ export default function AdminPage() {
           </>
         )}
       </main>
+
+      {/* Edit Profile Modal */}
+      {editProfileEmp && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setEditProfileEmp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Avatar name={editProfileEmp.name} size="md" />
+                <div>
+                  <h3 className="font-bold text-gray-800">{editProfileEmp.name}</h3>
+                  <p className="text-xs text-gray-500">Profile Karyawan</p>
+                </div>
+              </div>
+              <button onClick={() => setEditProfileEmp(null)} className="text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={saveProfile} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                  <Briefcase size={12} /> Posisi / Jabatan
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.position}
+                  onChange={(e) => setProfileForm({ ...profileForm, position: e.target.value })}
+                  placeholder="misal: Sales, Kasir, Stock"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                  <Phone size={12} /> Nomor HP
+                </label>
+                <input
+                  type="tel"
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                  placeholder="+62..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                  <Mail size={12} /> Email
+                </label>
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                  placeholder="nama@email.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Alamat</label>
+                <textarea
+                  value={profileForm.address}
+                  onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Tanggal Bergabung</label>
+                <input
+                  type="date"
+                  value={profileForm.join_date}
+                  onChange={(e) => setProfileForm({ ...profileForm, join_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              {profileMsg && (
+                <p className={`text-sm ${profileMsg.includes("Gagal") ? "text-red-600" : "text-green-600"}`}>
+                  {profileMsg}
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditProfileEmp(null)}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Reset PIN Modal */}
       {resetPinEmp && (

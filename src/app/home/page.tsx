@@ -14,10 +14,6 @@ import {
   History,
   FileText,
   User as UserIcon,
-  Calendar,
-  Receipt,
-  Wallet,
-  FolderClosed,
   LayoutGrid,
   MapPin,
   ChevronRight,
@@ -248,7 +244,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Menu Grid 4x2 - 8 icons */}
+        {/* Menu Grid - 4 icons (fitur aktif saja) */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <div className="grid grid-cols-4 gap-4">
             <MenuIcon
@@ -269,30 +265,6 @@ export default function HomePage() {
               icon={<History size={22} className="text-white" />}
               bg="bg-orange-500"
               onClick={() => router.push("/riwayat")}
-            />
-            <MenuIcon
-              label="Kalender"
-              icon={<Calendar size={22} className="text-white" />}
-              bg="bg-pink-500"
-              onClick={() => router.push("/riwayat")}
-            />
-            <MenuIcon
-              label="Reimburse"
-              icon={<Receipt size={22} className="text-white" />}
-              bg="bg-teal-500"
-              soon
-            />
-            <MenuIcon
-              label="Slip Gaji"
-              icon={<Wallet size={22} className="text-white" />}
-              bg="bg-indigo-600"
-              soon
-            />
-            <MenuIcon
-              label="File"
-              icon={<FolderClosed size={22} className="text-white" />}
-              bg="bg-amber-500"
-              soon
             />
             <MenuIcon
               label="Profil"
@@ -417,24 +389,17 @@ function MenuIcon({
   bg,
   onClick,
   badge,
-  soon,
 }: {
   label: string;
   icon: React.ReactNode;
   bg: string;
   onClick?: () => void;
   badge?: number;
-  soon?: boolean;
 }) {
   return (
-    <button
-      onClick={soon ? () => alert("Fitur ini segera hadir!") : onClick}
-      className="flex flex-col items-center gap-1.5 group"
-    >
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5 group">
       <div
-        className={`${bg} w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition relative ${
-          soon ? "opacity-60" : ""
-        }`}
+        className={`${bg} w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition relative`}
       >
         {icon}
         {badge && badge > 0 ? (
@@ -442,11 +407,6 @@ function MenuIcon({
             {badge > 9 ? "9+" : badge}
           </span>
         ) : null}
-        {soon && (
-          <span className="absolute -bottom-1 -right-1 bg-amber-400 text-white text-[8px] font-bold px-1 rounded-full">
-            SOON
-          </span>
-        )}
       </div>
       <span className="text-[11px] text-gray-700 text-center font-medium leading-tight">
         {label}

@@ -137,7 +137,7 @@ export default function KaryawanDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header */}
-      <div className="bg-gradient-to-br from-primary to-primary-dark pt-4 pb-16 text-white relative">
+      <div className="bg-gradient-to-br from-primary to-primary-dark pt-4 pb-20 text-white relative">
         <div className="max-w-3xl mx-auto px-4">
           <button
             onClick={() => router.back()}
@@ -176,7 +176,7 @@ export default function KaryawanDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 -mt-10 pb-8">
+      <main className="max-w-3xl mx-auto px-4 -mt-12 pb-8 relative z-10">
         {/* Stats Summary */}
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 grid grid-cols-3 divide-x">
           <div className="text-center">

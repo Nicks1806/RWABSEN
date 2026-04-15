@@ -507,16 +507,25 @@ export default function AdminPage() {
 
     return employees.filter((emp) => {
       if (emp.role !== "employee") return false;
+      // Skip if already clocked in today
       if (clockedInIds.has(emp.id)) return false;
 
-      const { start, end } = getEffectiveWorkHours(emp, settings);
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
+      const eff = getEffectiveWorkHours(emp, settings);
+      // Skip if today is their off day (schedule-based)
+      if (eff.off) return false;
+      // Skip if work hours not properly set
+      if (!eff.start || !eff.end) return false;
+
+      const [sh, sm] = eff.start.split(":").map(Number);
+      const [eh, em] = eff.end.split(":").map(Number);
+      if (isNaN(sh) || isNaN(eh)) return false;
+
       const workStart = new Date();
       workStart.setHours(sh, sm, 0, 0);
       const workEnd = new Date();
       workEnd.setHours(eh, em, 0, 0);
 
+      // Only show during their work hours
       return now >= workStart && now <= workEnd;
     });
   }, [settings, employees, todayRecords]);

@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ArrowLeft, Clock, MapPin, FileText } from "lucide-react";
 import Logo from "@/components/Logo";
+import BottomNav from "@/components/BottomNav";
 
 export default function RiwayatPage() {
   const router = useRouter();
@@ -156,6 +157,7 @@ export default function RiwayatPage() {
           </div>
         )}
       </main>
+      <BottomNav />
     </div>
   );
 }

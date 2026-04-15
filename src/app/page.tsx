@@ -38,7 +38,7 @@ export default function LoginPage() {
     if (data.role === "admin") {
       router.push("/admin");
     } else {
-      router.push("/absen");
+      router.push("/home");
     }
   }
 

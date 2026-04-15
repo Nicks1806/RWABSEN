@@ -26,6 +26,7 @@ import jsQR from "jsqr";
 import { hasFace, prewarmFaceModels } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
 import NotifToggle from "@/components/NotifToggle";
+import BottomNav from "@/components/BottomNav";
 
 export default function AbsenPage() {
   const router = useRouter();
@@ -937,6 +938,7 @@ export default function AbsenPage() {
           </div>
         )}
       </main>
+      <BottomNav />
 
       {/* Leave Request Modal */}
       {showLeaveForm && (

@@ -101,7 +101,7 @@ export default function TasksPage() {
     title: "",
     description: "",
     color: "red" as Task["color"],
-    assignee_id: "",
+    assignee_ids: [] as string[],
     due_date: "",
   });
   const [loading, setLoading] = useState(false);
@@ -178,16 +178,24 @@ export default function TasksPage() {
   }, [user]);
 
   function openCreate(status: ColKey) {
-    setForm({ title: "", description: "", color: "red", assignee_id: user?.id || "", due_date: "" });
+    setForm({
+      title: "",
+      description: "",
+      color: "red",
+      assignee_ids: user ? [user.id] : [],
+      due_date: "",
+    });
     setShowForm({ open: true, status });
   }
 
   function openEdit(task: Task) {
+    const ids: string[] = Array.isArray(task.assignees) ? [...task.assignees] : [];
+    if (task.assignee_id && !ids.includes(task.assignee_id)) ids.unshift(task.assignee_id);
     setForm({
       title: task.title,
       description: task.description || "",
       color: task.color,
-      assignee_id: task.assignee_id || "",
+      assignee_ids: ids,
       due_date: task.due_date || "",
     });
     setShowForm({ open: true, status: task.status, task });
@@ -199,30 +207,35 @@ export default function TasksPage() {
     if (!form.title.trim()) return;
 
     setLoading(true);
+    const primaryAssignee = form.assignee_ids[0] || null;
     if (showForm.task) {
       // Update
-      await supabase
+      const { error } = await supabase
         .from("tasks")
         .update({
           title: form.title.trim(),
           description: form.description.trim() || null,
           color: form.color,
-          assignee_id: form.assignee_id || null,
+          assignees: form.assignee_ids,
+          assignee_id: primaryAssignee,
           due_date: form.due_date || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", showForm.task.id);
+      if (error) alert("Gagal menyimpan: " + error.message);
     } else {
       // Insert
-      await supabase.from("tasks").insert({
+      const { error } = await supabase.from("tasks").insert({
         title: form.title.trim(),
         description: form.description.trim() || null,
         color: form.color,
         status: showForm.status,
-        assignee_id: form.assignee_id || null,
+        assignees: form.assignee_ids,
+        assignee_id: primaryAssignee,
         due_date: form.due_date || null,
         created_by: user.id,
       });
+      if (error) alert("Gagal menyimpan: " + error.message);
     }
     setLoading(false);
     setShowForm({ open: false, status: "brief" });
@@ -635,35 +648,37 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              {/* Assignee - custom picker */}
+              {/* Assignees - multi-select */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-1">
-                  <UserIcon size={12} /> Di-assign ke
+                  <UserIcon size={12} /> Di-assign ke ({form.assignee_ids.length} dipilih)
                 </label>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, assignee_id: "" })}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
-                      !form.assignee_id
-                        ? "bg-white shadow-sm ring-2 ring-primary/30 text-primary font-semibold"
-                        : "text-gray-500 hover:bg-white/60"
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <UserIcon size={14} className="text-gray-400" />
-                    </div>
-                    <span className="text-left flex-1">Tidak di-assign</span>
-                  </button>
+                  {form.assignee_ids.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, assignee_ids: [] })}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-white/60 italic"
+                    >
+                      <X size={14} /> Hapus semua pilihan
+                    </button>
+                  )}
                   {employees
                     .filter((e) => e.is_active)
                     .map((e) => {
-                      const active = form.assignee_id === e.id;
+                      const active = form.assignee_ids.includes(e.id);
                       return (
                         <button
                           key={e.id}
                           type="button"
-                          onClick={() => setForm({ ...form, assignee_id: e.id })}
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              assignee_ids: active
+                                ? form.assignee_ids.filter((x) => x !== e.id)
+                                : [...form.assignee_ids, e.id],
+                            })
+                          }
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
                             active
                               ? "bg-white shadow-sm ring-2 ring-primary/30 font-semibold"

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { storeEmployee } from "@/lib/auth";
 import Logo from "@/components/Logo";
 import InstallAppButton from "@/components/InstallAppButton";
+import { isPushSupported, getPushPermissionStatus, subscribeToPush } from "@/lib/push";
 
 export default function LoginPage() {
   const [name, setName] = useState("");
@@ -34,6 +35,24 @@ export default function LoginPage() {
     }
 
     storeEmployee(data);
+
+    // Auto-subscribe push notifications (user gesture from clicking Masuk)
+    // Only prompt if permission not yet asked (state="default")
+    // If denied previously, skip silently
+    try {
+      if (await isPushSupported()) {
+        const perm = await getPushPermissionStatus();
+        if (perm === "default") {
+          // First time - browser will show permission prompt
+          await subscribeToPush(data.id);
+        } else if (perm === "granted") {
+          // Permission granted but may not have subscription yet (e.g., new device)
+          await subscribeToPush(data.id);
+        }
+      }
+    } catch (err) {
+      console.warn("Push auto-subscribe skipped:", err);
+    }
 
     if (data.role === "admin") {
       router.push("/admin");

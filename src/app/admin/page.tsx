@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
-import { Employee, Attendance, Settings } from "@/lib/types";
+import { Employee, Attendance, Settings, DayKey, Schedule } from "@/lib/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -25,12 +25,27 @@ import {
   Eye,
   EyeOff,
   Clock3,
+  TrendingUp,
+  Award,
+  Timer,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Logo from "@/components/Logo";
-import { getEffectiveWorkHours } from "@/lib/workHours";
+import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
+  CartesianGrid,
+} from "recharts";
 
-type Tab = "dashboard" | "karyawan" | "settings";
+type Tab = "dashboard" | "analytics" | "karyawan" | "settings";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -68,6 +83,8 @@ export default function AdminPage() {
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
   const [editHoursMsg, setEditHoursMsg] = useState("");
+  const [editSchedule, setEditSchedule] = useState<Schedule>({});
+  const [useCustomSchedule, setUseCustomSchedule] = useState(false);
 
   // Filters for Detail Absensi
   const [filterEmployee, setFilterEmployee] = useState("all");
@@ -271,14 +288,30 @@ export default function AdminPage() {
   async function saveWorkHours(e: React.FormEvent) {
     e.preventDefault();
     if (!editHoursEmp) return;
+
+    const payload: Record<string, unknown> = {
+      work_start: editStart || null,
+      work_end: editEnd || null,
+    };
+
+    if (useCustomSchedule) {
+      // Only save non-empty day entries
+      const cleaned: Schedule = {};
+      Object.entries(editSchedule).forEach(([k, v]) => {
+        if (v && (v.off || (v.start && v.end))) {
+          cleaned[k as DayKey] = v;
+        }
+      });
+      payload.schedule = Object.keys(cleaned).length > 0 ? cleaned : null;
+    } else {
+      payload.schedule = null;
+    }
+
     const { error } = await supabase
       .from("employees")
-      .update({
-        work_start: editStart || null,
-        work_end: editEnd || null,
-      })
+      .update(payload)
       .eq("id", editHoursEmp.id);
-    setEditHoursMsg(error ? "Gagal menyimpan" : "Jam kerja tersimpan!");
+    setEditHoursMsg(error ? "Gagal menyimpan" : "Tersimpan!");
     if (!error) {
       setTimeout(() => {
         setEditHoursEmp(null);
@@ -286,6 +319,13 @@ export default function AdminPage() {
         fetchData();
       }, 1200);
     }
+  }
+
+  function updateDaySchedule(day: DayKey, field: "start" | "end" | "off", value: string | boolean) {
+    setEditSchedule((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], [field]: value },
+    }));
   }
 
   // Filtered records for Detail Absensi
@@ -356,6 +396,7 @@ export default function AdminPage() {
         <div className="max-w-5xl mx-auto px-4 flex gap-1">
           {[
             { key: "dashboard" as Tab, label: "Dashboard", icon: <Clock size={16} /> },
+            { key: "analytics" as Tab, label: "Analitik", icon: <TrendingUp size={16} /> },
             { key: "karyawan" as Tab, label: "Karyawan", icon: <Users size={16} /> },
             { key: "settings" as Tab, label: "Pengaturan", icon: <SettingsIcon size={16} /> },
           ].map((tab) => (
@@ -706,6 +747,209 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* ANALYTICS TAB */}
+            {activeTab === "analytics" && (
+              <div className="space-y-6">
+                {/* Ranking Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(() => {
+                    const empStats = employees
+                      .filter((e) => e.role === "employee")
+                      .map((emp) => {
+                        const empRecs = records.filter((r) => r.employee_id === emp.id);
+                        const lateCount = empRecs.filter((r) => r.status === "late").length;
+                        const presentCount = empRecs.filter((r) => r.clock_in).length;
+                        const hours = getMonthlyHours(emp.id);
+                        return { name: emp.name, lateCount, presentCount, hours };
+                      });
+
+                    const mostLate = [...empStats].sort((a, b) => b.lateCount - a.lateCount)[0];
+                    const mostPresent = [...empStats].sort((a, b) => b.presentCount - a.presentCount)[0];
+                    const longestHours = [...empStats].sort((a, b) => b.hours - a.hours)[0];
+
+                    return (
+                      <>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-red-500">
+                          <div className="flex items-center gap-2 text-red-600 mb-2">
+                            <AlertTriangle size={18} />
+                            <p className="text-xs font-semibold">Paling Sering Terlambat</p>
+                          </div>
+                          <p className="text-lg font-bold">{mostLate?.name || "-"}</p>
+                          <p className="text-xs text-gray-500">
+                            {mostLate?.lateCount || 0}x terlambat bulan ini
+                          </p>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-green-500">
+                          <div className="flex items-center gap-2 text-green-600 mb-2">
+                            <Award size={18} />
+                            <p className="text-xs font-semibold">Paling Rajin</p>
+                          </div>
+                          <p className="text-lg font-bold">{mostPresent?.name || "-"}</p>
+                          <p className="text-xs text-gray-500">
+                            {mostPresent?.presentCount || 0} hari hadir
+                          </p>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-blue-500">
+                          <div className="flex items-center gap-2 text-blue-600 mb-2">
+                            <Timer size={18} />
+                            <p className="text-xs font-semibold">Paling Lama di Kantor</p>
+                          </div>
+                          <p className="text-lg font-bold">{longestHours?.name || "-"}</p>
+                          <p className="text-xs text-gray-500">
+                            {longestHours?.hours || 0} jam total
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Chart: Monthly Hours per Employee */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-semibold text-gray-700 mb-4">
+                    Total Jam Kerja per Karyawan
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={employees
+                        .filter((e) => e.role === "employee")
+                        .map((emp) => ({
+                          name: emp.name,
+                          jam: getMonthlyHours(emp.id),
+                        }))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="jam" fill="#8B1A1A" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Chart: Hadir vs Terlambat */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-semibold text-gray-700 mb-4">
+                    Kehadiran vs Keterlambatan
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={employees
+                        .filter((e) => e.role === "employee")
+                        .map((emp) => {
+                          const empRecs = records.filter((r) => r.employee_id === emp.id);
+                          return {
+                            name: emp.name,
+                            Hadir: empRecs.filter((r) => r.clock_in).length,
+                            Terlambat: empRecs.filter((r) => r.status === "late").length,
+                          };
+                        })}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Hadir" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="Terlambat" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Chart: Line chart daily attendance trend */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-semibold text-gray-700 mb-4">
+                    Tren Kehadiran Harian
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart
+                      data={(() => {
+                        // Group by date
+                        const dateMap = new Map<string, { hadir: number; terlambat: number }>();
+                        records.forEach((r) => {
+                          const cur = dateMap.get(r.date) || { hadir: 0, terlambat: 0 };
+                          if (r.clock_in) cur.hadir += 1;
+                          if (r.status === "late") cur.terlambat += 1;
+                          dateMap.set(r.date, cur);
+                        });
+                        return Array.from(dateMap.entries())
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([date, v]) => ({
+                            date: format(new Date(date), "dd/MM"),
+                            Hadir: v.hadir,
+                            Terlambat: v.terlambat,
+                          }));
+                      })()}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="Hadir" stroke="#22c55e" strokeWidth={2} />
+                      <Line type="monotone" dataKey="Terlambat" stroke="#ef4444" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Detailed Ranking Tables */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Late Ranking */}
+                  <div className="bg-white rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <AlertTriangle size={16} className="text-red-500" /> Ranking Keterlambatan
+                    </h3>
+                    <div className="space-y-2">
+                      {employees
+                        .filter((e) => e.role === "employee")
+                        .map((emp) => ({
+                          name: emp.name,
+                          lateCount: records.filter((r) => r.employee_id === emp.id && r.status === "late").length,
+                        }))
+                        .sort((a, b) => b.lateCount - a.lateCount)
+                        .map((s, i) => (
+                          <div key={s.name} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <span className="w-5 text-xs text-gray-400">#{i + 1}</span>
+                              {s.name}
+                            </span>
+                            <span className={`font-semibold ${s.lateCount > 0 ? "text-red-600" : "text-gray-400"}`}>
+                              {s.lateCount}x
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Hours Ranking */}
+                  <div className="bg-white rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Timer size={16} className="text-blue-500" /> Ranking Jam Kerja
+                    </h3>
+                    <div className="space-y-2">
+                      {employees
+                        .filter((e) => e.role === "employee")
+                        .map((emp) => ({ name: emp.name, hours: getMonthlyHours(emp.id) }))
+                        .sort((a, b) => b.hours - a.hours)
+                        .map((s, i) => (
+                          <div key={s.name} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <span className="w-5 text-xs text-gray-400">#{i + 1}</span>
+                              {s.name}
+                            </span>
+                            <span className="font-semibold text-primary">{s.hours} jam</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Data bulan {format(new Date(month + "-01"), "MMMM yyyy", { locale: idLocale })}
+                </p>
+              </div>
+            )}
+
             {/* KARYAWAN TAB */}
             {activeTab === "karyawan" && (
               <div className="space-y-6">
@@ -813,6 +1057,8 @@ export default function AdminPage() {
                                         setEditHoursEmp(emp);
                                         setEditStart(emp.work_start || "");
                                         setEditEnd(emp.work_end || "");
+                                        setEditSchedule(emp.schedule || {});
+                                        setUseCustomSchedule(!!emp.schedule);
                                         setEditHoursMsg("");
                                       }}
                                       className="text-xs px-2 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition flex items-center gap-1"
@@ -1057,52 +1303,109 @@ export default function AdminPage() {
       {/* Edit Work Hours Modal */}
       {editHoursEmp && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
           onClick={() => setEditHoursEmp(null)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-sm"
+            className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <Clock3 size={18} /> Jam Kerja
+                <Clock3 size={18} /> Jam Kerja - {editHoursEmp.name}
               </h3>
               <button onClick={() => setEditHoursEmp(null)} className="text-gray-400">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={saveWorkHours} className="space-y-3">
-              <div>
-                <label className="text-xs text-gray-500">Karyawan</label>
-                <p className="font-semibold">{editHoursEmp.name}</p>
-              </div>
-              <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
-                Kosongkan kedua input untuk pakai jam kerja default:{" "}
-                <strong>
-                  {settings?.work_start} - {settings?.work_end}
-                </strong>
-              </p>
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={saveWorkHours} className="space-y-4">
+              {/* Toggle custom schedule */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Jam Masuk</label>
-                  <input
-                    type="time"
-                    value={editStart}
-                    onChange={(e) => setEditStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <p className="text-sm font-medium">Jadwal Per Hari</p>
+                  <p className="text-xs text-gray-500">
+                    Atur jam masuk berbeda setiap hari & hari libur
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Jam Pulang</label>
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
-                    type="time"
-                    value={editEnd}
-                    onChange={(e) => setEditEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    type="checkbox"
+                    checked={useCustomSchedule}
+                    onChange={(e) => setUseCustomSchedule(e.target.checked)}
+                    className="sr-only peer"
                   />
-                </div>
+                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
               </div>
+
+              {!useCustomSchedule ? (
+                <>
+                  <p className="text-xs text-gray-500 bg-amber-50 rounded-lg p-2">
+                    Jam kerja tunggal berlaku semua hari. Default:{" "}
+                    <strong>
+                      {settings?.work_start} - {settings?.work_end}
+                    </strong>
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Jam Masuk</label>
+                      <input
+                        type="time"
+                        value={editStart}
+                        onChange={(e) => setEditStart(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Jam Pulang</label>
+                      <input
+                        type="time"
+                        value={editEnd}
+                        onChange={(e) => setEditEnd(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">
+                    Centang libur untuk hari tidak masuk. Kosong = pakai default.
+                  </p>
+                  {DAY_ORDER.map((day) => {
+                    const ds = editSchedule[day] || {};
+                    return (
+                      <div key={day} className="grid grid-cols-[70px_1fr_1fr_auto] gap-2 items-center text-sm">
+                        <span className="font-medium">{DAY_LABELS[day]}</span>
+                        <input
+                          type="time"
+                          value={ds.start || ""}
+                          disabled={ds.off}
+                          onChange={(e) => updateDaySchedule(day, "start", e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
+                        />
+                        <input
+                          type="time"
+                          value={ds.end || ""}
+                          disabled={ds.off}
+                          onChange={(e) => updateDaySchedule(day, "end", e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
+                        />
+                        <label className="flex items-center gap-1 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!ds.off}
+                            onChange={(e) => updateDaySchedule(day, "off", e.target.checked)}
+                            className="accent-red-500"
+                          />
+                          Libur
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {editHoursMsg && (
                 <p
                   className={`text-sm ${
@@ -1118,11 +1421,13 @@ export default function AdminPage() {
                   onClick={() => {
                     setEditStart("");
                     setEditEnd("");
+                    setEditSchedule({});
+                    setUseCustomSchedule(false);
                   }}
                   className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
                   title="Pakai default"
                 >
-                  Pakai Default
+                  Reset Default
                 </button>
                 <button
                   type="submit"

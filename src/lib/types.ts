@@ -1,3 +1,13 @@
+export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface DaySchedule {
+  start?: string;
+  end?: string;
+  off?: boolean;
+}
+
+export type Schedule = Partial<Record<DayKey, DaySchedule>>;
+
 export interface Employee {
   id: string;
   name: string;
@@ -6,6 +16,7 @@ export interface Employee {
   is_active: boolean;
   work_start?: string | null;
   work_end?: string | null;
+  schedule?: Schedule | null;
   created_at: string;
 }
 

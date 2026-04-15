@@ -94,6 +94,14 @@ export interface TaskComment {
   at: string; // ISO timestamp
 }
 
+export interface TaskAttachment {
+  id: string;
+  type: "image" | "link";
+  url: string;
+  name?: string;
+  added_at: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -107,6 +115,7 @@ export interface Task {
   position?: number;
   checklist?: ChecklistItem[];
   comments?: TaskComment[];
+  attachments?: TaskAttachment[];
   created_at: string;
   updated_at: string;
   assignee?: Employee;

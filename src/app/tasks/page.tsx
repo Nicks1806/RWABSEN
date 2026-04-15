@@ -13,9 +13,6 @@ import {
   X,
   Calendar as CalendarIcon,
   User as UserIcon,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
   Filter,
   Inbox,
   Zap,
@@ -23,7 +20,23 @@ import {
   Archive,
   Clock as ClockIcon,
   AlertCircle,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Paperclip,
 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  closestCenter,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
@@ -40,42 +53,10 @@ const COLUMNS: {
   icon: typeof Inbox;
   iconColor: string;
 }[] = [
-  {
-    key: "brief",
-    label: "Brief",
-    desc: "Belum dikerjakan",
-    bg: "bg-rose-50/60",
-    headerBg: "bg-rose-500",
-    icon: Inbox,
-    iconColor: "text-rose-500",
-  },
-  {
-    key: "today",
-    label: "Today",
-    desc: "Hari ini",
-    bg: "bg-amber-50/60",
-    headerBg: "bg-amber-500",
-    icon: Zap,
-    iconColor: "text-amber-500",
-  },
-  {
-    key: "done",
-    label: "Done",
-    desc: "Selesai",
-    bg: "bg-emerald-50/60",
-    headerBg: "bg-emerald-500",
-    icon: CheckCircle2,
-    iconColor: "text-emerald-500",
-  },
-  {
-    key: "history",
-    label: "History",
-    desc: "Arsip",
-    bg: "bg-slate-100/60",
-    headerBg: "bg-slate-500",
-    icon: Archive,
-    iconColor: "text-slate-500",
-  },
+  { key: "brief", label: "Brief", desc: "Belum dikerjakan", bg: "bg-rose-50/60", headerBg: "bg-rose-500", icon: Inbox, iconColor: "text-rose-500" },
+  { key: "today", label: "Today", desc: "Hari ini", bg: "bg-amber-50/60", headerBg: "bg-amber-500", icon: Zap, iconColor: "text-amber-500" },
+  { key: "done", label: "Done", desc: "Selesai", bg: "bg-emerald-50/60", headerBg: "bg-emerald-500", icon: CheckCircle2, iconColor: "text-emerald-500" },
+  { key: "history", label: "History", desc: "Arsip", bg: "bg-slate-100/60", headerBg: "bg-slate-500", icon: Archive, iconColor: "text-slate-500" },
 ];
 
 const CARD_COLORS: { key: Task["color"]; bg: string; border: string }[] = [
@@ -86,6 +67,165 @@ const CARD_COLORS: { key: Task["color"]; bg: string; border: string }[] = [
   { key: "purple", bg: "bg-purple-50", border: "border-l-purple-500" },
   { key: "gray", bg: "bg-gray-50", border: "border-l-gray-400" },
 ];
+
+// ============= Sub-components for dnd-kit =============
+
+function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: { task },
+  });
+
+  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
+  const overdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
+  const todayDue = task.due_date && isToday(new Date(task.due_date));
+  const attachCount = task.attachments?.length || 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ opacity: isDragging ? 0 : 1 }}
+      className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} transition-shadow hover:shadow-md overflow-hidden touch-none`}
+    >
+      {/* Drag handle area (top + middle) */}
+      <div
+        {...attributes}
+        {...listeners}
+        onClick={onClick}
+        className="cursor-grab active:cursor-grabbing select-none"
+      >
+        <div className="px-3.5 pt-3 pb-2">
+          <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
+          {task.description && (
+            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+          )}
+        </div>
+
+        {/* Attachments preview */}
+        {attachCount > 0 && (
+          <div className="px-3.5 pb-2 flex gap-1.5 flex-wrap">
+            {task.attachments?.slice(0, 3).map((a) =>
+              a.type === "image" ? (
+                <div
+                  key={a.id}
+                  className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 border border-gray-200"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a.url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <span
+                  key={a.id}
+                  className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium max-w-[140px] truncate"
+                >
+                  <LinkIcon size={10} />
+                  {a.name || a.url.replace(/^https?:\/\//, "").slice(0, 18)}
+                </span>
+              )
+            )}
+            {attachCount > 3 && (
+              <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-medium">
+                +{attachCount - 3}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Meta row */}
+        {task.due_date && (
+          <div className="px-3.5 pb-2">
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+                overdue
+                  ? "bg-red-100 text-red-700"
+                  : todayDue
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              <CalendarIcon size={10} />
+              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
+              {overdue && " • Lewat"}
+              {todayDue && " • Hari ini"}
+            </span>
+          </div>
+        )}
+
+        {/* Footer: assignees */}
+        <div className="px-3.5 py-2 bg-gray-50/60 border-t border-gray-100 flex items-center justify-between gap-2">
+          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex -space-x-1.5">
+                {task.assigneeObjects.slice(0, 3).map((emp) => (
+                  <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
+                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+                  </div>
+                ))}
+                {task.assigneeObjects.length > 3 && (
+                  <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                    +{task.assigneeObjects.length - 3}
+                  </div>
+                )}
+              </div>
+              {task.assigneeObjects.length === 1 && (
+                <span className="text-[11px] text-gray-700 font-medium truncate">
+                  {task.assigneeObjects[0].name.split(" ")[0]}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
+          )}
+          {attachCount > 0 && (
+            <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">
+              <Paperclip size={10} /> {attachCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColumnDroppable({
+  colKey,
+  children,
+  isOver,
+}: {
+  colKey: ColKey;
+  children: React.ReactNode;
+  isOver: boolean;
+}) {
+  const { setNodeRef } = useDroppable({ id: `col-${colKey}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 overflow-y-auto px-3 py-3 space-y-2.5 transition-all ${
+        isOver ? "bg-primary/5" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CardOverlay({ task }: { task: Task }) {
+  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-2xl border border-gray-200/60 border-l-4 ${cardColor.border} overflow-hidden w-72 rotate-3 cursor-grabbing`}
+    >
+      <div className="px-3.5 pt-3 pb-2">
+        <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
+        {task.description && (
+          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============= Main page =============
 
 export default function TasksPage() {
   const router = useRouter();
@@ -106,9 +246,13 @@ export default function TasksPage() {
   });
   const [loading, setLoading] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<ColKey | null>(null);
-  const colsRef = useRef<HTMLDivElement>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overColKey, setOverColKey] = useState<ColKey | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
+  );
 
   const fetchData = useCallback(async () => {
     const [tRes, eRes] = await Promise.all([
@@ -117,7 +261,6 @@ export default function TasksPage() {
     ]);
     const empMap = new Map((eRes.data || []).map((e) => [e.id, e]));
     const tasksWithAssignee = (tRes.data || []).map((t) => {
-      // Union of assignees[] + legacy assignee_id
       const ids: string[] = Array.isArray(t.assignees) ? [...t.assignees] : [];
       if (t.assignee_id && !ids.includes(t.assignee_id)) ids.unshift(t.assignee_id);
       const assigneeObjects = ids.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
@@ -141,7 +284,6 @@ export default function TasksPage() {
       router.push("/");
       return;
     }
-    // Fetch fresh profile to get latest position/role
     supabase
       .from("employees")
       .select("*")
@@ -159,7 +301,6 @@ export default function TasksPage() {
       });
   }, [router, fetchData]);
 
-  // Realtime
   useEffect(() => {
     if (!user) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -188,28 +329,12 @@ export default function TasksPage() {
     setShowForm({ open: true, status });
   }
 
-  function openEdit(task: Task) {
-    const ids: string[] = Array.isArray(task.assignees) ? [...task.assignees] : [];
-    if (task.assignee_id && !ids.includes(task.assignee_id)) ids.unshift(task.assignee_id);
-    setForm({
-      title: task.title,
-      description: task.description || "",
-      color: task.color,
-      assignee_ids: ids,
-      due_date: task.due_date || "",
-    });
-    setShowForm({ open: true, status: task.status, task });
-  }
-
   async function saveTask(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) return;
-    if (!form.title.trim()) return;
-
+    if (!user || !form.title.trim()) return;
     setLoading(true);
     const primaryAssignee = form.assignee_ids[0] || null;
     if (showForm.task) {
-      // Update
       const { error } = await supabase
         .from("tasks")
         .update({
@@ -222,9 +347,8 @@ export default function TasksPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", showForm.task.id);
-      if (error) alert("Gagal menyimpan: " + error.message);
+      if (error) alert("Gagal: " + error.message);
     } else {
-      // Insert
       const { error } = await supabase.from("tasks").insert({
         title: form.title.trim(),
         description: form.description.trim() || null,
@@ -235,58 +359,52 @@ export default function TasksPage() {
         due_date: form.due_date || null,
         created_by: user.id,
       });
-      if (error) alert("Gagal menyimpan: " + error.message);
+      if (error) alert("Gagal: " + error.message);
     }
     setLoading(false);
     setShowForm({ open: false, status: "brief" });
   }
 
-  async function moveTask(task: Task, direction: "left" | "right") {
-    const order: ColKey[] = ["brief", "today", "done", "history"];
-    const idx = order.indexOf(task.status);
-    const newIdx = direction === "left" ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= order.length) return;
-    await supabase.from("tasks").update({ status: order[newIdx], updated_at: new Date().toISOString() }).eq("id", task.id);
-  }
-
   async function moveTaskToColumn(taskId: string, newStatus: ColKey) {
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
-    // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
-    );
-    await supabase.from("tasks").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", taskId);
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+    await supabase
+      .from("tasks")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", taskId);
   }
 
-  function handleDragStart(e: React.DragEvent, taskId: string) {
-    setDraggingTaskId(taskId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", taskId);
+  function handleDragStart(e: DragStartEvent) {
+    setActiveId(String(e.active.id));
   }
 
-  function handleDragEnd() {
-    setDraggingTaskId(null);
-    setDragOverCol(null);
+  function handleDragOver(e: { over: { id: string | number } | null }) {
+    const overId = e.over?.id ? String(e.over.id) : null;
+    if (overId?.startsWith("col-")) {
+      setOverColKey(overId.replace("col-", "") as ColKey);
+    } else if (overId) {
+      // Hovering over another card — find its column
+      const overTask = tasks.find((t) => t.id === overId);
+      if (overTask) setOverColKey(overTask.status);
+    }
   }
 
-  function handleColDragOver(e: React.DragEvent, col: ColKey) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (dragOverCol !== col) setDragOverCol(col);
-  }
+  function handleDragEnd(e: DragEndEvent) {
+    const activeIdStr = String(e.active.id);
+    const overId = e.over?.id ? String(e.over.id) : null;
+    setActiveId(null);
+    setOverColKey(null);
+    if (!overId) return;
 
-  function handleColDrop(e: React.DragEvent, col: ColKey) {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) moveTaskToColumn(taskId, col);
-    setDraggingTaskId(null);
-    setDragOverCol(null);
-  }
-
-  async function deleteTask(id: string) {
-    if (!confirm("Hapus task ini?")) return;
-    await supabase.from("tasks").delete().eq("id", id);
+    let targetCol: ColKey | null = null;
+    if (overId.startsWith("col-")) {
+      targetCol = overId.replace("col-", "") as ColKey;
+    } else {
+      const overTask = tasks.find((t) => t.id === overId);
+      if (overTask) targetCol = overTask.status;
+    }
+    if (targetCol) moveTaskToColumn(activeIdStr, targetCol);
   }
 
   const isMine = (t: Task) =>
@@ -295,16 +413,20 @@ export default function TasksPage() {
 
   if (!user) return null;
 
-  // Calc stats
   const myCount = user ? tasks.filter(isMine).length : 0;
   const overdueCount = tasks.filter(
-    (t) => t.status !== "done" && t.status !== "history" && t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date))
+    (t) =>
+      t.status !== "done" &&
+      t.status !== "history" &&
+      t.due_date &&
+      isPast(new Date(t.due_date)) &&
+      !isToday(new Date(t.due_date))
   ).length;
   const todayTasksCount = tasks.filter((t) => t.status === "today").length;
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 flex flex-col">
-      {/* Header - professional */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -322,27 +444,19 @@ export default function TasksPage() {
                     {tasks.length}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 hidden sm:block">
-                  Drag card untuk pindah kolom • Tap untuk edit
-                </p>
-                <p className="text-xs text-gray-500 sm:hidden">
-                  Schedule task tim
-                </p>
+                <p className="text-xs text-gray-500">Drag card untuk pindah kolom • Tap untuk edit</p>
               </div>
             </div>
             <button
               onClick={() => setFilterMine(!filterMine)}
               className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
-                filterMine
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                filterMine ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              <Filter size={13} /> {filterMine ? "Tugas Saya" : "Semua Tugas"}
+              <Filter size={13} /> {filterMine ? "Tugas Saya" : "Semua"}
             </button>
           </div>
 
-          {/* Quick stats */}
           <div className="grid grid-cols-3 gap-2">
             <StatPill icon={<UserIcon size={12} />} label="Tugas Saya" value={myCount} color="primary" />
             <StatPill icon={<ClockIcon size={12} />} label="Today" value={todayTasksCount} color="amber" />
@@ -356,193 +470,76 @@ export default function TasksPage() {
         </div>
       </header>
 
-      {/* Kanban */}
-      <main className="flex-1 overflow-hidden">
-        <div
-          ref={colsRef}
-          className="h-full overflow-x-auto px-3 md:px-6 py-5 flex gap-4 snap-x snap-mandatory"
-        >
-          {COLUMNS.map((col) => {
-            const colTasks = filteredTasks.filter((t) => t.status === col.key);
-            const Icon = col.icon;
-            return (
-              <div
-                key={col.key}
-                onDragOver={(e) => handleColDragOver(e, col.key)}
-                onDragLeave={() => setDragOverCol((c) => (c === col.key ? null : c))}
-                onDrop={(e) => handleColDrop(e, col.key)}
-                className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full border shadow-sm transition-all ${
-                  dragOverCol === col.key
-                    ? "border-primary border-2 ring-4 ring-primary/20 scale-[1.02]"
-                    : "border-gray-200/80"
-                }`}
-              >
-                {/* Column header - premium */}
-                <div className="px-4 py-3.5 flex items-center justify-between border-b border-gray-200/60 sticky top-0 z-10 bg-white/60 backdrop-blur-sm rounded-t-2xl">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg ${col.headerBg} flex items-center justify-center text-white shadow-sm`}>
-                      <Icon size={15} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-sm text-gray-800">{col.label}</h3>
-                        <span className="text-[10px] bg-gray-900/10 text-gray-700 px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
-                          {colTasks.length}
-                        </span>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex gap-4 snap-x snap-mandatory">
+            {COLUMNS.map((col) => {
+              const colTasks = filteredTasks.filter((t) => t.status === col.key);
+              const Icon = col.icon;
+              const isOverThis = overColKey === col.key && activeId !== null;
+              return (
+                <div
+                  key={col.key}
+                  className={`shrink-0 w-72 md:w-80 ${col.bg} rounded-2xl flex flex-col snap-start max-h-full border shadow-sm transition-all ${
+                    isOverThis ? "border-primary border-2 ring-4 ring-primary/20" : "border-gray-200/80"
+                  }`}
+                >
+                  <div className="px-4 py-3.5 flex items-center justify-between border-b border-gray-200/60 sticky top-0 z-10 bg-white/60 backdrop-blur-sm rounded-t-2xl">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-8 h-8 rounded-lg ${col.headerBg} flex items-center justify-center text-white shadow-sm`}
+                      >
+                        <Icon size={15} />
                       </div>
-                      <p className="text-[10px] text-gray-500 leading-tight">{col.desc}</p>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-bold text-sm text-gray-800">{col.label}</h3>
+                          <span className="text-[10px] bg-gray-900/10 text-gray-700 px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
+                            {colTasks.length}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 leading-tight">{col.desc}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Cards */}
-                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
-                  {colTasks.length === 0 && (
-                    <div className="text-center py-8 px-4">
-                      <Icon size={32} className={`${col.iconColor} mx-auto mb-2 opacity-40`} />
-                      <p className="text-xs text-gray-400 font-medium">
-                        Belum ada task
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        Tap + di bawah untuk buat
-                      </p>
-                    </div>
-                  )}
-                  {colTasks.map((task) => {
-                    const cardColor =
-                      CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
-                    const overdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
-                    const todayDue = task.due_date && isToday(new Date(task.due_date));
-
-                    return (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        onDragEnd={handleDragEnd}
-                        onClick={() => setDetailTask(task)}
-                        className={`bg-white rounded-xl shadow-sm border border-gray-200/60 border-l-4 ${cardColor.border} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden cursor-grab active:cursor-grabbing select-none ${
-                          draggingTaskId === task.id ? "opacity-40 rotate-2" : ""
-                        }`}
-                      >
-                        <div className="px-3.5 pt-3 pb-2">
-                          <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">
-                            {task.title}
-                          </p>
-                          {task.description && (
-                            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
-                              {task.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Meta row */}
-                        {task.due_date && (
-                          <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                                overdue
-                                  ? "bg-red-100 text-red-700"
-                                  : todayDue
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              <CalendarIcon size={10} />
-                              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
-                              {overdue && " • Lewat"}
-                              {todayDue && " • Hari ini"}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Footer: assignees + actions */}
-                        <div className="px-3.5 py-2 bg-gray-50/60 border-t border-gray-100 flex items-center justify-between gap-2">
-                          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <div className="flex -space-x-1.5">
-                                {task.assigneeObjects.slice(0, 3).map((emp) => (
-                                  <div
-                                    key={emp.id}
-                                    className="ring-2 ring-white rounded-full"
-                                    title={emp.name}
-                                  >
-                                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-                                  </div>
-                                ))}
-                                {task.assigneeObjects.length > 3 && (
-                                  <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
-                                    +{task.assigneeObjects.length - 3}
-                                  </div>
-                                )}
-                              </div>
-                              {task.assigneeObjects.length === 1 && (
-                                <span className="text-[11px] text-gray-700 font-medium truncate">
-                                  {task.assigneeObjects[0].name.split(" ")[0]}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
-                          )}
-
-                          <div
-                            className="flex items-center gap-0.5"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveTask(task, "left");
-                              }}
-                              className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
-                              title="Pindah kiri"
-                            >
-                              <ChevronLeft size={14} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveTask(task, "right");
-                              }}
-                              className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
-                              title="Pindah kanan"
-                            >
-                              <ChevronRight size={14} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteTask(task.id);
-                              }}
-                              className="w-6 h-6 rounded-md hover:bg-red-100 hover:text-red-600 text-gray-400 flex items-center justify-center transition"
-                              title="Hapus"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
+                  <ColumnDroppable colKey={col.key} isOver={isOverThis}>
+                    {colTasks.length === 0 && (
+                      <div className="text-center py-8 px-4 pointer-events-none">
+                        <Icon size={32} className={`${col.iconColor} mx-auto mb-2 opacity-40`} />
+                        <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
                       </div>
-                    );
-                  })}
-
-                  {/* Add card button - premium */}
-                  <button
-                    onClick={() => openCreate(col.key)}
-                    className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium"
-                  >
-                    <Plus size={14} /> Tambah task
-                  </button>
+                    )}
+                    {colTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} />
+                    ))}
+                    <button
+                      onClick={() => openCreate(col.key)}
+                      className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium mt-1"
+                    >
+                      <Plus size={14} /> Tambah task
+                    </button>
+                  </ColumnDroppable>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </main>
+              );
+            })}
+          </div>
+        </main>
+
+        <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+          {activeTask ? <CardOverlay task={activeTask} /> : null}
+        </DragOverlay>
+      </DndContext>
 
       <BottomNav />
 
-      {/* Task Detail Modal (Trello-like) */}
       {detailTask && user && (
         <TaskDetailModal
           task={tasks.find((t) => t.id === detailTask.id) || detailTask}
@@ -552,7 +549,6 @@ export default function TasksPage() {
         />
       )}
 
-      {/* Form Modal - Professional */}
       {showForm.open && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
@@ -566,7 +562,6 @@ export default function TasksPage() {
               <div className="w-10 h-1 bg-gray-300 rounded-full" />
             </div>
 
-            {/* Gradient Header */}
             {(() => {
               const colInfo = COLUMNS.find((c) => c.key === showForm.status)!;
               const ColIcon = colInfo.icon;
@@ -574,7 +569,7 @@ export default function TasksPage() {
                 <div className={`${colInfo.headerBg} px-5 pt-5 pb-6 text-white relative`}>
                   <button
                     onClick={() => setShowForm({ open: false, status: "brief" })}
-                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition"
+                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
                   >
                     <X size={18} />
                   </button>
@@ -583,11 +578,9 @@ export default function TasksPage() {
                       <ColIcon size={22} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">
-                        {showForm.task ? "Edit Task" : "Task Baru"}
-                      </h3>
+                      <h3 className="font-bold text-lg">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
                       <p className="text-xs text-white/80">
-                        Kolom: {colInfo.label} • {colInfo.desc}
+                        {colInfo.label} • {colInfo.desc}
                       </p>
                     </div>
                   </div>
@@ -598,14 +591,14 @@ export default function TasksPage() {
             <form onSubmit={saveTask} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Judul <span className="text-red-500">*</span>
+                  Judul *
                 </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="misal: Follow up client A"
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white focus:border-primary transition font-medium"
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition font-medium"
                   required
                   autoFocus
                 />
@@ -619,8 +612,8 @@ export default function TasksPage() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={3}
-                  placeholder="Detail tugas, context, atau checklist..."
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white focus:border-primary transition resize-none leading-relaxed"
+                  placeholder="Detail tugas..."
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition resize-none"
                 />
               </div>
 
@@ -637,21 +630,17 @@ export default function TasksPage() {
                         type="button"
                         onClick={() => setForm({ ...form, color: c.key })}
                         className={`w-10 h-10 rounded-xl border-l-4 ${c.border} ${c.bg} transition-all ${
-                          active
-                            ? "ring-2 ring-offset-2 ring-gray-800 scale-105 shadow-md"
-                            : "hover:scale-105"
+                          active ? "ring-2 ring-offset-2 ring-gray-800 scale-105 shadow-md" : "hover:scale-105"
                         }`}
-                        title={c.key}
                       />
                     );
                   })}
                 </div>
               </div>
 
-              {/* Assignees - multi-select */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-1">
-                  <UserIcon size={12} /> Di-assign ke ({form.assignee_ids.length} dipilih)
+                  <UserIcon size={12} /> Di-assign ({form.assignee_ids.length})
                 </label>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-200">
                   {form.assignee_ids.length > 0 && (
@@ -660,7 +649,7 @@ export default function TasksPage() {
                       onClick={() => setForm({ ...form, assignee_ids: [] })}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-white/60 italic"
                     >
-                      <X size={14} /> Hapus semua pilihan
+                      <X size={14} /> Hapus semua
                     </button>
                   )}
                   {employees
@@ -680,21 +669,15 @@ export default function TasksPage() {
                             })
                           }
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
-                            active
-                              ? "bg-white shadow-sm ring-2 ring-primary/30 font-semibold"
-                              : "hover:bg-white/60"
+                            active ? "bg-white shadow-sm ring-2 ring-primary/30 font-semibold" : "hover:bg-white/60"
                           }`}
                         >
                           <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
                           <div className="text-left flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800 truncate">{e.name}</p>
-                            {e.position && (
-                              <p className="text-[10px] text-gray-500 truncate">{e.position}</p>
-                            )}
+                            {e.position && <p className="text-[10px] text-gray-500 truncate">{e.position}</p>}
                           </div>
-                          {active && (
-                            <CheckCircle2 size={16} className="text-primary shrink-0" />
-                          )}
+                          {active && <CheckCircle2 size={16} className="text-primary shrink-0" />}
                         </button>
                       );
                     })}
@@ -709,10 +692,13 @@ export default function TasksPage() {
                   type="date"
                   value={form.due_date}
                   onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white focus:border-primary transition"
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">Kosongkan jika tidak ada deadline</p>
               </div>
+
+              <p className="text-[10px] text-gray-400 italic flex items-center gap-1">
+                <ImageIcon size={11} /> Attach gambar/link bisa ditambah setelah task dibuat
+              </p>
 
               <div className="flex gap-2 pt-2">
                 <button
@@ -725,10 +711,10 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 shadow-sm transition"
+                  disabled={loading || !form.title.trim()}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition"
                 >
-                  {loading ? "Menyimpan..." : showForm.task ? "Simpan Perubahan" : "Buat Task"}
+                  {loading ? "Menyimpan..." : showForm.task ? "Simpan" : "Buat Task"}
                 </button>
               </div>
             </form>
@@ -750,19 +736,19 @@ function StatPill({
   value: number;
   color: "primary" | "amber" | "red" | "gray";
 }) {
-  const colors = {
-    primary: "bg-primary/5 text-primary border-primary/20",
+  const colorMap = {
+    primary: "bg-primary/10 text-primary border-primary/20",
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     red: "bg-red-50 text-red-700 border-red-200",
     gray: "bg-gray-50 text-gray-600 border-gray-200",
   };
   return (
-    <div className={`rounded-xl border px-3 py-2 ${colors[color]}`}>
-      <div className="flex items-center gap-1 opacity-80">
+    <div className={`rounded-xl border px-3 py-2 ${colorMap[color]}`}>
+      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-wide">{label}</span>
+        {label}
       </div>
-      <p className="text-lg font-bold mt-0.5 leading-tight">{value}</p>
+      <p className="text-lg font-bold mt-0.5">{value}</p>
     </div>
   );
 }

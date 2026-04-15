@@ -17,6 +17,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function AbsenPage() {
   const router = useRouter();
@@ -67,9 +68,60 @@ export default function AbsenPage() {
       if (data) setSettings(data);
     });
 
+    // Auto-request permissions if not yet granted
+    requestPermissionsIfNeeded();
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, fetchTodayRecord]);
+
+  async function requestPermissionsIfNeeded() {
+    // Check camera permission
+    let cameraState: PermissionState = "prompt";
+    let geoState: PermissionState = "prompt";
+
+    try {
+      if (navigator.permissions) {
+        const camPerm = await navigator.permissions.query({
+          name: "camera" as PermissionName,
+        });
+        cameraState = camPerm.state;
+
+        const geoPerm = await navigator.permissions.query({
+          name: "geolocation" as PermissionName,
+        });
+        geoState = geoPerm.state;
+      }
+    } catch {
+      // Permissions API not supported - skip silently
+      return;
+    }
+
+    // If camera not granted yet, trigger permission prompt
+    if (cameraState !== "granted") {
+      try {
+        const testStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        testStream.getTracks().forEach((t) => t.stop());
+      } catch {
+        // User denied - will need to enable manually
+      }
+    }
+
+    // If geo not granted yet, trigger permission prompt
+    if (geoState !== "granted") {
+      try {
+        await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 10000,
+          });
+        });
+      } catch {
+        // User denied or timeout
+      }
+    }
+  }
 
   async function startCamera() {
     setMessage(null);
@@ -274,12 +326,7 @@ export default function AbsenPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">
-              <span className="text-primary">Red</span>
-              <span className="text-gray-800">Wine</span>
-            </h1>
-          </div>
+          <Logo size="sm" showSubtitle={false} />
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/riwayat")}

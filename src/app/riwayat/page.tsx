@@ -8,6 +8,7 @@ import { Employee, Attendance } from "@/lib/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ArrowLeft, Clock, MapPin, FileText } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function RiwayatPage() {
   const router = useRouter();
@@ -74,11 +75,14 @@ export default function RiwayatPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-primary">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-bold text-gray-800">Riwayat Absensi</h1>
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="text-gray-500 hover:text-primary">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="font-bold text-gray-800">Riwayat Absensi</h1>
+          </div>
+          <Logo size="sm" showSubtitle={false} />
         </div>
       </header>
 

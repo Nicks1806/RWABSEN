@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
@@ -19,8 +19,14 @@ import {
   Image as ImageIcon,
   X,
   Trash2,
+  Key,
+  Filter,
+  Bell,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import Logo from "@/components/Logo";
 
 type Tab = "dashboard" | "karyawan" | "settings";
 
@@ -48,6 +54,16 @@ export default function AdminPage() {
   // Employee form
   const [newEmployee, setNewEmployee] = useState({ name: "", pin: "" });
   const [empMsg, setEmpMsg] = useState("");
+
+  // Reset PIN modal
+  const [resetPinEmp, setResetPinEmp] = useState<Employee | null>(null);
+  const [newPin, setNewPin] = useState("");
+  const [resetPinMsg, setResetPinMsg] = useState("");
+  const [showPins, setShowPins] = useState(false);
+
+  // Filters for Detail Absensi
+  const [filterEmployee, setFilterEmployee] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -92,6 +108,41 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (admin) fetchData();
+  }, [admin, fetchData]);
+
+  // Realtime subscription for attendance
+  useEffect(() => {
+    if (!admin) return;
+    const channel = supabase
+      .channel("attendance-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "attendance" },
+        () => {
+          fetchData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "employees" },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [admin, fetchData]);
+
+  // Auto-refresh every 30s as fallback
+  useEffect(() => {
+    if (!admin) return;
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [admin, fetchData]);
 
   // Stats
@@ -189,6 +240,52 @@ export default function AdminPage() {
     fetchData();
   }
 
+  // Reset PIN
+  async function resetPin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetPinEmp || !newPin.trim()) return;
+    const { error } = await supabase
+      .from("employees")
+      .update({ pin: newPin.trim() })
+      .eq("id", resetPinEmp.id);
+    setResetPinMsg(error ? "Gagal mengubah PIN" : "PIN berhasil diubah!");
+    if (!error) {
+      setTimeout(() => {
+        setResetPinEmp(null);
+        setNewPin("");
+        setResetPinMsg("");
+        fetchData();
+      }, 1200);
+    }
+  }
+
+  // Filtered records for Detail Absensi
+  const filteredRecords = useMemo(() => {
+    return records.filter((r) => {
+      if (filterEmployee !== "all" && r.employee_id !== filterEmployee) return false;
+      if (filterStatus !== "all" && r.status !== filterStatus) return false;
+      return true;
+    });
+  }, [records, filterEmployee, filterStatus]);
+
+  // Late clock-in notification: employees who should have clocked in but haven't
+  const lateClockIn = useMemo(() => {
+    if (!settings) return [];
+    const now = new Date();
+    const [sh, sm] = settings.work_start.split(":").map(Number);
+    const [eh, em] = settings.work_end.split(":").map(Number);
+    const workStart = new Date();
+    workStart.setHours(sh, sm, 0, 0);
+    const workEnd = new Date();
+    workEnd.setHours(eh, em, 0, 0);
+
+    // Only show during work hours
+    if (now < workStart || now > workEnd) return [];
+
+    const clockedInIds = new Set(todayRecords.filter((r) => r.clock_in).map((r) => r.employee_id));
+    return employees.filter((e) => e.role === "employee" && !clockedInIds.has(e.id));
+  }, [settings, employees, todayRecords]);
+
   function handleLogout() {
     clearEmployee();
     router.push("/");
@@ -208,12 +305,9 @@ export default function AdminPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">
-              <span className="text-primary">Red</span>
-              <span className="text-gray-800">Wine</span>
-              <span className="text-xs text-gray-400 ml-2">Admin</span>
-            </h1>
+          <div className="flex items-center gap-2">
+            <Logo size="sm" showSubtitle={false} />
+            <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
           </div>
           <button
             onClick={handleLogout}
@@ -255,6 +349,31 @@ export default function AdminPage() {
             {/* DASHBOARD TAB */}
             {activeTab === "dashboard" && (
               <div className="space-y-6">
+                {/* Late Clock-In Notification */}
+                {lateClockIn.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-red-700 mb-2">
+                      <Bell size={18} />
+                      <h3 className="font-semibold">
+                        Belum Clock In ({lateClockIn.length})
+                      </h3>
+                    </div>
+                    <p className="text-xs text-red-600 mb-2">
+                      Karyawan yang belum absen hari ini setelah jam kerja dimulai
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {lateClockIn.map((emp) => (
+                        <span
+                          key={emp.id}
+                          className="bg-white text-red-700 text-xs px-3 py-1 rounded-full border border-red-300"
+                        >
+                          {emp.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -312,7 +431,7 @@ export default function AdminPage() {
                       Jam Kerja Bulan {format(new Date(month + "-01"), "MMMM yyyy", { locale: idLocale })}
                     </h3>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50">
                         <tr>
@@ -343,14 +462,66 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   </div>
+                  {/* Mobile Cards for Monthly Hours */}
+                  <div className="md:hidden divide-y">
+                    {employees
+                      .filter((e) => e.role === "employee")
+                      .map((emp) => {
+                        const empRecords = records.filter((r) => r.employee_id === emp.id);
+                        const presentCount = empRecords.filter((r) => r.clock_in).length;
+                        const lateCount = empRecords.filter((r) => r.status === "late").length;
+                        return (
+                          <div key={emp.id} className="p-4 flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{emp.name}</p>
+                              <p className="text-xs text-gray-500">
+                                Hadir: {presentCount} •{" "}
+                                <span className="text-red-600">Terlambat: {lateCount}</span>
+                              </p>
+                            </div>
+                            <p className="font-bold text-primary">
+                              {getMonthlyHours(emp.id)} jam
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
 
                 {/* Attendance Table */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b">
-                    <h3 className="font-semibold text-gray-700">Detail Absensi</h3>
+                  <div className="p-4 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <Filter size={16} /> Detail Absensi
+                    </h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        value={filterEmployee}
+                        onChange={(e) => setFilterEmployee(e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="all">Semua Karyawan</option>
+                        {employees
+                          .filter((e) => e.role === "employee")
+                          .map((e) => (
+                            <option key={e.id} value={e.id}>
+                              {e.name}
+                            </option>
+                          ))}
+                      </select>
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="all">Semua Status</option>
+                        <option value="present">Hadir</option>
+                        <option value="late">Terlambat</option>
+                        <option value="early_leave">Pulang Awal</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50">
                         <tr>
@@ -366,7 +537,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {records.map((r) => (
+                        {filteredRecords.map((r) => (
                           <tr key={r.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 whitespace-nowrap">
                               {format(new Date(r.date), "dd/MM")}
@@ -430,8 +601,73 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   </div>
-                  {records.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">Belum ada data</div>
+                  {/* Mobile Cards for Detail Absensi */}
+                  <div className="md:hidden divide-y">
+                    {filteredRecords.map((r) => {
+                      const rec = r as Attendance & { employees?: { name: string } };
+                      return (
+                        <div key={r.id} className="p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{rec.employees?.name || "-"}</p>
+                              <p className="text-xs text-gray-500">
+                                {format(new Date(r.date), "EEE, dd MMM", { locale: idLocale })}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                statusBadge[r.status]?.color || ""
+                              }`}
+                            >
+                              {statusBadge[r.status]?.text || r.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="bg-green-50 rounded-lg px-2 py-1 text-green-700">
+                              Masuk: {r.clock_in ? format(new Date(r.clock_in), "HH:mm") : "-"}
+                            </div>
+                            <div className="bg-orange-50 rounded-lg px-2 py-1 text-orange-700">
+                              Keluar: {r.clock_out ? format(new Date(r.clock_out), "HH:mm") : "-"}
+                            </div>
+                          </div>
+                          {r.notes && (
+                            <p className="text-xs text-gray-500">Ket: {r.notes}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs pt-1">
+                            {r.clock_in_photo && (
+                              <button
+                                onClick={() => setPhotoModal(r.clock_in_photo!)}
+                                className="flex items-center gap-1 text-blue-600"
+                              >
+                                <ImageIcon size={14} /> Foto
+                              </button>
+                            )}
+                            {r.clock_in_lat && (
+                              <a
+                                href={`https://www.google.com/maps?q=${r.clock_in_lat},${r.clock_in_lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-blue-600"
+                              >
+                                <MapPin size={14} /> Lokasi
+                              </a>
+                            )}
+                            <button
+                              onClick={() => deleteAttendance(r.id)}
+                              className="flex items-center gap-1 text-red-500 ml-auto"
+                            >
+                              <Trash2 size={14} /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {filteredRecords.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      {records.length === 0 ? "Belum ada data" : "Tidak ada data sesuai filter"}
+                    </div>
                   )}
                 </div>
               </div>
@@ -472,10 +708,19 @@ export default function AdminPage() {
 
                 {/* Employee List */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b">
+                  <div className="p-4 border-b flex items-center justify-between">
                     <h3 className="font-semibold text-gray-700">Daftar Karyawan</h3>
+                    <button
+                      onClick={() => setShowPins(!showPins)}
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary"
+                    >
+                      {showPins ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showPins ? "Sembunyikan PIN" : "Tampilkan PIN"}
+                    </button>
                   </div>
-                  <div className="overflow-x-auto">
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50">
                         <tr>
@@ -490,7 +735,9 @@ export default function AdminPage() {
                         {employees.map((emp) => (
                           <tr key={emp.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-medium">{emp.name}</td>
-                            <td className="px-4 py-3 text-center font-mono">{emp.pin}</td>
+                            <td className="px-4 py-3 text-center font-mono">
+                              {showPins ? emp.pin : "••••••"}
+                            </td>
                             <td className="px-4 py-3 text-center capitalize">{emp.role}</td>
                             <td className="px-4 py-3 text-center">
                               <span
@@ -504,23 +751,85 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              {emp.role !== "admin" && (
+                              <div className="flex items-center justify-center gap-1.5">
                                 <button
-                                  onClick={() => toggleEmployee(emp.id, emp.is_active)}
-                                  className={`text-xs px-3 py-1 rounded-lg transition ${
-                                    emp.is_active
-                                      ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                      : "bg-green-50 text-green-600 hover:bg-green-100"
-                                  }`}
+                                  onClick={() => {
+                                    setResetPinEmp(emp);
+                                    setNewPin("");
+                                    setResetPinMsg("");
+                                  }}
+                                  className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition flex items-center gap-1"
+                                  title="Reset PIN"
                                 >
-                                  {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                  <Key size={12} /> PIN
                                 </button>
-                              )}
+                                {emp.role !== "admin" && (
+                                  <button
+                                    onClick={() => toggleEmployee(emp.id, emp.is_active)}
+                                    className={`text-xs px-2 py-1 rounded-lg transition ${
+                                      emp.is_active
+                                        ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                        : "bg-green-50 text-green-600 hover:bg-green-100"
+                                    }`}
+                                  >
+                                    {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="md:hidden divide-y">
+                    {employees.map((emp) => (
+                      <div key={emp.id} className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-semibold">{emp.name}</p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {emp.role} • PIN: {showPins ? emp.pin : "••••••"}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              emp.is_active
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {emp.is_active ? "Aktif" : "Nonaktif"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => {
+                              setResetPinEmp(emp);
+                              setNewPin("");
+                              setResetPinMsg("");
+                            }}
+                            className="flex-1 text-xs px-3 py-2 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center gap-1"
+                          >
+                            <Key size={12} /> Reset PIN
+                          </button>
+                          {emp.role !== "admin" && (
+                            <button
+                              onClick={() => toggleEmployee(emp.id, emp.is_active)}
+                              className={`flex-1 text-xs px-3 py-2 rounded-lg ${
+                                emp.is_active
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-green-50 text-green-600"
+                              }`}
+                            >
+                              {emp.is_active ? "Nonaktifkan" : "Aktifkan"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -597,6 +906,72 @@ export default function AdminPage() {
           </>
         )}
       </main>
+
+      {/* Reset PIN Modal */}
+      {resetPinEmp && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setResetPinEmp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">Reset PIN</h3>
+              <button onClick={() => setResetPinEmp(null)} className="text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={resetPin} className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Karyawan</label>
+                <p className="font-semibold">{resetPinEmp.name}</p>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">PIN Sekarang</label>
+                <p className="font-mono text-sm">{resetPinEmp.pin}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">PIN Baru</label>
+                <input
+                  type="text"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder="Masukkan PIN baru"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  required
+                  autoFocus
+                />
+              </div>
+              {resetPinMsg && (
+                <p
+                  className={`text-sm ${
+                    resetPinMsg.includes("Gagal") ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {resetPinMsg}
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setResetPinEmp(null)}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Photo Modal */}
       {photoModal && (

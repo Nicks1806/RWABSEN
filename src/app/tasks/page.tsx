@@ -958,14 +958,20 @@ export default function TasksPage() {
               </button>
               <div>
                 <div className="flex items-center gap-2">
-                  {editingBoardName && activeBoard ? (
+                  {editingBoardName ? (
                     <input
                       type="text"
                       value={boardNameDraft}
                       onChange={(e) => setBoardNameDraft(e.target.value)}
-                      onBlur={() => renameBoardInline(boardNameDraft)}
+                      onBlur={() => {
+                        if (activeBoard) renameBoardInline(boardNameDraft);
+                        else { localStorage.setItem("default_board_name", boardNameDraft.trim() || "Task Board"); setEditingBoardName(false); }
+                      }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") renameBoardInline(boardNameDraft);
+                        if (e.key === "Enter") {
+                          if (activeBoard) renameBoardInline(boardNameDraft);
+                          else { localStorage.setItem("default_board_name", boardNameDraft.trim() || "Task Board"); setEditingBoardName(false); }
+                        }
                         if (e.key === "Escape") setEditingBoardName(false);
                       }}
                       className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-primary outline-none px-1 min-w-[120px]"
@@ -973,23 +979,22 @@ export default function TasksPage() {
                     />
                   ) : (
                     <h1
-                      className={`font-bold text-lg text-gray-900 ${activeBoard ? "cursor-pointer hover:text-primary transition" : ""}`}
+                      className="font-bold text-lg text-gray-900 cursor-pointer hover:text-primary transition"
                       onClick={() => {
-                        if (activeBoard) {
-                          setBoardNameDraft(activeBoard.name);
-                          setEditingBoardName(true);
-                        }
+                        const currentName = activeBoard ? activeBoard.name : (localStorage.getItem("default_board_name") || "Task Board");
+                        setBoardNameDraft(currentName);
+                        setEditingBoardName(true);
                       }}
-                      title={activeBoard ? "Klik untuk rename" : undefined}
+                      title="Klik untuk rename"
                     >
-                      {activeBoard ? activeBoard.name : "Task Board"}
+                      {activeBoard ? activeBoard.name : (typeof window !== "undefined" ? localStorage.getItem("default_board_name") || "Task Board" : "Task Board")}
                     </h1>
                   )}
                   <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
                     {tasks.length}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">Drag card untuk pindah kolom • Tap untuk edit</p>
+                <p className="text-xs text-gray-500">Tap judul untuk rename • Tap card untuk edit</p>
               </div>
             </div>
             {/* Board switcher button */}

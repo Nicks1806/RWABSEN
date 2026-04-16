@@ -1022,13 +1022,6 @@ export default function TasksPage() {
                 <p className="text-xs text-gray-500">Tap judul untuk rename • Tap card untuk edit</p>
               </div>
             </div>
-            {/* Board switcher button */}
-            <button
-              onClick={() => setShowBoardSwitcher(!showBoardSwitcher)}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition mr-1"
-            >
-              <LayoutGrid size={13} /> Switch
-            </button>
             <button
               onClick={() => setFilterMine(!filterMine)}
               className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
@@ -1315,13 +1308,6 @@ export default function TasksPage() {
           >
             <MessageCircle size={18} strokeWidth={bottomTab === "message" ? 2.5 : 2} />
             <span className={`text-[10px] mt-0.5 ${bottomTab === "message" ? "font-bold" : "font-medium"}`}>Message</span>
-          </button>
-          <button
-            onClick={() => router.push("/home")}
-            className="flex-1 flex flex-col items-center justify-center py-2.5 text-gray-500 transition"
-          >
-            <ArrowLeft size={18} />
-            <span className="text-[10px] mt-0.5 font-medium">Kembali</span>
           </button>
         </div>
       </nav>

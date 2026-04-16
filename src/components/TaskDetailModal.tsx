@@ -409,61 +409,75 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
           </div>
 
           {/* ====== RIGHT: Sidebar ====== */}
-          <div className="w-full md:w-44 shrink-0 pt-5 md:pt-0 space-y-1.5 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Tambah ke card</p>
+          <div className="w-full md:w-48 shrink-0 pt-5 md:pt-0 space-y-1 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Tambah ke card</p>
 
-            <SidebarBtn icon={<UserIcon size={14} />} label="Members" onClick={() => setShowMembers(!showMembers)} />
+            <SidebarBtn icon={<UserIcon size={14} />} label="Members" badge={assigneeIds.length || undefined} active={showMembers} onClick={() => setShowMembers(!showMembers)} />
             {showMembers && (
-              <div className="bg-white rounded-lg border border-gray-200 p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
+              <div className="bg-white rounded-xl border border-gray-200 p-1.5 space-y-0.5 max-h-52 overflow-y-auto shadow-sm mb-1">
                 {employees.filter((e) => e.is_active).map((e) => {
                   const sel = assigneeIds.includes(e.id);
                   return (
-                    <button key={e.id} onClick={() => toggleAssignee(e.id)} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition ${sel ? "bg-primary/10 font-semibold" : "hover:bg-gray-50"}`}>
+                    <button key={e.id} onClick={() => toggleAssignee(e.id)} className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition ${sel ? "bg-primary/8 ring-1 ring-primary/20" : "hover:bg-gray-50"}`}>
                       <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
-                      <span className="flex-1 text-left truncate">{e.name}</span>
-                      {sel && <Check size={12} className="text-primary" />}
+                      <span className={`flex-1 text-left truncate ${sel ? "font-semibold text-gray-900" : "text-gray-700"}`}>{e.name}</span>
+                      {sel && <CheckCircle2 size={14} className="text-primary shrink-0" />}
                     </button>
                   );
                 })}
               </div>
             )}
 
-            <SidebarBtn icon={<Tag size={14} />} label="Labels" onClick={() => setShowLabels(!showLabels)} />
+            <SidebarBtn icon={<Tag size={14} />} label="Labels" badge={labels.length || undefined} active={showLabels} onClick={() => setShowLabels(!showLabels)} />
             {showLabels && (
-              <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1">
+              <div className="bg-white rounded-xl border border-gray-200 p-2 space-y-1.5 shadow-sm mb-1">
                 {CARD_COLORS.map((c) => {
                   const sel = labels.includes(c.key);
                   return (
-                    <button key={c.key} onClick={() => toggleLabel(c.key)} className={`w-full h-7 rounded ${c.dot} flex items-center justify-between px-2 transition ${sel ? "ring-2 ring-offset-1 ring-gray-800" : "opacity-60 hover:opacity-100"}`}>
-                      <span className="text-white text-[10px] font-bold">{c.label}</span>
-                      {sel && <Check size={12} className="text-white" />}
+                    <button key={c.key} onClick={() => toggleLabel(c.key)} className={`w-full h-8 rounded-lg ${c.dot} flex items-center justify-between px-3 transition-all ${sel ? "ring-2 ring-offset-2 ring-gray-800 scale-[1.02]" : "opacity-50 hover:opacity-90"}`}>
+                      <span className="text-white text-[11px] font-bold">{c.label}</span>
+                      {sel && <Check size={13} className="text-white" strokeWidth={3} />}
                     </button>
                   );
                 })}
               </div>
             )}
 
-            <SidebarBtn icon={<ListChecks size={14} />} label="Checklist" onClick={() => document.getElementById("cl-input")?.focus()} />
+            <SidebarBtn icon={<ListChecks size={14} />} label="Checklist" badge={checklist.length || undefined} onClick={() => document.getElementById("cl-input")?.focus()} />
 
-            <SidebarBtn icon={<CalendarIcon size={14} />} label="Deadline" onClick={() => {
-              const el = document.getElementById("due-input") as HTMLInputElement | null;
-              if (el) el.showPicker?.();
-            }} />
+            {/* Deadline inline */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <button
+                onClick={() => { const el = document.getElementById("due-input") as HTMLInputElement | null; if (el) el.showPicker?.(); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                <CalendarIcon size={14} className="text-gray-500" />
+                <span className="flex-1 text-left">Deadline</span>
+              </button>
+              {dueDate && (
+                <div className="px-3 pb-2.5 flex items-center gap-1.5">
+                  <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                    {format(new Date(dueDate), "dd MMM yyyy", { locale: idLocale })}
+                  </span>
+                  <button onClick={() => setDueDate("")} className="text-gray-400 hover:text-red-500 transition"><X size={12} /></button>
+                </div>
+              )}
+            </div>
             <input id="due-input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="sr-only" />
 
-            <SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} onClick={() => fileInputRef.current?.click()} />
-            <SidebarBtn icon={<LinkIcon size={14} />} label="Link" onClick={() => setShowLinkForm(!showLinkForm)} />
+            <SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} badge={attachments.filter((a) => a.type === "image").length || undefined} onClick={() => fileInputRef.current?.click()} />
+            <SidebarBtn icon={<LinkIcon size={14} />} label="Link" badge={attachments.filter((a) => a.type === "link").length || undefined} active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} />
 
-            <div className="pt-3 mt-3 border-t border-gray-200">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Aksi</p>
-              <SidebarBtn icon={<Trash2 size={14} />} label="Hapus" onClick={deleteTask} danger />
+            <div className="pt-3 mt-2 border-t border-gray-200">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Aksi</p>
+              <SidebarBtn icon={<Trash2 size={14} />} label="Hapus Task" onClick={deleteTask} danger />
             </div>
 
             {/* Save button */}
             <button onClick={saveAll} disabled={saving}
-              className="w-full mt-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition shadow-sm inline-flex items-center justify-center gap-1.5"
+              className="w-full mt-3 py-3 bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition shadow-md inline-flex items-center justify-center gap-2"
             >
-              <Check size={14} /> {saving ? "Menyimpan..." : "Simpan"}
+              <Check size={15} /> {saving ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </div>
@@ -472,10 +486,24 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   );
 }
 
-function SidebarBtn({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function SidebarBtn({ icon, label, onClick, danger, badge, active }: {
+  icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean; badge?: number; active?: boolean;
+}) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${danger ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"}`}>
-      {icon} {label}
+    <button onClick={onClick} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+      danger
+        ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+        : active
+        ? "bg-primary/5 text-primary border border-primary/20 ring-1 ring-primary/10"
+        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300"
+    }`}>
+      {icon}
+      <span className="flex-1 text-left">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+          danger ? "bg-red-200 text-red-700" : "bg-gray-100 text-gray-600"
+        }`}>{badge}</span>
+      )}
     </button>
   );
 }

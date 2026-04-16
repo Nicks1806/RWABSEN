@@ -941,6 +941,13 @@ export default function TasksPage() {
   ).length;
   const todayTasksCount = tasks.filter((t) => t.status === "today").length;
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col">
@@ -1012,7 +1019,7 @@ export default function TasksPage() {
             </button>
           </div>
 
-          <div className="hidden md:grid grid-cols-3 gap-2">
+          <div className={`${isMobile ? "hidden" : "grid"} grid-cols-3 gap-2`}>
             <StatPill icon={<UserIcon size={12} />} label="Tugas Saya" value={myCount} color="primary" />
             <StatPill icon={<ClockIcon size={12} />} label="Today" value={todayTasksCount} color="amber" />
             <StatPill
@@ -1024,7 +1031,7 @@ export default function TasksPage() {
           </div>
 
           {/* Mobile: Column Tab Bar */}
-          <div className="md:hidden flex gap-1 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
+          <div className={`${isMobile ? "flex" : "hidden"} gap-1 overflow-x-auto -mx-4 px-4 pb-1 snap-x`}>
             {columns.map((col, idx) => {
               const count = filteredTasks.filter((t) => t.status === col.key).length;
               const isActive = mobileTab === idx;
@@ -1053,70 +1060,63 @@ export default function TasksPage() {
         </div>
       </header>
 
-      {/* ====== MOBILE: Single column view with drag reorder ====== */}
+      {/* ====== Single DndContext for either mobile or desktop ====== */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
+        onDragOver={isMobile ? undefined : handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="md:hidden flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
-          {(() => {
-            const col = columns[mobileTab];
-            if (!col) return null;
-            const colTasks = filteredTasks
-              .filter((t) => t.status === col.key)
-              .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
-            return (
-              <>
-                {colTasks.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
-                    <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
-                    <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
-                  </div>
-                )}
-                <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  {colTasks.map((task) => (
-                    <MobileTaskCard
-                      key={task.id}
-                      task={task}
-                      columns={columns}
-                      onClick={() => setDetailTask(task)}
-                      onMove={(newStatus) => {
-                        moveTaskToColumn(task.id, newStatus);
-                        // Auto-switch to target tab
-                        const targetIdx = columns.findIndex((c) => c.key === newStatus);
-                        if (targetIdx >= 0) setTimeout(() => setMobileTab(targetIdx), 300);
-                      }}
-                      onRename={(t) => renameTaskInline(task.id, t)}
-                    />
-                  ))}
-                </SortableContext>
-                <button
-                  onClick={() => openCreate(col.key)}
-                  className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
-                >
-                  <Plus size={16} /> Tambah task
-                </button>
-              </>
-            );
-          })()}
-        </div>
-        <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-          {activeTask ? <CardOverlay task={activeTask} /> : null}
-        </DragOverlay>
-      </DndContext>
+        {/* MOBILE: Single column view */}
+        {isMobile && (
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
+            {(() => {
+              const col = columns[mobileTab];
+              if (!col) return null;
+              const colTasks = filteredTasks
+                .filter((t) => t.status === col.key)
+                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+              return (
+                <>
+                  {colTasks.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
+                      <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
+                      <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
+                    </div>
+                  )}
+                  <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                    {colTasks.map((task) => (
+                      <MobileTaskCard
+                        key={task.id}
+                        task={task}
+                        columns={columns}
+                        onClick={() => setDetailTask(task)}
+                        onMove={(newStatus) => {
+                          moveTaskToColumn(task.id, newStatus);
+                          const targetIdx = columns.findIndex((c) => c.key === newStatus);
+                          if (targetIdx >= 0) setTimeout(() => setMobileTab(targetIdx), 300);
+                        }}
+                        onRename={(t) => renameTaskInline(task.id, t)}
+                      />
+                    ))}
+                  </SortableContext>
+                  <button
+                    onClick={() => openCreate(col.key)}
+                    className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
+                  >
+                    <Plus size={16} /> Tambah task
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+        )}
 
-      {/* ====== DESKTOP: Horizontal kanban ====== */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <main className="flex-1 overflow-hidden hidden md:block">
+        {/* DESKTOP: Horizontal kanban */}
+        {!isMobile && (
+        <main className="flex-1 overflow-hidden">
           <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
             {columns.map((col) => {
               const colTasks = filteredTasks
@@ -1263,6 +1263,7 @@ export default function TasksPage() {
             </div>
           </div>
         </main>
+        )}
 
         <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
           {activeTask ? <CardOverlay task={activeTask} /> : null}

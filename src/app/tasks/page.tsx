@@ -959,6 +959,14 @@ export default function TasksPage() {
     }
   }
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const isMine = (t: Task) =>
     t.assignee_id === user?.id || (Array.isArray(t.assignees) && t.assignees.includes(user?.id || ""));
   const filteredTasks = filterMine && user ? tasks.filter(isMine) : tasks;
@@ -976,13 +984,6 @@ export default function TasksPage() {
   ).length;
   const todayTasksCount = tasks.filter((t) => t.status === "today").length;
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col">

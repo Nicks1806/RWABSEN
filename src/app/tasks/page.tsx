@@ -974,7 +974,10 @@ export default function TasksPage() {
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col">
+    <div
+      className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col transition-all duration-300"
+      style={!isMobile && bottomTab === "message" ? { marginLeft: 360 } : undefined}
+    >
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-2 mb-3">

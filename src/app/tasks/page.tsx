@@ -1284,31 +1284,33 @@ export default function TasksPage() {
       </DndContext>
       )}
 
-      {/* Task Bottom Bar (Trello-style) */}
-      <div className="h-14" />
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-bottom">
-        <div className="max-w-3xl mx-auto flex items-center">
-          <button
-            onClick={() => setShowBoardSwitcher(true)}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition ${showBoardSwitcher ? "text-primary" : "text-gray-500"}`}
-          >
-            <LayoutGrid size={18} strokeWidth={showBoardSwitcher ? 2.5 : 2} />
-            <span className="text-[10px] mt-0.5 font-medium">Switch</span>
-          </button>
-          <button
-            onClick={() => setBottomTab("board")}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition ${bottomTab === "board" ? "text-primary" : "text-gray-500"}`}
-          >
-            <Columns3 size={18} strokeWidth={bottomTab === "board" ? 2.5 : 2} />
-            <span className={`text-[10px] mt-0.5 ${bottomTab === "board" ? "font-bold" : "font-medium"}`}>Board</span>
-          </button>
-          <button
-            onClick={() => setBottomTab("message")}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition relative ${bottomTab === "message" ? "text-primary" : "text-gray-500"}`}
-          >
-            <MessageCircle size={18} strokeWidth={bottomTab === "message" ? 2.5 : 2} />
-            <span className={`text-[10px] mt-0.5 ${bottomTab === "message" ? "font-bold" : "font-medium"}`}>Message</span>
-          </button>
+      {/* Task Bottom Bar */}
+      <div className="h-20" />
+      <nav className="fixed bottom-0 left-0 right-0 z-30">
+        <div className="bg-white border-t border-gray-200 shadow-lg">
+          <div className="max-w-3xl mx-auto flex items-center pb-[env(safe-area-inset-bottom)]">
+            <button
+              onClick={() => setShowBoardSwitcher(true)}
+              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition ${showBoardSwitcher ? "text-primary" : "text-gray-500"}`}
+            >
+              <LayoutGrid size={20} strokeWidth={showBoardSwitcher ? 2.5 : 1.8} />
+              <span className="text-[10px] mt-1 font-medium">Switch</span>
+            </button>
+            <button
+              onClick={() => setBottomTab("board")}
+              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition ${bottomTab === "board" ? "text-primary" : "text-gray-500"}`}
+            >
+              <Columns3 size={20} strokeWidth={bottomTab === "board" ? 2.5 : 1.8} />
+              <span className={`text-[10px] mt-1 ${bottomTab === "board" ? "font-bold" : "font-medium"}`}>Board</span>
+            </button>
+            <button
+              onClick={() => setBottomTab("message")}
+              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition relative ${bottomTab === "message" ? "text-primary" : "text-gray-500"}`}
+            >
+              <MessageCircle size={20} strokeWidth={bottomTab === "message" ? 2.5 : 1.8} />
+              <span className={`text-[10px] mt-1 ${bottomTab === "message" ? "font-bold" : "font-medium"}`}>Message</span>
+            </button>
+          </div>
         </div>
       </nav>
 

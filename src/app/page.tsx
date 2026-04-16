@@ -66,7 +66,6 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8 flex flex-col items-center">
           <Logo size="xl" />
-          <p className="text-gray-600 mt-4 text-sm">Sistem Absensi Karyawan</p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-lg p-6 space-y-4">

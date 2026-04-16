@@ -270,9 +270,17 @@ function ColumnDroppable({
   );
 }
 
-function MobileTaskCard({ task, columns, onClick, onMove, onReorder, onRename }: {
-  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onReorder: (dir: "up" | "down") => void; onRename: (t: string) => void;
+function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
+  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onRename: (t: string) => void;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    data: { type: "task", task },
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
   const [showActions, setShowActions] = useState(false);
   const [editTitle, setEditTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(task.title);
@@ -286,16 +294,27 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder, onRename }:
   const attachCount = task.attachments?.length || 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.99] transition-transform overflow-visible relative">
-      {/* Cover */}
-      {coverUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt="" className="w-full h-36 object-cover rounded-t-2xl" onClick={onClick} />
-      )}
+    <div
+      ref={setNodeRef}
+      style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
+      className={`bg-white rounded-2xl shadow-sm border border-gray-100 transition-transform overflow-visible relative touch-none ${isDragging ? "z-50 shadow-xl" : ""}`}
+    >
+      {/* Cover + drag handle */}
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing select-none">
+        {coverUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverUrl} alt="" className="w-full h-32 object-cover rounded-t-2xl" draggable={false} />
+        )}
+        {!coverUrl && (
+          <div className="flex justify-center pt-2">
+            <div className="w-8 h-1 bg-gray-200 rounded-full" />
+          </div>
+        )}
+      </div>
 
       <div onClick={onClick} className="px-4 pt-3 pb-2.5">
         {/* Labels */}
-        {labelSet.size > 0 && (
+        {!coverUrl && labelSet.size > 0 && (
           <div className="flex gap-1.5 mb-2">
             {Array.from(labelSet).map((l) => {
               const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
@@ -415,30 +434,9 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder, onRename }:
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Reorder */}
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Urutan</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onReorder("up"); setShowActions(false); }}
-                    className="flex-1 py-3.5 rounded-2xl bg-gray-50 text-gray-700 text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 active:bg-gray-100 transition"
-                  >
-                    <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-base">↑</span>
-                    Atas
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onReorder("down"); setShowActions(false); }}
-                    className="flex-1 py-3.5 rounded-2xl bg-gray-50 text-gray-700 text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 active:bg-gray-100 transition"
-                  >
-                    <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-base">↓</span>
-                    Bawah
-                  </button>
-                </div>
-              </div>
-
               {/* Move to column */}
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Pindah ke</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Pindah ke kolom</p>
                 <div className="space-y-1.5">
                   {columns.filter((c) => c.key !== task.status).map((c) => {
                     const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
@@ -1055,44 +1053,55 @@ export default function TasksPage() {
         </div>
       </header>
 
-      {/* ====== MOBILE: Single column view ====== */}
-      <div className="md:hidden flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
-        {(() => {
-          const col = columns[mobileTab];
-          if (!col) return null;
-          const colTasks = filteredTasks.filter((t) => t.status === col.key);
-          return (
-            <>
-              {colTasks.length === 0 && (
-                <div className="text-center py-12">
-                  <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
-                  <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
-                  <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
-                </div>
-              )}
-              {colTasks
-                .sort((a, b) => (a.position || 0) - (b.position || 0))
-                .map((task) => (
-                <MobileTaskCard
-                  key={task.id}
-                  task={task}
-                  columns={columns}
-                  onClick={() => setDetailTask(task)}
-                  onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
-                  onReorder={(dir) => reorderTask(task.id, dir)}
-                  onRename={(t) => renameTaskInline(task.id, t)}
-                />
-              ))}
-              <button
-                onClick={() => openCreate(col.key)}
-                className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
-              >
-                <Plus size={16} /> Tambah task
-              </button>
-            </>
-          );
-        })()}
-      </div>
+      {/* ====== MOBILE: Single column view with drag reorder ====== */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="md:hidden flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
+          {(() => {
+            const col = columns[mobileTab];
+            if (!col) return null;
+            const colTasks = filteredTasks
+              .filter((t) => t.status === col.key)
+              .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+            return (
+              <>
+                {colTasks.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
+                    <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
+                    <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
+                  </div>
+                )}
+                <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  {colTasks.map((task) => (
+                    <MobileTaskCard
+                      key={task.id}
+                      task={task}
+                      columns={columns}
+                      onClick={() => setDetailTask(task)}
+                      onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
+                      onRename={(t) => renameTaskInline(task.id, t)}
+                    />
+                  ))}
+                </SortableContext>
+                <button
+                  onClick={() => openCreate(col.key)}
+                  className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
+                >
+                  <Plus size={16} /> Tambah task
+                </button>
+              </>
+            );
+          })()}
+        </div>
+        <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+          {activeTask ? <CardOverlay task={activeTask} /> : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* ====== DESKTOP: Horizontal kanban ====== */}
       <DndContext

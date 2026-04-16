@@ -1068,7 +1068,8 @@ export default function TasksPage() {
 
           {/* Mobile: Column Tab Bar */}
           {isMobile && (
-            <div className="flex gap-2 overflow-x-auto pb-1 pt-1 snap-x scrollbar-hide">
+            <div className="overflow-x-auto -mx-4 scrollbar-hide">
+            <div className="flex gap-2 pb-2 pt-1 px-4 w-max">
               {columns.map((col, idx) => {
                 const count = filteredTasks.filter((t) => t.status === col.key).length;
                 const isActive = mobileTab === idx;
@@ -1093,6 +1094,7 @@ export default function TasksPage() {
                   </button>
                 );
               })}
+            </div>
             </div>
           )}
         </div>

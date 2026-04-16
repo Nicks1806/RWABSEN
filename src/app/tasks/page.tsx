@@ -722,8 +722,8 @@ export default function TasksPage() {
     setShowForm({ open: true, status });
   }
 
-  async function saveTask(e: React.FormEvent) {
-    e.preventDefault();
+  async function saveTask(e?: React.FormEvent | React.MouseEvent) {
+    if (e) e.preventDefault();
     if (!user || !form.title.trim()) return;
     setLoading(true);
     const primaryAssignee = form.assignee_ids[0] || null;
@@ -1377,25 +1377,31 @@ export default function TasksPage() {
                 </div>
 
                 {/* Deadline */}
-                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-200">
-                  <CalendarIcon size={16} className="text-gray-500 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Deadline</p>
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-1">
+                    <CalendarIcon size={11} /> Deadline
+                  </p>
+                  <div className="flex items-center gap-2">
                     <input
                       type="date"
                       value={form.due_date}
                       onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-medium text-gray-800 outline-none mt-0.5"
+                      className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
                     />
+                    {form.due_date && (
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, due_date: "" })}
+                        className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center transition"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                   {form.due_date && (
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, due_date: "" })}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <X size={14} />
-                    </button>
+                    <p className="text-xs text-primary font-medium mt-1.5 px-1">
+                      {format(new Date(form.due_date), "EEEE, dd MMMM yyyy", { locale: idLocale })}
+                    </p>
                   )}
                 </div>
 

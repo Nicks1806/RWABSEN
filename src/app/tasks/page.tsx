@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Clock as ClockIcon,
   AlertCircle,
+  LayoutGrid,
   Image as ImageIcon,
   Link as LinkIcon,
   Paperclip,
@@ -39,7 +40,7 @@ import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks } from "@/lib/permissions";
-import type { BoardColumn } from "@/lib/types";
+import type { BoardColumn, Board } from "@/lib/types";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {
@@ -71,6 +72,8 @@ const CARD_COLORS: { key: Task["color"]; dot: string; border: string }[] = [
   { key: "purple", dot: "bg-purple-500", border: "border-l-purple-500" },
   { key: "gray", dot: "bg-gray-400", border: "border-l-gray-400" },
 ];
+
+const BOARD_COLORS = ["bg-primary", "bg-blue-600", "bg-emerald-600", "bg-amber-500", "bg-purple-600", "bg-pink-600", "bg-indigo-600", "bg-teal-600", "bg-slate-700"];
 
 // ============= Sub-components for dnd-kit =============
 
@@ -286,6 +289,13 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [columns, setColumns] = useState<BoardColumn[]>(DEFAULT_COLUMNS);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  // Multi-board state
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
+  const [showBoardSwitcher, setShowBoardSwitcher] = useState(false);
+  const [showCreateBoard, setShowCreateBoard] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [newBoardColor, setNewBoardColor] = useState("bg-primary");
   const [filterMine, setFilterMine] = useState(false);
   const [showForm, setShowForm] = useState<{ open: boolean; status: string; task?: Task }>({
     open: false,
@@ -314,31 +324,80 @@ export default function TasksPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
   );
 
-  const fetchData = useCallback(async () => {
-    const [tRes, eRes, cRes] = await Promise.all([
-      supabase.from("tasks").select("*").order("position", { ascending: true }).order("created_at", { ascending: false }),
+  const fetchData = useCallback(async (boardId?: string | null) => {
+    // Build tasks query — filter by board_id if set
+    let tasksQuery = supabase.from("tasks").select("*").order("position", { ascending: true }).order("created_at", { ascending: false });
+    if (boardId) tasksQuery = tasksQuery.eq("board_id", boardId);
+    else tasksQuery = tasksQuery.is("board_id", null); // default board = null
+
+    // Build columns query
+    let colsQuery = supabase.from("board_columns").select("*").order("position", { ascending: true });
+    if (boardId) colsQuery = colsQuery.eq("board_id", boardId);
+    else colsQuery = colsQuery.is("board_id", null);
+
+    const [tRes, eRes, cRes, bRes] = await Promise.all([
+      tasksQuery,
       supabase.from("employees").select("*").eq("is_active", true).order("name"),
-      supabase.from("board_columns").select("*").order("position", { ascending: true }),
+      colsQuery,
+      supabase.from("boards").select("*").order("created_at", { ascending: true }),
     ]);
     const empMap = new Map((eRes.data || []).map((e) => [e.id, e]));
     const tasksWithAssignee = (tRes.data || []).map((t) => {
       const ids: string[] = Array.isArray(t.assignees) ? [...t.assignees] : [];
       if (t.assignee_id && !ids.includes(t.assignee_id)) ids.unshift(t.assignee_id);
       const assigneeObjects = ids.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
-      return {
-        ...t,
-        assignees: ids,
-        assigneeObjects,
-        assignee: assigneeObjects[0],
-      };
+      return { ...t, assignees: ids, assigneeObjects, assignee: assigneeObjects[0] };
     });
     setTasks(tasksWithAssignee);
     setEmployees(eRes.data || []);
-    // Use DB columns if exist, otherwise keep defaults (works without migration)
-    if (cRes.data && cRes.data.length > 0) {
-      setColumns(cRes.data as BoardColumn[]);
-    }
+    if (cRes.data && cRes.data.length > 0) setColumns(cRes.data as BoardColumn[]);
+    else setColumns(DEFAULT_COLUMNS);
+    if (bRes.data) setBoards(bRes.data as Board[]);
   }, []);
+
+  // ===== Board CRUD =====
+  async function switchBoard(board: Board | null) {
+    setActiveBoard(board);
+    setShowBoardSwitcher(false);
+    setColumns(DEFAULT_COLUMNS);
+    await fetchData(board?.id || null);
+  }
+
+  async function createBoard() {
+    if (!newBoardName.trim() || !user) return;
+    const { data, error } = await supabase.from("boards").insert({
+      name: newBoardName.trim(),
+      color: newBoardColor,
+      created_by: user.id,
+    }).select().single();
+    if (error) {
+      alert("Gagal: " + error.message + "\n\nPastikan tabel 'boards' sudah dibuat di Supabase.");
+      return;
+    }
+    // Create default columns for new board
+    const defaultCols = DEFAULT_COLUMNS.map((c, i) => ({
+      board_id: data.id,
+      key: c.key,
+      label: c.label,
+      description: c.description,
+      color: c.color,
+      position: i,
+    }));
+    await supabase.from("board_columns").insert(defaultCols);
+    setNewBoardName("");
+    setShowCreateBoard(false);
+    setBoards([...boards, data as Board]);
+    switchBoard(data as Board);
+  }
+
+  async function deleteBoard(board: Board) {
+    if (!confirm(`Hapus board "${board.name}" beserta semua task & kolom di dalamnya?`)) return;
+    await supabase.from("tasks").delete().eq("board_id", board.id);
+    await supabase.from("board_columns").delete().eq("board_id", board.id);
+    await supabase.from("boards").delete().eq("id", board.id);
+    setBoards((prev) => prev.filter((b) => b.id !== board.id));
+    if (activeBoard?.id === board.id) switchBoard(null);
+  }
 
   // ===== Column CRUD =====
   async function addColumn() {
@@ -351,6 +410,7 @@ export default function TasksPage() {
       color: newColColor,
       position: columns.length,
       is_default: false,
+      board_id: activeBoard?.id || null,
     };
     const { data, error } = await supabase.from("board_columns").insert(newCol).select().single();
     if (error) {
@@ -421,7 +481,7 @@ export default function TasksPage() {
           return;
         }
         setUser(fresh);
-        fetchData();
+        fetchData(null); // default board
       });
   }, [router, fetchData]);
 
@@ -430,7 +490,7 @@ export default function TasksPage() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const trigger = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fetchRef.current(), 500);
+      timer = setTimeout(() => fetchRef.current(activeBoard?.id || null), 500);
     };
     const channel = supabase
       .channel("tasks-realtime")
@@ -482,6 +542,7 @@ export default function TasksPage() {
         assignee_id: primaryAssignee,
         due_date: form.due_date || null,
         created_by: user.id,
+        board_id: activeBoard?.id || null,
       });
       if (error) alert("Gagal: " + error.message);
     }
@@ -563,7 +624,9 @@ export default function TasksPage() {
               </button>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-lg text-gray-900">Task Board</h1>
+                  <h1 className="font-bold text-lg text-gray-900">
+                    {activeBoard ? activeBoard.name : "Task Board"}
+                  </h1>
                   <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
                     {tasks.length}
                   </span>
@@ -571,6 +634,13 @@ export default function TasksPage() {
                 <p className="text-xs text-gray-500">Drag card untuk pindah kolom • Tap untuk edit</p>
               </div>
             </div>
+            {/* Board switcher button */}
+            <button
+              onClick={() => setShowBoardSwitcher(!showBoardSwitcher)}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition mr-1"
+            >
+              <LayoutGrid size={13} /> Switch
+            </button>
             <button
               onClick={() => setFilterMine(!filterMine)}
               className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
@@ -751,6 +821,93 @@ export default function TasksPage() {
       </DndContext>
 
       <BottomNav />
+
+      {/* Board Switcher Modal */}
+      {showBoardSwitcher && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-16 px-4" onClick={() => setShowBoardSwitcher(false)}>
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Switch Board</h3>
+              <button onClick={() => setShowBoardSwitcher(false)} className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-400 flex items-center justify-center"><X size={16} /></button>
+            </div>
+            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+              {/* Default board */}
+              <button
+                onClick={() => switchBoard(null)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition ${
+                  !activeBoard ? "bg-primary/5 border-primary ring-2 ring-primary/20" : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                }`}
+              >
+                <div className="w-12 h-9 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold shadow-sm">RW</div>
+                <div className="text-left flex-1">
+                  <p className="text-sm font-semibold text-gray-900">Default Board</p>
+                  <p className="text-[10px] text-gray-500">Board utama RedWine</p>
+                </div>
+                {!activeBoard && <CheckCircle2 size={16} className="text-primary" />}
+              </button>
+
+              {/* User boards */}
+              {boards.map((b) => (
+                <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl border transition ${
+                  activeBoard?.id === b.id ? "bg-primary/5 border-primary ring-2 ring-primary/20" : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                }`}>
+                  <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                    <div className={`w-12 h-9 rounded-lg ${b.color} flex items-center justify-center text-white text-xs font-bold shadow-sm`}>
+                      {b.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
+                      {b.description && <p className="text-[10px] text-gray-500 truncate">{b.description}</p>}
+                    </div>
+                    {activeBoard?.id === b.id && <CheckCircle2 size={16} className="text-primary shrink-0" />}
+                  </button>
+                  <button
+                    onClick={() => deleteBoard(b)}
+                    className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0"
+                    title="Hapus board"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Create new board */}
+              {showCreateBoard ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+                  <input
+                    type="text" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") createBoard(); if (e.key === "Escape") setShowCreateBoard(false); }}
+                    placeholder="Nama board (misal: Sales Team)"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    autoFocus
+                  />
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 mb-1 uppercase">Warna</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {BOARD_COLORS.map((c) => (
+                        <button key={c} onClick={() => setNewBoardColor(c)}
+                          className={`w-8 h-6 rounded-md ${c} transition ${newBoardColor === c ? "ring-2 ring-offset-1 ring-gray-800 scale-110" : "opacity-60 hover:opacity-100"}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowCreateBoard(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700">Batal</button>
+                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-40">Buat Board</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowCreateBoard(true)}
+                  className="w-full py-3 rounded-xl text-sm text-gray-600 hover:text-primary bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 hover:border-primary transition font-medium inline-flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} /> Buat Board Baru
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {detailTask && user && (
         <TaskDetailModal

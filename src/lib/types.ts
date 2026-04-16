@@ -104,8 +104,19 @@ export interface TaskAttachment {
 
 export type TaskLabel = "red" | "yellow" | "green" | "blue" | "purple" | "gray";
 
+export interface Board {
+  id: string;
+  name: string;
+  description?: string | null;
+  color: string; // tailwind bg class name or hex
+  cover_url?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
 export interface BoardColumn {
   id: string;
+  board_id?: string | null;
   key: string; // unique slug
   label: string;
   description?: string | null;

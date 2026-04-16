@@ -265,6 +265,114 @@ function ColumnDroppable({
   );
 }
 
+function MobileTaskCard({ task, columns, onClick, onMove }: {
+  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void;
+}) {
+  const [showMove, setShowMove] = useState(false);
+  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
+  const coverUrl = task.cover_url || task.attachments?.find((a) => a.type === "image")?.url;
+  const labels = new Set<string>(task.labels || []);
+  if (task.color) labels.add(task.color);
+  const clTotal = task.checklist?.length || 0;
+  const clDone = task.checklist?.filter((i) => i.done).length || 0;
+
+  return (
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 ${cardColor.border} overflow-hidden active:scale-[0.98] transition-transform`}>
+      {coverUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={coverUrl} alt="" className="w-full h-32 object-cover" onClick={onClick} />
+      )}
+      <div onClick={onClick} className="px-3.5 pt-3 pb-2">
+        {/* Labels */}
+        {labels.size > 0 && (
+          <div className="flex gap-1 mb-1.5">
+            {Array.from(labels).map((l) => {
+              const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
+              return <span key={l} className={`h-1.5 w-8 rounded-full ${lc.dot}`} />;
+            })}
+          </div>
+        )}
+        <p className="font-semibold text-sm text-gray-900 leading-snug">{task.title}</p>
+        {task.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>}
+      </div>
+
+      {/* Meta badges */}
+      {(task.due_date || clTotal > 0 || (task.comments?.length || 0) > 0) && (
+        <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap" onClick={onClick}>
+          {task.due_date && (
+            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+              isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
+                ? "bg-red-100 text-red-700"
+                : isToday(new Date(task.due_date))
+                ? "bg-amber-100 text-amber-700"
+                : "bg-slate-100 text-slate-600"
+            }`}>
+              <CalendarIcon size={10} />
+              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
+            </span>
+          )}
+          {clTotal > 0 && (
+            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${clDone === clTotal ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+              <CheckCircle2 size={10} /> {clDone}/{clTotal}
+            </span>
+          )}
+          {(task.comments?.length || 0) > 0 && (
+            <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">💬 {task.comments!.length}</span>
+          )}
+        </div>
+      )}
+
+      {/* Footer: assignees + move */}
+      <div className="px-3.5 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0" onClick={onClick}>
+          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
+            <div className="flex -space-x-1.5">
+              {task.assigneeObjects.slice(0, 3).map((emp) => (
+                <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
+                  <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+                </div>
+              ))}
+              {task.assigneeObjects.length > 3 && (
+                <span className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                  +{task.assigneeObjects.length - 3}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
+          )}
+        </div>
+        {/* Move button */}
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowMove(!showMove); }}
+            className="text-[10px] text-gray-500 hover:text-primary font-medium px-2 py-1 bg-white border border-gray-200 rounded-lg transition inline-flex items-center gap-1"
+          >
+            Pindah ▸
+          </button>
+          {showMove && (
+            <div className="absolute bottom-full right-0 mb-1 bg-white rounded-xl shadow-lg border border-gray-200 p-1 min-w-[120px] z-20">
+              {columns.filter((c) => c.key !== task.status).map((c) => {
+                const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
+                return (
+                  <button
+                    key={c.id}
+                    onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowMove(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition text-left"
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${topColor}`} />
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CardOverlay({ task }: { task: Task }) {
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
   return (
@@ -312,6 +420,8 @@ export default function TasksPage() {
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overColKey, setOverColKey] = useState<string | null>(null);
+  // Mobile tab view
+  const [mobileTab, setMobileTab] = useState(0);
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -651,7 +761,7 @@ export default function TasksPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="hidden md:grid grid-cols-3 gap-2">
             <StatPill icon={<UserIcon size={12} />} label="Tugas Saya" value={myCount} color="primary" />
             <StatPill icon={<ClockIcon size={12} />} label="Today" value={todayTasksCount} color="amber" />
             <StatPill
@@ -661,9 +771,73 @@ export default function TasksPage() {
               color={overdueCount > 0 ? "red" : "gray"}
             />
           </div>
+
+          {/* Mobile: Column Tab Bar */}
+          <div className="md:hidden flex gap-1 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
+            {columns.map((col, idx) => {
+              const count = filteredTasks.filter((t) => t.status === col.key).length;
+              const isActive = mobileTab === idx;
+              const topBarColor = COL_COLORS[col.color as ColColor] || "bg-gray-400";
+              return (
+                <button
+                  key={col.id}
+                  onClick={() => setMobileTab(idx)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition snap-start ${
+                    isActive
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "bg-white text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${topBarColor}`} />
+                  {col.label}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-bold ${
+                    isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
+      {/* ====== MOBILE: Single column view ====== */}
+      <div className="md:hidden flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
+        {(() => {
+          const col = columns[mobileTab];
+          if (!col) return null;
+          const colTasks = filteredTasks.filter((t) => t.status === col.key);
+          return (
+            <>
+              {colTasks.length === 0 && (
+                <div className="text-center py-12">
+                  <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
+                  <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
+                  <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
+                </div>
+              )}
+              {colTasks.map((task) => (
+                <MobileTaskCard
+                  key={task.id}
+                  task={task}
+                  columns={columns}
+                  onClick={() => setDetailTask(task)}
+                  onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
+                />
+              ))}
+              <button
+                onClick={() => openCreate(col.key)}
+                className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
+              >
+                <Plus size={16} /> Tambah task
+              </button>
+            </>
+          );
+        })()}
+      </div>
+
+      {/* ====== DESKTOP: Horizontal kanban ====== */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -671,7 +845,7 @@ export default function TasksPage() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden hidden md:block">
           <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
             {columns.map((col) => {
               const colTasks = filteredTasks.filter((t) => t.status === col.key);

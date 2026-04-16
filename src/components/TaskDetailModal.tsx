@@ -447,23 +447,27 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             {/* Deadline inline */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <button
-                onClick={() => { const el = document.getElementById("due-input") as HTMLInputElement | null; if (el) el.showPicker?.(); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                <CalendarIcon size={14} className="text-gray-500" />
-                <span className="flex-1 text-left">Deadline</span>
-              </button>
-              {dueDate && (
-                <div className="px-3 pb-2.5 flex items-center gap-1.5">
-                  <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
-                    {format(new Date(dueDate), "dd MMM yyyy", { locale: idLocale })}
-                  </span>
-                  <button onClick={() => setDueDate("")} className="text-gray-400 hover:text-red-500 transition"><X size={12} /></button>
-                </div>
-              )}
+              <div className="flex items-center gap-2.5 px-3 py-2.5">
+                <CalendarIcon size={14} className="text-gray-500 shrink-0" />
+                <span className="text-xs font-medium text-gray-700">Deadline</span>
+              </div>
+              <div className="px-3 pb-3">
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                />
+                {dueDate && (
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                      {format(new Date(dueDate), "EEEE, dd MMM yyyy", { locale: idLocale })}
+                    </span>
+                    <button onClick={() => setDueDate("")} className="text-[10px] text-gray-400 hover:text-red-500 transition font-medium">Hapus</button>
+                  </div>
+                )}
+              </div>
             </div>
-            <input id="due-input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="sr-only" />
 
             <SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} badge={attachments.filter((a) => a.type === "image").length || undefined} onClick={() => fileInputRef.current?.click()} />
             <SidebarBtn icon={<LinkIcon size={14} />} label="Link" badge={attachments.filter((a) => a.type === "link").length || undefined} active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} />

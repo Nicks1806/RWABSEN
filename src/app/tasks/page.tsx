@@ -274,14 +274,6 @@ function ColumnDroppable({
 function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
   task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (colKey: string) => void; onRename: (t: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id,
-    data: { type: "task", task },
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
   const [showActions, setShowActions] = useState(false);
   const [editTitle, setEditTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(task.title);
@@ -296,21 +288,13 @@ function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
 
   return (
     <div
-      ref={setNodeRef}
-      style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
-      className={`bg-white rounded-2xl shadow-sm border border-gray-100 transition-transform overflow-visible relative touch-none ${isDragging ? "z-50 shadow-xl" : ""}`}
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative"
     >
-      {/* Cover + drag handle */}
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing select-none">
-        {coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt="" className="w-full h-36 object-cover rounded-t-2xl" draggable={false} />
-        ) : (
-          <div className="flex justify-center pt-2.5 pb-0.5">
-            <div className="w-10 h-1 bg-gray-200 rounded-full" />
-          </div>
-        )}
-      </div>
+      {/* Cover */}
+      {coverUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={coverUrl} alt="" className="w-full h-32 object-cover rounded-t-2xl" onClick={onClick} />
+      )}
 
       <div onClick={onClick} className="px-4 pt-2 pb-2.5">
         {/* Labels */}
@@ -1100,62 +1084,59 @@ export default function TasksPage() {
         </div>
       </header>
 
-      {/* ====== Single DndContext for either mobile or desktop ====== */}
+      {/* ====== MOBILE: Simple card list (no dnd-kit) ====== */}
+      {isMobile && (
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-24">
+          {(() => {
+            const col = columns[mobileTab];
+            if (!col) return null;
+            const colTasks = filteredTasks
+              .filter((t) => t.status === col.key)
+              .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+            return (
+              <>
+                {colTasks.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
+                    <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
+                    <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
+                  </div>
+                )}
+                {colTasks.map((task) => (
+                  <MobileTaskCard
+                    key={task.id}
+                    task={task}
+                    columns={columns}
+                    onClick={() => setDetailTask(task)}
+                    onMove={(newStatus) => {
+                      moveTaskToColumn(task.id, newStatus);
+                      const targetIdx = columns.findIndex((c) => c.key === newStatus);
+                      if (targetIdx >= 0) setTimeout(() => setMobileTab(targetIdx), 300);
+                    }}
+                    onRename={(t) => renameTaskInline(task.id, t)}
+                  />
+                ))}
+                <button
+                  onClick={() => openCreate(col.key)}
+                  className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
+                >
+                  <Plus size={16} /> Tambah task
+                </button>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ====== DESKTOP: Kanban with dnd-kit ====== */}
+      {!isMobile && (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragOver={isMobile ? undefined : handleDragOver}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        {/* MOBILE: Single column view */}
-        {isMobile && (
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-24">
-            {(() => {
-              const col = columns[mobileTab];
-              if (!col) return null;
-              const colTasks = filteredTasks
-                .filter((t) => t.status === col.key)
-                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
-              return (
-                <>
-                  {colTasks.length === 0 && (
-                    <div className="text-center py-12">
-                      <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
-                      <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
-                      <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
-                    </div>
-                  )}
-                  <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                    {colTasks.map((task) => (
-                      <MobileTaskCard
-                        key={task.id}
-                        task={task}
-                        columns={columns}
-                        onClick={() => setDetailTask(task)}
-                        onMove={(newStatus) => {
-                          moveTaskToColumn(task.id, newStatus);
-                          const targetIdx = columns.findIndex((c) => c.key === newStatus);
-                          if (targetIdx >= 0) setTimeout(() => setMobileTab(targetIdx), 300);
-                        }}
-                        onRename={(t) => renameTaskInline(task.id, t)}
-                      />
-                    ))}
-                  </SortableContext>
-                  <button
-                    onClick={() => openCreate(col.key)}
-                    className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
-                  >
-                    <Plus size={16} /> Tambah task
-                  </button>
-                </>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* DESKTOP: Horizontal kanban */}
-        {!isMobile && (
         <main className="flex-1 overflow-hidden">
           <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
             {columns.map((col) => {
@@ -1303,12 +1284,12 @@ export default function TasksPage() {
             </div>
           </div>
         </main>
-        )}
 
         <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
           {activeTask ? <CardOverlay task={activeTask} /> : null}
         </DragOverlay>
       </DndContext>
+      )}
 
       {/* Task Bottom Bar (Trello-style) */}
       <div className="h-14" />

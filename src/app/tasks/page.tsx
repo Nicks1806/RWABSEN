@@ -265,8 +265,8 @@ function ColumnDroppable({
   );
 }
 
-function MobileTaskCard({ task, columns, onClick, onMove }: {
-  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void;
+function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
+  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onReorder: (dir: "up" | "down") => void;
 }) {
   const [showMove, setShowMove] = useState(false);
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
@@ -342,8 +342,24 @@ function MobileTaskCard({ task, columns, onClick, onMove }: {
             <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
           )}
         </div>
-        {/* Move button */}
-        <div className="relative">
+        <div className="flex items-center gap-1">
+          {/* Reorder up/down */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onReorder("up"); }}
+            className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-primary flex items-center justify-center text-xs font-bold transition active:scale-90"
+            title="Pindah atas"
+          >
+            ↑
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReorder("down"); }}
+            className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-primary flex items-center justify-center text-xs font-bold transition active:scale-90"
+            title="Pindah bawah"
+          >
+            ↓
+          </button>
+          {/* Move to column */}
+          <div className="relative ml-1">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMove(!showMove); }}
             className="text-[10px] text-gray-500 hover:text-primary font-medium px-2 py-1 bg-white border border-gray-200 rounded-lg transition inline-flex items-center gap-1"
@@ -367,6 +383,7 @@ function MobileTaskCard({ task, columns, onClick, onMove }: {
               })}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
@@ -612,6 +629,31 @@ export default function TasksPage() {
     };
   }, [user]);
 
+  async function reorderTask(taskId: string, direction: "up" | "down") {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const colTasks = filteredTasks
+      .filter((t) => t.status === task.status)
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
+    const idx = colTasks.findIndex((t) => t.id === taskId);
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= colTasks.length) return;
+    const other = colTasks[swapIdx];
+    // Swap positions optimistically
+    const myPos = task.position ?? idx;
+    const otherPos = other.position ?? swapIdx;
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? { ...t, position: otherPos } :
+        t.id === other.id ? { ...t, position: myPos } : t
+      )
+    );
+    await Promise.all([
+      supabase.from("tasks").update({ position: otherPos }).eq("id", taskId),
+      supabase.from("tasks").update({ position: myPos }).eq("id", other.id),
+    ]);
+  }
+
   function openCreate(status: string) {
     setForm({
       title: "",
@@ -817,13 +859,16 @@ export default function TasksPage() {
                   <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
                 </div>
               )}
-              {colTasks.map((task) => (
+              {colTasks
+                .sort((a, b) => (a.position || 0) - (b.position || 0))
+                .map((task) => (
                 <MobileTaskCard
                   key={task.id}
                   task={task}
                   columns={columns}
                   onClick={() => setDetailTask(task)}
                   onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
+                  onReorder={(dir) => reorderTask(task.id, dir)}
                 />
               ))}
               <button

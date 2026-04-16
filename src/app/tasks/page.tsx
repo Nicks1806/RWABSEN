@@ -290,11 +290,11 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
   const attachCount = task.attachments?.length || 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition-transform">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.99] transition-transform overflow-visible relative">
       {/* Cover */}
       {coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt="" className="w-full h-36 object-cover" onClick={onClick} />
+        <img src={coverUrl} alt="" className="w-full h-36 object-cover rounded-t-2xl" onClick={onClick} />
       )}
 
       <div onClick={onClick} className="px-4 pt-3 pb-2.5">
@@ -381,42 +381,57 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
         </button>
       </div>
 
-      {/* Action drawer */}
+      {/* Action bottom sheet */}
       {showActions && (
-        <div className="px-3 pb-3 border-t border-gray-100 bg-gray-50/50 animate-slide-up">
-          <div className="flex gap-2 pt-2.5">
-            <button
-              onClick={(e) => { e.stopPropagation(); onReorder("up"); }}
-              className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition"
-            >
-              ↑ Atas
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onReorder("down"); }}
-              className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition"
-            >
-              ↓ Bawah
-            </button>
-          </div>
-          <div className="mt-2">
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5 px-1">Pindah ke</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {columns.filter((c) => c.key !== task.status).map((c) => {
-                const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
-                return (
-                  <button
-                    key={c.id}
-                    onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowActions(false); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-700 active:scale-95 transition"
-                  >
-                    <span className={`w-2.5 h-2.5 rounded-full ${topColor}`} />
-                    {c.label}
-                  </button>
-                );
-              })}
+        <>
+          <div className="fixed inset-0 bg-black/30 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 animate-slide-up safe-bottom">
+            <div className="flex justify-center pt-2 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
+            <div className="px-4 pt-2 pb-2 border-b border-gray-100">
+              <p className="text-sm font-bold text-gray-900 truncate">{task.title}</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onReorder("up"); setShowActions(false); }}
+                  className="flex-1 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+                >
+                  ↑ Atas
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onReorder("down"); setShowActions(false); }}
+                  className="flex-1 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+                >
+                  ↓ Bawah
+                </button>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 px-1">Pindah ke kolom</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {columns.filter((c) => c.key !== task.status).map((c) => {
+                    const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowActions(false); }}
+                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 active:scale-95 transition"
+                      >
+                        <span className={`w-3 h-3 rounded-full ${topColor}`} />
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowActions(false); }}
+                className="w-full py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold active:scale-95 transition mt-1"
+              >
+                Tutup
+              </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

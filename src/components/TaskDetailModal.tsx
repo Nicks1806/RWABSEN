@@ -6,34 +6,20 @@ import { Employee, Task, TaskAttachment, TaskLabel, ChecklistItem, TaskComment }
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
-  X,
-  CheckCircle2,
-  Trash2,
-  User as UserIcon,
-  Calendar as CalendarIcon,
-  AlignLeft,
-  Check,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Paperclip,
-  Upload,
-  ExternalLink,
-  ListChecks,
-  Plus,
-  Tag,
-  Square,
-  MessageSquare,
-  Send,
+  X, CheckCircle2, Trash2, User as UserIcon, Calendar as CalendarIcon,
+  AlignLeft, Check, Image as ImageIcon, Link as LinkIcon, Paperclip,
+  Upload, ExternalLink, ListChecks, Plus, Tag, Square, MessageSquare,
+  Send, CreditCard,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 
-const CARD_COLORS: { key: Task["color"]; bg: string; border: string; dot: string; label: string }[] = [
-  { key: "red", bg: "bg-rose-50", border: "border-l-rose-500", dot: "bg-rose-500", label: "Merah" },
-  { key: "yellow", bg: "bg-amber-50", border: "border-l-amber-500", dot: "bg-amber-500", label: "Kuning" },
-  { key: "green", bg: "bg-emerald-50", border: "border-l-emerald-500", dot: "bg-emerald-500", label: "Hijau" },
-  { key: "blue", bg: "bg-blue-50", border: "border-l-blue-500", dot: "bg-blue-500", label: "Biru" },
-  { key: "purple", bg: "bg-purple-50", border: "border-l-purple-500", dot: "bg-purple-500", label: "Ungu" },
-  { key: "gray", bg: "bg-gray-50", border: "border-l-gray-400", dot: "bg-gray-400", label: "Abu" },
+const CARD_COLORS: { key: Task["color"]; dot: string; label: string }[] = [
+  { key: "red", dot: "bg-rose-500", label: "Merah" },
+  { key: "yellow", dot: "bg-amber-400", label: "Kuning" },
+  { key: "green", dot: "bg-emerald-500", label: "Hijau" },
+  { key: "blue", dot: "bg-blue-500", label: "Biru" },
+  { key: "purple", dot: "bg-purple-500", label: "Ungu" },
+  { key: "gray", dot: "bg-gray-400", label: "Abu" },
 ];
 
 interface Props {
@@ -46,7 +32,7 @@ interface Props {
 export default function TaskDetailModal({ task, currentUser, employees, onClose }: Props) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
-  // Labels: union of `labels[]` + legacy `color`
+  const [editingDesc, setEditingDesc] = useState(false);
   const initialLabels: TaskLabel[] = (() => {
     const set = new Set<TaskLabel>(task.labels || []);
     if (task.color) set.add(task.color);
@@ -70,6 +56,8 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   const [linkUrl, setLinkUrl] = useState("");
   const [linkName, setLinkName] = useState("");
   const [showLinkForm, setShowLinkForm] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,681 +75,368 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
     setComments(task.comments || []);
   }, [task]);
 
+  // ===== Persistence helpers =====
   async function saveAll() {
-    if (!title.trim()) {
-      alert("Judul wajib diisi");
-      return;
-    }
+    if (!title.trim()) { alert("Judul wajib diisi"); return; }
     setSaving(true);
-    const { error } = await supabase
-      .from("tasks")
-      .update({
-        title: title.trim(),
-        description: description.trim() || null,
-        color: labels[0] || "gray", // primary color = first label
-        labels,
-        assignees: assigneeIds,
-        assignee_id: assigneeIds[0] || null,
-        due_date: dueDate || null,
-        attachments,
-        checklist,
-        comments,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", task.id);
+    const { error } = await supabase.from("tasks").update({
+      title: title.trim(), description: description.trim() || null,
+      color: labels[0] || "gray", labels, assignees: assigneeIds,
+      assignee_id: assigneeIds[0] || null, due_date: dueDate || null,
+      attachments, checklist, comments, updated_at: new Date().toISOString(),
+    }).eq("id", task.id);
     setSaving(false);
-    if (error) {
-      alert("Gagal menyimpan: " + error.message);
-      return;
-    }
+    if (error) { alert("Gagal: " + error.message); return; }
     onClose();
   }
-
-  function toggleLabel(l: TaskLabel) {
-    setLabels((prev) => (prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]));
+  async function quickUpdate(patch: Record<string, unknown>) {
+    await supabase.from("tasks").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", task.id);
   }
-
-  // Checklist (auto-save individual mutations)
-  async function persistChecklist(updated: ChecklistItem[]) {
-    setChecklist(updated);
-    await supabase
-      .from("tasks")
-      .update({ checklist: updated, updated_at: new Date().toISOString() })
-      .eq("id", task.id);
-  }
-  async function addChecklistItem() {
-    if (!newChecklistText.trim()) return;
-    const item: ChecklistItem = {
-      id: crypto.randomUUID(),
-      text: newChecklistText.trim(),
-      done: false,
-    };
-    setNewChecklistText("");
-    await persistChecklist([...checklist, item]);
-  }
-  async function toggleChecklistItem(id: string) {
-    const updated = checklist.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
-    await persistChecklist(updated);
-  }
-  async function removeChecklistItem(id: string) {
-    await persistChecklist(checklist.filter((i) => i.id !== id));
-  }
-
-  // ===== Comments =====
-  async function addComment() {
-    if (!newCommentText.trim()) return;
-    const comment: TaskComment = {
-      id: crypto.randomUUID(),
-      text: newCommentText.trim(),
-      by: currentUser.id,
-      byName: currentUser.name,
-      at: new Date().toISOString(),
-    };
-    const updated = [comment, ...comments]; // newest first
-    setComments(updated);
-    setNewCommentText("");
-    await supabase
-      .from("tasks")
-      .update({ comments: updated, updated_at: new Date().toISOString() })
-      .eq("id", task.id);
-  }
-
-  async function deleteComment(id: string) {
-    const updated = comments.filter((c) => c.id !== id);
-    setComments(updated);
-    await supabase
-      .from("tasks")
-      .update({ comments: updated, updated_at: new Date().toISOString() })
-      .eq("id", task.id);
-  }
-
-  // ===== Attachments =====
-  async function handleImageUpload(file: File) {
-    if (!file.type.startsWith("image/")) {
-      alert("Hanya file gambar yang didukung");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran maksimal 5 MB");
-      return;
-    }
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const filename = `tasks/${task.id}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("attendance-photos")
-        .upload(filename, file, { contentType: file.type, cacheControl: "3600" });
-      if (uploadErr) throw uploadErr;
-      const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
-      const newAttachment: TaskAttachment = {
-        id: crypto.randomUUID(),
-        type: "image",
-        url: urlData.publicUrl,
-        name: file.name,
-        added_at: new Date().toISOString(),
-      };
-      const updated = [...attachments, newAttachment];
-      setAttachments(updated);
-      // Auto-save attachments immediately
-      await supabase
-        .from("tasks")
-        .update({ attachments: updated, updated_at: new Date().toISOString() })
-        .eq("id", task.id);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      alert("Upload gagal: " + msg);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function addLink() {
-    if (!linkUrl.trim()) return;
-    let url = linkUrl.trim();
-    if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-    const newAttachment: TaskAttachment = {
-      id: crypto.randomUUID(),
-      type: "link",
-      url,
-      name: linkName.trim() || url.replace(/^https?:\/\//, "").split("/")[0],
-      added_at: new Date().toISOString(),
-    };
-    const updated = [...attachments, newAttachment];
-    setAttachments(updated);
-    setLinkUrl("");
-    setLinkName("");
-    setShowLinkForm(false);
-    await supabase
-      .from("tasks")
-      .update({ attachments: updated, updated_at: new Date().toISOString() })
-      .eq("id", task.id);
-  }
-
-  async function removeAttachment(id: string) {
-    if (!confirm("Hapus attachment ini?")) return;
-    const target = attachments.find((a) => a.id === id);
-    const updated = attachments.filter((a) => a.id !== id);
-    setAttachments(updated);
-    // Best-effort delete from storage
-    if (target?.type === "image" && target.url.includes("attendance-photos/")) {
-      try {
-        const path = target.url.split("/attendance-photos/")[1]?.split("?")[0];
-        if (path) await supabase.storage.from("attendance-photos").remove([path]);
-      } catch {
-        /* ignore */
-      }
-    }
-    await supabase
-      .from("tasks")
-      .update({ attachments: updated, updated_at: new Date().toISOString() })
-      .eq("id", task.id);
-  }
-
   async function deleteTask() {
     if (!confirm("Hapus task ini?")) return;
     await supabase.from("tasks").delete().eq("id", task.id);
     onClose();
   }
+  function toggleAssignee(id: string) { setAssigneeIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]); }
+  function toggleLabel(l: TaskLabel) { setLabels((p) => p.includes(l) ? p.filter((x) => x !== l) : [...p, l]); }
 
-  function toggleAssignee(id: string) {
-    setAssigneeIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  // Checklist
+  async function persistChecklist(u: ChecklistItem[]) { setChecklist(u); await quickUpdate({ checklist: u }); }
+  async function addChecklistItem() {
+    if (!newChecklistText.trim()) return;
+    setNewChecklistText("");
+    await persistChecklist([...checklist, { id: crypto.randomUUID(), text: newChecklistText.trim(), done: false }]);
+  }
+  async function toggleChecklistItem(id: string) { await persistChecklist(checklist.map((i) => i.id === id ? { ...i, done: !i.done } : i)); }
+  async function removeChecklistItem(id: string) { await persistChecklist(checklist.filter((i) => i.id !== id)); }
+
+  // Comments
+  async function addComment() {
+    if (!newCommentText.trim()) return;
+    const c: TaskComment = { id: crypto.randomUUID(), text: newCommentText.trim(), by: currentUser.id, byName: currentUser.name, at: new Date().toISOString() };
+    const u = [c, ...comments]; setComments(u); setNewCommentText(""); await quickUpdate({ comments: u });
+  }
+  async function deleteComment(id: string) { const u = comments.filter((c) => c.id !== id); setComments(u); await quickUpdate({ comments: u }); }
+
+  // Attachments
+  async function handleImageUpload(file: File) {
+    if (!file.type.startsWith("image/")) { alert("Hanya file gambar"); return; }
+    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filename = `tasks/${task.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("attendance-photos").upload(filename, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
+      const a: TaskAttachment = { id: crypto.randomUUID(), type: "image", url: data.publicUrl, name: file.name, added_at: new Date().toISOString() };
+      const u = [...attachments, a]; setAttachments(u); await quickUpdate({ attachments: u });
+    } catch (e) { alert("Upload gagal: " + (e instanceof Error ? e.message : e)); }
+    finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
+  }
+  async function addLink() {
+    if (!linkUrl.trim()) return;
+    let url = linkUrl.trim(); if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    const a: TaskAttachment = { id: crypto.randomUUID(), type: "link", url, name: linkName.trim() || url.replace(/^https?:\/\//, "").split("/")[0], added_at: new Date().toISOString() };
+    const u = [...attachments, a]; setAttachments(u); setLinkUrl(""); setLinkName(""); setShowLinkForm(false); await quickUpdate({ attachments: u });
+  }
+  async function removeAttachment(id: string) {
+    if (!confirm("Hapus?")) return;
+    const u = attachments.filter((a) => a.id !== id); setAttachments(u); await quickUpdate({ attachments: u });
   }
 
-  const primaryLabel = labels[0] || task.color;
-  const currentColor = CARD_COLORS.find((c) => c.key === primaryLabel) || CARD_COLORS[0];
+  const coverUrl = task.cover_url || attachments.find((a) => a.type === "image")?.url;
+  const clDone = checklist.filter((i) => i.done).length;
+  const clPct = checklist.length > 0 ? Math.round((clDone / checklist.length) * 100) : 0;
+  const primaryColor = CARD_COLORS.find((c) => c.key === (labels[0] || task.color)) || CARD_COLORS[0];
+  const selectedEmps = employees.filter((e) => assigneeIds.includes(e.id));
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start md:items-center justify-center md:p-4 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full md:max-w-lg md:rounded-3xl shadow-2xl my-0 md:my-4 overflow-hidden animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Color bar */}
-        <div className={`h-2 ${currentColor.dot}`} />
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto pt-8 md:pt-16 pb-8 px-2" onClick={onClose}>
+      <div className="bg-gray-100 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
 
-        {/* Header */}
-        <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
-          <h2 className="font-bold text-gray-800">Detail Task</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
-          >
-            <X size={16} />
-          </button>
+        {/* Cover image */}
+        {coverUrl ? (
+          <div className="relative h-36 md:h-48 bg-gray-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        ) : (
+          <div className={`h-2 ${primaryColor.dot}`} />
+        )}
+
+        {/* Close button */}
+        <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10">
+          <X size={16} />
+        </button>
+
+        {/* Title */}
+        <div className="px-5 md:px-8 pt-4 pb-2 flex items-start gap-3">
+          <CreditCard size={20} className="text-gray-500 mt-0.5 shrink-0" />
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 text-lg font-bold text-gray-900 bg-transparent outline-none border-b-2 border-transparent focus:border-primary transition px-1 py-0.5"
+          />
         </div>
 
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-              Judul
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:bg-white"
-              placeholder="Judul task"
-              maxLength={200}
-            />
-          </div>
-
-          {/* Description / Notes */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <AlignLeft size={12} /> Catatan
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white resize-none"
-              placeholder="Catatan, detail, atau to-do list..."
-            />
-          </div>
-
-          {/* Due Date */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <CalendarIcon size={12} /> Deadline
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
-              />
-              {dueDate && (
-                <button
-                  onClick={() => setDueDate("")}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs text-gray-600"
-                >
-                  Hapus
-                </button>
-              )}
-            </div>
-            {dueDate && (
-              <p className="text-[11px] text-gray-500 mt-1">
-                {format(new Date(dueDate), "EEEE, dd MMMM yyyy", { locale: idLocale })}
-              </p>
-            )}
-          </div>
-
-          {/* Labels (multi-select) */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <Tag size={12} /> Label ({labels.length})
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {CARD_COLORS.map((c) => {
-                const active = labels.includes(c.key);
-                return (
-                  <button
-                    key={c.key}
-                    onClick={() => toggleLabel(c.key)}
-                    className={`h-9 px-3 rounded-lg ${c.dot} text-white text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
-                      active ? "ring-2 ring-offset-2 ring-gray-800 scale-105" : "opacity-60 hover:opacity-100"
-                    }`}
-                    title={c.label}
-                  >
-                    {active && <Check size={12} />}
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Assignees */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <UserIcon size={12} /> Di-assign ke ({assigneeIds.length})
-            </label>
-            <div className="space-y-1 max-h-56 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-200">
-              {employees
-                .filter((e) => e.is_active)
-                .map((e) => {
-                  const selected = assigneeIds.includes(e.id);
-                  return (
-                    <button
-                      key={e.id}
-                      onClick={() => toggleAssignee(e.id)}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
-                        selected
-                          ? "bg-white shadow-sm ring-2 ring-primary/30 font-semibold"
-                          : "hover:bg-white/60"
-                      }`}
-                    >
-                      <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
-                      <div className="flex-1 text-left min-w-0">
-                        <p className="text-sm truncate">{e.name}</p>
-                        {e.position && (
-                          <p className="text-[10px] text-gray-500 truncate">{e.position}</p>
-                        )}
-                      </div>
-                      {selected && <CheckCircle2 size={16} className="text-primary shrink-0" />}
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Checklist (Trello-style) */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <ListChecks size={12} /> Checklist
-              {checklist.length > 0 && (
-                <span className="ml-auto text-[10px] text-gray-500 normal-case tracking-normal">
-                  {checklist.filter((i) => i.done).length} / {checklist.length} selesai
-                </span>
-              )}
-            </label>
-
-            {/* Progress bar */}
-            {checklist.length > 0 && (() => {
-              const done = checklist.filter((i) => i.done).length;
-              const pct = Math.round((done / checklist.length) * 100);
-              return (
-                <div className="mb-2">
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        pct === 100 ? "bg-emerald-500" : "bg-primary"
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
+        {/* Info chips row (Trello-style) */}
+        <div className="px-5 md:px-8 pb-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-600">
+          {/* Members */}
+          {selectedEmps.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Members</p>
+              <div className="flex -space-x-1.5">
+                {selectedEmps.slice(0, 5).map((e) => (
+                  <div key={e.id} className="ring-2 ring-gray-100 rounded-full" title={e.name}>
+                    <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1 font-medium">{pct}%</p>
-                </div>
-              );
-            })()}
+                ))}
+                {selectedEmps.length > 5 && <span className="w-7 h-7 rounded-full bg-gray-300 ring-2 ring-gray-100 flex items-center justify-center text-[9px] font-bold">+{selectedEmps.length - 5}</span>}
+              </div>
+            </div>
+          )}
+          {/* Labels */}
+          {labels.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Labels</p>
+              <div className="flex gap-1">
+                {labels.map((l) => { const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0]; return <span key={l} className={`h-6 w-12 rounded-md ${lc.dot}`} title={lc.label} />; })}
+              </div>
+            </div>
+          )}
+          {/* Due date */}
+          {dueDate && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Due date</p>
+              <span className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-xs font-medium">
+                <CalendarIcon size={12} /> {format(new Date(dueDate), "dd MMM yyyy", { locale: idLocale })}
+              </span>
+            </div>
+          )}
+        </div>
 
-            {/* Items */}
-            {checklist.length > 0 && (
-              <div className="space-y-1 mb-2">
+        {/* Two-column layout */}
+        <div className="flex flex-col md:flex-row gap-0 md:gap-4 px-5 md:px-8 pb-5">
+
+          {/* ====== LEFT: Main content ====== */}
+          <div className="flex-1 space-y-5 min-w-0">
+
+            {/* Description */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                <AlignLeft size={16} /> Deskripsi
+              </h4>
+              {editingDesc ? (
+                <div>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary resize-none"
+                    autoFocus
+                  />
+                  <div className="flex gap-2 mt-1.5">
+                    <button onClick={() => setEditingDesc(false)} className="px-3 py-1.5 bg-primary text-white text-xs rounded-md font-semibold">Simpan</button>
+                    <button onClick={() => { setDescription(task.description || ""); setEditingDesc(false); }} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-md">Batal</button>
+                  </div>
+                </div>
+              ) : (
+                <div onClick={() => setEditingDesc(true)} className="min-h-[60px] bg-white rounded-lg p-3 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 border border-gray-200 transition whitespace-pre-wrap">
+                  {description || <span className="text-gray-400 italic">Tambahkan deskripsi yang lebih detail...</span>}
+                </div>
+              )}
+            </section>
+
+            {/* Checklist */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                <CheckCircle2 size={16} /> Checklist
+                {checklist.length > 0 && <span className="text-[10px] text-gray-500 font-normal ml-auto">{clDone}/{checklist.length}</span>}
+              </h4>
+              {checklist.length > 0 && (
+                <div className="mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-500 w-6 text-right">{clPct}%</span>
+                    <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={`h-full transition-all duration-500 rounded-full ${clPct === 100 ? "bg-emerald-500" : "bg-primary"}`} style={{ width: `${clPct}%` }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-0.5 mb-2">
                 {checklist.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg group transition ${
-                      item.done ? "bg-emerald-50/60" : "bg-gray-50 hover:bg-gray-100"
-                    }`}
-                  >
-                    <button
-                      onClick={() => toggleChecklistItem(item.id)}
-                      className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${
-                        item.done
-                          ? "bg-emerald-500 border-emerald-500"
-                          : "bg-white border-gray-300 hover:border-primary"
-                      }`}
-                    >
-                      {item.done ? (
-                        <Check size={12} className="text-white" strokeWidth={3} />
-                      ) : (
-                        <Square size={12} className="text-transparent" />
-                      )}
+                  <div key={item.id} className="flex items-center gap-2 py-1.5 px-1 rounded group hover:bg-white transition">
+                    <button onClick={() => toggleChecklistItem(item.id)}
+                      className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition ${item.done ? "bg-primary border-primary" : "bg-white border-gray-300"}`}>
+                      {item.done && <Check size={10} className="text-white" strokeWidth={3} />}
                     </button>
-                    <span
-                      className={`flex-1 text-sm ${
-                        item.done ? "text-gray-400 line-through" : "text-gray-700"
-                      }`}
-                    >
-                      {item.text}
-                    </span>
-                    <button
-                      onClick={() => removeChecklistItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 transition w-6 h-6 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
-                      title="Hapus"
-                    >
-                      <X size={12} />
-                    </button>
+                    <span className={`flex-1 text-sm ${item.done ? "text-gray-400 line-through" : "text-gray-700"}`}>{item.text}</span>
+                    <button onClick={() => removeChecklistItem(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition"><X size={12} /></button>
                   </div>
                 ))}
               </div>
-            )}
+              <div className="flex gap-1.5">
+                <input type="text" value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addChecklistItem(); } }}
+                  placeholder="Tambah item..."
+                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="px-2.5 py-1.5 bg-primary text-white rounded-md text-xs font-semibold disabled:opacity-40"><Plus size={14} /></button>
+              </div>
+            </section>
 
-            {/* Add new item */}
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={newChecklistText}
-                onChange={(e) => setNewChecklistText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addChecklistItem();
-                  }
-                }}
-                placeholder="Tambah item checklist & Enter..."
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
-              />
-              <button
-                onClick={addChecklistItem}
-                disabled={!newChecklistText.trim()}
-                className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 inline-flex items-center gap-1"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
+            {/* Attachments */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                <Paperclip size={16} /> Attachment
+              </h4>
+              {attachments.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 bg-white rounded-lg p-2 border border-gray-200 group hover:shadow-sm transition">
+                      {a.type === "image" ? (
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="w-20 h-14 rounded-md overflow-hidden bg-gray-100 shrink-0 hover:opacity-80">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={a.url} alt="" className="w-full h-full object-cover" />
+                        </a>
+                      ) : (
+                        <div className="w-20 h-14 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                          <LinkIcon size={20} className="text-blue-500" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-800 hover:underline truncate block">
+                          {a.name || (a.type === "image" ? "Gambar" : a.url)} <ExternalLink size={10} className="inline" />
+                        </a>
+                        <p className="text-[10px] text-gray-400">{format(new Date(a.added_at), "dd MMM yyyy • HH:mm", { locale: idLocale })}</p>
+                      </div>
+                      <button onClick={() => removeAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1"><Trash2 size={13} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showLinkForm && (
+                <div className="bg-white p-3 rounded-lg border border-gray-200 space-y-2 mb-3">
+                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary" autoFocus />
+                  <input type="text" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="Nama (opsional)" className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary" />
+                  <div className="flex gap-2">
+                    <button onClick={addLink} disabled={!linkUrl.trim()} className="px-3 py-1.5 bg-primary text-white text-xs rounded-md font-semibold disabled:opacity-40">Tambah</button>
+                    <button onClick={() => { setShowLinkForm(false); setLinkUrl(""); setLinkName(""); }} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md">Batal</button>
+                  </div>
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} />
+            </section>
+
+            {/* Activity / Comments */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                <MessageSquare size={16} /> Komentar & Activity
+              </h4>
+              <div className="flex gap-2 mb-4">
+                <Avatar name={currentUser.name} photoUrl={currentUser.photo_url} size="sm" />
+                <div className="flex-1 flex gap-1.5">
+                  <input type="text" value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }}
+                    placeholder="Tulis komentar..."
+                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button onClick={addComment} disabled={!newCommentText.trim()} className="px-2.5 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-40 shrink-0"><Send size={14} /></button>
+                </div>
+              </div>
+              {comments.length > 0 && (
+                <div className="space-y-3">
+                  {comments.map((c) => {
+                    const emp = employees.find((e) => e.id === c.by);
+                    return (
+                      <div key={c.id} className="flex gap-2 group">
+                        <Avatar name={emp?.name || c.byName || "?"} photoUrl={emp?.photo_url} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-gray-800">{emp?.name || c.byName}</span>
+                            <span className="text-[10px] text-gray-400">{format(new Date(c.at), "dd MMM HH:mm", { locale: idLocale })}</span>
+                          </div>
+                          <div className="bg-white rounded-lg p-2.5 mt-1 border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words">{c.text}</div>
+                        </div>
+                        {c.by === currentUser.id && (
+                          <button onClick={() => deleteComment(c.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition mt-1"><X size={12} /></button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
 
-          {/* Comments thread */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <MessageSquare size={12} /> Komentar ({comments.length})
-            </label>
+          {/* ====== RIGHT: Sidebar ====== */}
+          <div className="w-full md:w-44 shrink-0 pt-5 md:pt-0 space-y-1.5 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Tambah ke card</p>
 
-            {/* Add comment input */}
-            <div className="flex gap-2 mb-3">
-              <Avatar name={currentUser.name} photoUrl={currentUser.photo_url} size="sm" />
-              <div className="flex-1 flex gap-1.5">
-                <input
-                  type="text"
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addComment();
-                    }
-                  }}
-                  placeholder="Tulis komentar..."
-                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
-                />
-                <button
-                  onClick={addComment}
-                  disabled={!newCommentText.trim()}
-                  className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 shrink-0"
-                >
-                  <Send size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Thread */}
-            {comments.length > 0 && (
-              <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                {comments.map((c) => {
-                  const emp = employees.find((e) => e.id === c.by);
-                  const isMe = c.by === currentUser.id;
+            <SidebarBtn icon={<UserIcon size={14} />} label="Members" onClick={() => setShowMembers(!showMembers)} />
+            {showMembers && (
+              <div className="bg-white rounded-lg border border-gray-200 p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
+                {employees.filter((e) => e.is_active).map((e) => {
+                  const sel = assigneeIds.includes(e.id);
                   return (
-                    <div key={c.id} className="flex gap-2 group">
-                      <Avatar
-                        name={emp?.name || c.byName || "?"}
-                        photoUrl={emp?.photo_url}
-                        size="sm"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-semibold text-gray-800">
-                            {emp?.name || c.byName || "User"}
-                          </span>
-                          <span className="text-[10px] text-gray-400">
-                            {format(new Date(c.at), "dd MMM HH:mm", { locale: idLocale })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap break-words">
-                          {c.text}
-                        </p>
-                      </div>
-                      {isMe && (
-                        <button
-                          onClick={() => deleteComment(c.id)}
-                          className="opacity-0 group-hover:opacity-100 transition w-6 h-6 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0 mt-1"
-                          title="Hapus"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
+                    <button key={e.id} onClick={() => toggleAssignee(e.id)} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition ${sel ? "bg-primary/10 font-semibold" : "hover:bg-gray-50"}`}>
+                      <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
+                      <span className="flex-1 text-left truncate">{e.name}</span>
+                      {sel && <Check size={12} className="text-primary" />}
+                    </button>
                   );
                 })}
               </div>
             )}
-          </div>
 
-          {/* Attachments */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-              <Paperclip size={12} /> Attachment ({attachments.length})
-            </label>
-
-            {/* Existing attachments */}
-            {attachments.length > 0 && (
-              <div className="space-y-1.5 mb-2">
-                {attachments.map((a) =>
-                  a.type === "image" ? (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-xl group"
-                    >
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-12 h-12 rounded-md overflow-hidden bg-white border border-gray-200 shrink-0 hover:opacity-80"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={a.url} alt={a.name || ""} className="w-full h-full object-cover" />
-                      </a>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 truncate">{a.name || "Gambar"}</p>
-                        <p className="text-[10px] text-gray-400">
-                          {format(new Date(a.added_at), "dd MMM • HH:mm", { locale: idLocale })}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeAttachment(a.id)}
-                        className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
-                        title="Hapus"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-xl group"
-                    >
-                      <div className="w-10 h-10 rounded-md bg-white border border-blue-200 flex items-center justify-center shrink-0">
-                        <LinkIcon size={16} className="text-blue-600" />
-                      </div>
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 min-w-0 hover:underline"
-                      >
-                        <p className="text-xs font-medium text-blue-700 truncate inline-flex items-center gap-1">
-                          {a.name || a.url}
-                          <ExternalLink size={10} className="shrink-0" />
-                        </p>
-                        <p className="text-[10px] text-blue-500/80 truncate">{a.url}</p>
-                      </a>
-                      <button
-                        onClick={() => removeAttachment(a.id)}
-                        className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
-                        title="Hapus"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  )
-                )}
+            <SidebarBtn icon={<Tag size={14} />} label="Labels" onClick={() => setShowLabels(!showLabels)} />
+            {showLabels && (
+              <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1">
+                {CARD_COLORS.map((c) => {
+                  const sel = labels.includes(c.key);
+                  return (
+                    <button key={c.key} onClick={() => toggleLabel(c.key)} className={`w-full h-7 rounded ${c.dot} flex items-center justify-between px-2 transition ${sel ? "ring-2 ring-offset-1 ring-gray-800" : "opacity-60 hover:opacity-100"}`}>
+                      <span className="text-white text-[10px] font-bold">{c.label}</span>
+                      {sel && <Check size={12} className="text-white" />}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
-            {/* Add buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="px-3 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl text-xs font-medium text-gray-700 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                {uploading ? (
-                  <>
-                    <Upload size={14} className="animate-pulse" /> Upload...
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon size={14} /> Tambah Gambar
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => setShowLinkForm(!showLinkForm)}
-                className={`px-3 py-2.5 border rounded-xl text-xs font-medium inline-flex items-center justify-center gap-1.5 transition ${
-                  showLinkForm
-                    ? "bg-blue-50 border-blue-300 text-blue-700"
-                    : "bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700"
-                }`}
-              >
-                <LinkIcon size={14} /> Tambah Link
-              </button>
+            <SidebarBtn icon={<ListChecks size={14} />} label="Checklist" onClick={() => document.getElementById("cl-input")?.focus()} />
+
+            <SidebarBtn icon={<CalendarIcon size={14} />} label="Deadline" onClick={() => {
+              const el = document.getElementById("due-input") as HTMLInputElement | null;
+              if (el) el.showPicker?.();
+            }} />
+            <input id="due-input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="sr-only" />
+
+            <SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} onClick={() => fileInputRef.current?.click()} />
+            <SidebarBtn icon={<LinkIcon size={14} />} label="Link" onClick={() => setShowLinkForm(!showLinkForm)} />
+
+            <div className="pt-3 mt-3 border-t border-gray-200">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Aksi</p>
+              <SidebarBtn icon={<Trash2 size={14} />} label="Hapus" onClick={deleteTask} danger />
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleImageUpload(f);
-              }}
-            />
 
-            {/* Link form */}
-            {showLinkForm && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
-                <input
-                  type="url"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-300"
-                  autoFocus
-                />
-                <input
-                  type="text"
-                  value={linkName}
-                  onChange={(e) => setLinkName(e.target.value)}
-                  placeholder="Nama (opsional)"
-                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-300"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowLinkForm(false);
-                      setLinkUrl("");
-                      setLinkName("");
-                    }}
-                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-700"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={addLink}
-                    disabled={!linkUrl.trim()}
-                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                  >
-                    Tambah
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Save button */}
+            <button onClick={saveAll} disabled={saving}
+              className="w-full mt-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition shadow-sm inline-flex items-center justify-center gap-1.5"
+            >
+              <Check size={14} /> {saving ? "Menyimpan..." : "Simpan"}
+            </button>
           </div>
-        </div>
-
-        {/* Footer actions */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2">
-          <button
-            onClick={deleteTask}
-            className="px-3 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-medium inline-flex items-center gap-1"
-          >
-            <Trash2 size={14} /> Hapus
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 px-3 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-xl text-sm font-medium"
-          >
-            Batal
-          </button>
-          <button
-            onClick={saveAll}
-            disabled={saving}
-            className="flex-1 px-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-1"
-          >
-            <Check size={14} /> {saving ? "Menyimpan..." : "Simpan"}
-          </button>
         </div>
       </div>
     </div>
+  );
+}
+
+function SidebarBtn({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${danger ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"}`}>
+      {icon} {label}
+    </button>
   );
 }

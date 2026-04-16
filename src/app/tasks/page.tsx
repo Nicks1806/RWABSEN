@@ -470,34 +470,52 @@ export default function TasksPage() {
   );
 
   const fetchData = useCallback(async (boardId?: string | null) => {
-    // Build tasks query — filter by board_id if set
-    let tasksQuery = supabase.from("tasks").select("*").order("position", { ascending: true }).order("created_at", { ascending: false });
-    if (boardId) tasksQuery = tasksQuery.eq("board_id", boardId);
-    else tasksQuery = tasksQuery.is("board_id", null); // default board = null
+    try {
+      // Core queries (always work)
+      const [tRes, eRes] = await Promise.all([
+        supabase.from("tasks").select("*").order("position", { ascending: true }).order("created_at", { ascending: false }),
+        supabase.from("employees").select("*").eq("is_active", true).order("name"),
+      ]);
 
-    // Build columns query
-    let colsQuery = supabase.from("board_columns").select("*").order("position", { ascending: true });
-    if (boardId) colsQuery = colsQuery.eq("board_id", boardId);
-    else colsQuery = colsQuery.is("board_id", null);
+      // Optional queries (may fail if tables don't exist yet)
+      let colsData: BoardColumn[] = [];
+      let boardsData: Board[] = [];
+      try {
+        const cRes = await supabase.from("board_columns").select("*").order("position", { ascending: true });
+        if (cRes.data) colsData = cRes.data as BoardColumn[];
+      } catch { /* table may not exist */ }
+      try {
+        const bRes = await supabase.from("boards").select("*").order("created_at", { ascending: true });
+        if (bRes.data) boardsData = bRes.data as Board[];
+      } catch { /* table may not exist */ }
 
-    const [tRes, eRes, cRes, bRes] = await Promise.all([
-      tasksQuery,
-      supabase.from("employees").select("*").eq("is_active", true).order("name"),
-      colsQuery,
-      supabase.from("boards").select("*").order("created_at", { ascending: true }),
-    ]);
-    const empMap = new Map((eRes.data || []).map((e) => [e.id, e]));
-    const tasksWithAssignee = (tRes.data || []).map((t) => {
-      const ids: string[] = Array.isArray(t.assignees) ? [...t.assignees] : [];
-      if (t.assignee_id && !ids.includes(t.assignee_id)) ids.unshift(t.assignee_id);
-      const assigneeObjects = ids.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
-      return { ...t, assignees: ids, assigneeObjects, assignee: assigneeObjects[0] };
-    });
-    setTasks(tasksWithAssignee);
-    setEmployees(eRes.data || []);
-    if (cRes.data && cRes.data.length > 0) setColumns(cRes.data as BoardColumn[]);
-    else setColumns(DEFAULT_COLUMNS);
-    if (bRes.data) setBoards(bRes.data as Board[]);
+      // Filter tasks by board
+      const allTasks = tRes.data || [];
+      const filtered = boardId
+        ? allTasks.filter((t) => t.board_id === boardId)
+        : allTasks.filter((t) => !t.board_id);
+
+      const empMap = new Map((eRes.data || []).map((e) => [e.id, e]));
+      const tasksWithAssignee = filtered.map((t) => {
+        const ids: string[] = Array.isArray(t.assignees) ? [...t.assignees] : [];
+        if (t.assignee_id && !ids.includes(t.assignee_id)) ids.unshift(t.assignee_id);
+        const assigneeObjects = ids.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
+        return { ...t, assignees: ids, assigneeObjects, assignee: assigneeObjects[0] };
+      });
+      setTasks(tasksWithAssignee);
+      setEmployees(eRes.data || []);
+
+      // Filter columns by board
+      const boardCols = boardId
+        ? colsData.filter((c) => c.board_id === boardId)
+        : colsData.filter((c) => !c.board_id);
+      if (boardCols.length > 0) setColumns(boardCols);
+      else setColumns(DEFAULT_COLUMNS);
+
+      setBoards(boardsData);
+    } catch (err) {
+      console.error("fetchData error:", err);
+    }
   }, []);
 
   // ===== Board CRUD =====

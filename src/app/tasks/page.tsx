@@ -1318,14 +1318,12 @@ export default function TasksPage() {
         </div>
       </nav>
 
-      {/* Message Panel - inline left panel on desktop, fullscreen on mobile */}
+      {/* Message Panel */}
       {bottomTab === "message" && (
         <>
         <div
-          className={`bg-white flex flex-col border-r border-gray-200 shadow-xl ${
-            isMobile ? "fixed inset-0 z-30" : "fixed top-0 left-0 bottom-0 z-30"
-          }`}
-          style={isMobile ? { bottom: 56 } : { width: 340 }}
+          className="bg-white flex flex-col border-r border-gray-200 shadow-xl fixed z-30"
+          style={isMobile ? { inset: 0, bottom: 56 } : { top: 0, left: 0, bottom: 0, width: 360 }}
         >
           {/* Chat header */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">

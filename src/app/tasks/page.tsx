@@ -268,113 +268,135 @@ function ColumnDroppable({
 function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
   task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onReorder: (dir: "up" | "down") => void;
 }) {
-  const [showMove, setShowMove] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
   const coverUrl = task.cover_url || task.attachments?.find((a) => a.type === "image")?.url;
-  const labels = new Set<string>(task.labels || []);
-  if (task.color) labels.add(task.color);
+  const labelSet = new Set<string>(task.labels || []);
+  if (task.color) labelSet.add(task.color);
   const clTotal = task.checklist?.length || 0;
   const clDone = task.checklist?.filter((i) => i.done).length || 0;
+  const commentCount = task.comments?.length || 0;
+  const attachCount = task.attachments?.length || 0;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 ${cardColor.border} overflow-hidden active:scale-[0.98] transition-transform`}>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition-transform">
+      {/* Cover */}
       {coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt="" className="w-full h-32 object-cover" onClick={onClick} />
+        <img src={coverUrl} alt="" className="w-full h-36 object-cover" onClick={onClick} />
       )}
-      <div onClick={onClick} className="px-3.5 pt-3 pb-2">
+
+      <div onClick={onClick} className="px-4 pt-3 pb-2.5">
         {/* Labels */}
-        {labels.size > 0 && (
-          <div className="flex gap-1 mb-1.5">
-            {Array.from(labels).map((l) => {
+        {labelSet.size > 0 && (
+          <div className="flex gap-1.5 mb-2">
+            {Array.from(labelSet).map((l) => {
               const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
-              return <span key={l} className={`h-1.5 w-8 rounded-full ${lc.dot}`} />;
+              return <span key={l} className={`h-2 w-10 rounded-full ${lc.dot}`} />;
             })}
           </div>
         )}
-        <p className="font-semibold text-sm text-gray-900 leading-snug">{task.title}</p>
-        {task.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>}
+        <p className="font-bold text-base text-gray-900 leading-snug">{task.title}</p>
+        {task.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>}
       </div>
 
-      {/* Meta badges */}
-      {(task.due_date || clTotal > 0 || (task.comments?.length || 0) > 0) && (
-        <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap" onClick={onClick}>
+      {/* Badges row */}
+      {(task.due_date || clTotal > 0 || commentCount > 0 || attachCount > 0) && (
+        <div className="px-4 pb-2.5 flex items-center gap-2 flex-wrap" onClick={onClick}>
           {task.due_date && (
-            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+            <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-semibold ${
               isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
-                ? "bg-red-100 text-red-700"
+                ? "bg-red-50 text-red-600 border border-red-100"
                 : isToday(new Date(task.due_date))
-                ? "bg-amber-100 text-amber-700"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-amber-50 text-amber-600 border border-amber-100"
+                : "bg-gray-50 text-gray-600 border border-gray-100"
             }`}>
-              <CalendarIcon size={10} />
+              <CalendarIcon size={11} />
               {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
             </span>
           )}
           {clTotal > 0 && (
-            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${clDone === clTotal ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-              <CheckCircle2 size={10} /> {clDone}/{clTotal}
+            <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-semibold ${
+              clDone === clTotal ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-gray-50 text-gray-600 border border-gray-100"
+            }`}>
+              <CheckCircle2 size={11} /> {clDone}/{clTotal}
             </span>
           )}
-          {(task.comments?.length || 0) > 0 && (
-            <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">💬 {task.comments!.length}</span>
+          {commentCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-100 font-semibold">
+              💬 {commentCount}
+            </span>
+          )}
+          {attachCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-100 font-semibold">
+              <Paperclip size={11} /> {attachCount}
+            </span>
           )}
         </div>
       )}
 
-      {/* Footer: assignees + move */}
-      <div className="px-3.5 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0" onClick={onClick}>
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-gray-50 flex items-center justify-between">
+        {/* Assignees */}
+        <div className="flex items-center gap-2 min-w-0" onClick={onClick}>
           {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
-            <div className="flex -space-x-1.5">
-              {task.assigneeObjects.slice(0, 3).map((emp) => (
-                <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
-                  <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-                </div>
-              ))}
-              {task.assigneeObjects.length > 3 && (
-                <span className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
-                  +{task.assigneeObjects.length - 3}
+            <>
+              <div className="flex -space-x-1.5">
+                {task.assigneeObjects.slice(0, 4).map((emp) => (
+                  <div key={emp.id} className="ring-2 ring-white rounded-full">
+                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+                  </div>
+                ))}
+              </div>
+              {task.assigneeObjects.length <= 2 && (
+                <span className="text-xs text-gray-600 font-medium truncate">
+                  {task.assigneeObjects.map((e) => e.name.split(" ")[0]).join(", ")}
                 </span>
               )}
-            </div>
+            </>
           ) : (
-            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
+            <span className="text-xs text-gray-400 italic">Belum di-assign</span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          {/* Reorder up/down */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onReorder("up"); }}
-            className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-primary flex items-center justify-center text-xs font-bold transition active:scale-90"
-            title="Pindah atas"
-          >
-            ↑
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onReorder("down"); }}
-            className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-primary flex items-center justify-center text-xs font-bold transition active:scale-90"
-            title="Pindah bawah"
-          >
-            ↓
-          </button>
-          {/* Move to column */}
-          <div className="relative ml-1">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowMove(!showMove); }}
-            className="text-[10px] text-gray-500 hover:text-primary font-medium px-2 py-1 bg-white border border-gray-200 rounded-lg transition inline-flex items-center gap-1"
-          >
-            Pindah ▸
-          </button>
-          {showMove && (
-            <div className="absolute bottom-full right-0 mb-1 bg-white rounded-xl shadow-lg border border-gray-200 p-1 min-w-[120px] z-20">
+
+        {/* Actions toggle */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowActions(!showActions); }}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition text-sm ${
+            showActions ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200"
+          }`}
+        >
+          ···
+        </button>
+      </div>
+
+      {/* Action drawer */}
+      {showActions && (
+        <div className="px-3 pb-3 border-t border-gray-100 bg-gray-50/50 animate-slide-up">
+          <div className="flex gap-2 pt-2.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); onReorder("up"); }}
+              className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition"
+            >
+              ↑ Atas
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onReorder("down"); }}
+              className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition"
+            >
+              ↓ Bawah
+            </button>
+          </div>
+          <div className="mt-2">
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5 px-1">Pindah ke</p>
+            <div className="flex gap-1.5 flex-wrap">
               {columns.filter((c) => c.key !== task.status).map((c) => {
                 const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
                 return (
                   <button
                     key={c.id}
-                    onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowMove(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition text-left"
+                    onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowActions(false); }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-700 active:scale-95 transition"
                   >
                     <span className={`w-2.5 h-2.5 rounded-full ${topColor}`} />
                     {c.label}
@@ -382,10 +404,9 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
                 );
               })}
             </div>
-          )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1396,16 +1396,16 @@ export default function TasksPage() {
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-slide-up border border-gray-200" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl animate-slide-up border border-gray-200 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-primary-dark px-5 pt-5 pb-4 text-white relative">
+            <div className="bg-gradient-to-r from-primary to-primary-dark px-5 pt-5 pb-4 text-white relative sticky top-0 z-10">
               <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"><X size={14} /></button>
               <LayoutGrid size={20} className="mb-1.5 opacity-80" />
               <h3 className="font-bold text-lg">Board Anda</h3>
               <p className="text-xs text-white/70 mt-0.5">Pilih atau buat board per divisi</p>
             </div>
 
-            <div className="p-3 max-h-[55vh] overflow-y-auto space-y-1.5">
+            <div className="p-3 space-y-1.5">
               {/* Default board */}
               <button
                 onClick={() => switchBoard(null)}

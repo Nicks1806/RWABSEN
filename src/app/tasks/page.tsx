@@ -672,7 +672,7 @@ export default function TasksPage() {
         onDragEnd={handleDragEnd}
       >
         <main className="flex-1 overflow-hidden">
-          <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex gap-4 snap-x snap-mandatory">
+          <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
             {columns.map((col) => {
               const colTasks = filteredTasks.filter((t) => t.status === col.key);
               const isOverThis = overColKey === col.key && activeId !== null;
@@ -680,7 +680,7 @@ export default function TasksPage() {
               return (
                 <div
                   key={col.id}
-                  className={`shrink-0 w-72 md:w-80 bg-white/85 backdrop-blur-sm rounded-2xl flex flex-col snap-start max-h-full overflow-hidden border shadow-md transition-all ${
+                  className={`shrink-0 w-72 md:w-80 bg-white/85 backdrop-blur-sm rounded-2xl flex flex-col snap-start max-h-[calc(100vh-220px)] overflow-hidden border shadow-md transition-all ${
                     isOverThis ? "border-primary ring-4 ring-primary/20 scale-[1.01]" : "border-gray-200/80"
                   }`}
                 >

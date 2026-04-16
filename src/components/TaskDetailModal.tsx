@@ -152,8 +152,8 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   const selectedEmps = employees.filter((e) => assigneeIds.includes(e.id));
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto pt-8 md:pt-16 pb-8 px-2" onClick={onClose}>
-      <div className="bg-gray-100 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-start justify-center md:overflow-y-auto md:pt-16 md:pb-8 md:px-2" onClick={onClose}>
+      <div className="bg-gray-100 w-full max-w-3xl md:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up max-h-[95vh] md:max-h-none overflow-y-auto" onClick={(e) => e.stopPropagation()}>
 
         {/* Cover image */}
         {coverUrl ? (
@@ -218,8 +218,13 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
           )}
         </div>
 
+        {/* Mobile drag handle */}
+        <div className="md:hidden flex justify-center pt-1 pb-0">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+
         {/* Two-column layout */}
-        <div className="flex flex-col md:flex-row gap-0 md:gap-4 px-5 md:px-8 pb-5">
+        <div className="flex flex-col md:flex-row gap-0 md:gap-4 px-4 md:px-8 pb-5">
 
           {/* ====== LEFT: Main content ====== */}
           <div className="flex-1 space-y-5 min-w-0">
@@ -409,10 +414,19 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
           </div>
 
           {/* ====== RIGHT: Sidebar ====== */}
-          <div className="w-full md:w-48 shrink-0 pt-5 md:pt-0 space-y-1 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Tambah ke card</p>
+          <div className="w-full md:w-48 shrink-0 pt-4 md:pt-0 space-y-1 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 hidden md:block">Tambah ke card</p>
 
-            <SidebarBtn icon={<UserIcon size={14} />} label="Members" badge={assigneeIds.length || undefined} active={showMembers} onClick={() => setShowMembers(!showMembers)} />
+            {/* Mobile: horizontal action chips */}
+            <div className="flex md:hidden gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+              <MobileChip icon={<UserIcon size={12} />} label="Members" count={assigneeIds.length} active={showMembers} onClick={() => setShowMembers(!showMembers)} />
+              <MobileChip icon={<Tag size={12} />} label="Labels" count={labels.length} active={showLabels} onClick={() => setShowLabels(!showLabels)} />
+              <MobileChip icon={<ListChecks size={12} />} label="Checklist" count={checklist.length} onClick={() => document.getElementById("cl-input")?.focus()} />
+              <MobileChip icon={<ImageIcon size={12} />} label="Gambar" onClick={() => fileInputRef.current?.click()} />
+              <MobileChip icon={<LinkIcon size={12} />} label="Link" active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} />
+            </div>
+
+            <div className="hidden md:block"><SidebarBtn icon={<UserIcon size={14} />} label="Members" badge={assigneeIds.length || undefined} active={showMembers} onClick={() => setShowMembers(!showMembers)} /></div>
             {showMembers && (
               <div className="bg-white rounded-xl border border-gray-200 p-1.5 space-y-0.5 max-h-52 overflow-y-auto shadow-sm mb-1">
                 {employees.filter((e) => e.is_active).map((e) => {
@@ -428,7 +442,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               </div>
             )}
 
-            <SidebarBtn icon={<Tag size={14} />} label="Labels" badge={labels.length || undefined} active={showLabels} onClick={() => setShowLabels(!showLabels)} />
+            <div className="hidden md:block"><SidebarBtn icon={<Tag size={14} />} label="Labels" badge={labels.length || undefined} active={showLabels} onClick={() => setShowLabels(!showLabels)} /></div>
             {showLabels && (
               <div className="bg-white rounded-xl border border-gray-200 p-2 space-y-1.5 shadow-sm mb-1">
                 {CARD_COLORS.map((c) => {
@@ -443,7 +457,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               </div>
             )}
 
-            <SidebarBtn icon={<ListChecks size={14} />} label="Checklist" badge={checklist.length || undefined} onClick={() => document.getElementById("cl-input")?.focus()} />
+            <div className="hidden md:block"><SidebarBtn icon={<ListChecks size={14} />} label="Checklist" badge={checklist.length || undefined} onClick={() => document.getElementById("cl-input")?.focus()} /></div>
 
             {/* Deadline inline */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -469,8 +483,8 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               </div>
             </div>
 
-            <SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} badge={attachments.filter((a) => a.type === "image").length || undefined} onClick={() => fileInputRef.current?.click()} />
-            <SidebarBtn icon={<LinkIcon size={14} />} label="Link" badge={attachments.filter((a) => a.type === "link").length || undefined} active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} />
+            <div className="hidden md:block"><SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} badge={attachments.filter((a) => a.type === "image").length || undefined} onClick={() => fileInputRef.current?.click()} /></div>
+            <div className="hidden md:block"><SidebarBtn icon={<LinkIcon size={14} />} label="Link" badge={attachments.filter((a) => a.type === "link").length || undefined} active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} /></div>
 
             <div className="pt-3 mt-2 border-t border-gray-200">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Aksi</p>
@@ -507,6 +521,25 @@ function SidebarBtn({ icon, label, onClick, danger, badge, active }: {
         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
           danger ? "bg-red-200 text-red-700" : "bg-gray-100 text-gray-600"
         }`}>{badge}</span>
+      )}
+    </button>
+  );
+}
+
+function MobileChip({ icon, label, count, active, onClick }: {
+  icon: React.ReactNode; label: string; count?: number; active?: boolean; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-medium transition snap-start ${
+      active
+        ? "bg-primary text-white shadow-sm"
+        : "bg-white text-gray-700 border border-gray-200 active:bg-gray-100"
+    }`}>
+      {icon} {label}
+      {count !== undefined && count > 0 && (
+        <span className={`text-[9px] font-bold px-1 rounded-full min-w-[14px] text-center ${
+          active ? "bg-white/30 text-white" : "bg-gray-100 text-gray-600"
+        }`}>{count}</span>
       )}
     </button>
   );

@@ -1258,20 +1258,18 @@ export default function TasksPage() {
               className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl animate-slide-up max-h-[92vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Compact header with color accent */}
-              <div className={`h-1.5 ${colBg}`} />
-              <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
+              {/* Header */}
+              <div className="md:hidden flex justify-center pt-2 pb-0"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
+              <div className={`${colBg} mx-4 mt-3 md:mt-4 rounded-xl px-4 py-3 text-white flex items-center justify-between`}>
                 <div>
-                  <h3 className="font-bold text-gray-900">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Kolom: <span className="font-medium text-gray-700">{colInfo.label}</span>
-                  </p>
+                  <h3 className="font-bold text-base">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
+                  <p className="text-xs text-white/70 mt-0.5">{colInfo.label}{colInfo.description ? ` • ${colInfo.description}` : ""}</p>
                 </div>
                 <button
                   onClick={() => setShowForm({ open: false, status: "brief" })}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition"
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
@@ -1296,10 +1294,10 @@ export default function TasksPage() {
                   className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-100 focus:border-gray-300 text-sm text-gray-700 outline-none transition resize-none placeholder:text-gray-400"
                 />
 
-                {/* Color label pills */}
+                {/* Color label */}
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider">Label</p>
-                  <div className="flex gap-1.5">
+                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Label</p>
+                  <div className="flex gap-2">
                     {CARD_COLORS.map((c) => {
                       const active = form.color === c.key;
                       return (
@@ -1307,8 +1305,8 @@ export default function TasksPage() {
                           key={c.key}
                           type="button"
                           onClick={() => setForm({ ...form, color: c.key })}
-                          className={`h-7 flex-1 rounded-full ${c.dot} transition-all ${
-                            active ? "ring-2 ring-offset-1 ring-gray-800 scale-y-125" : "opacity-50 hover:opacity-80"
+                          className={`w-10 h-10 rounded-xl ${c.dot} transition-all shadow-sm ${
+                            active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40 hover:opacity-70 hover:scale-105"
                           }`}
                         />
                       );
@@ -1318,10 +1316,10 @@ export default function TasksPage() {
 
                 {/* Assignees - compact */}
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider flex items-center gap-1">
+                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-1">
                     <UserIcon size={11} /> Anggota
                     {selectedEmps.length > 0 && (
-                      <span className="text-primary ml-1 normal-case">({selectedEmps.length})</span>
+                      <span className="bg-primary text-white text-[9px] px-1.5 py-0.5 rounded-full ml-1 font-bold normal-case tracking-normal">{selectedEmps.length}</span>
                     )}
                   </p>
                   {/* Selected chips */}
@@ -1407,19 +1405,19 @@ export default function TasksPage() {
               </form>
 
               {/* Footer */}
-              <div className="p-4 border-t border-gray-100 bg-gray-50/80 flex gap-2">
+              <div className="p-4 border-t border-gray-100 bg-white flex gap-3 safe-bottom">
                 <button
                   type="button"
                   onClick={() => setShowForm({ open: false, status: "brief" })}
                   disabled={loading}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:bg-white disabled:opacity-50 transition"
+                  className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
                 >
                   Batal
                 </button>
                 <button
                   onClick={saveTask}
                   disabled={loading || !form.title.trim()}
-                  className="flex-[2] py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition shadow-sm"
+                  className={`flex-[2] py-3 ${colBg} hover:opacity-90 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition shadow-md`}
                 >
                   {loading ? "Menyimpan..." : showForm.task ? "Simpan" : "Buat Task"}
                 </button>

@@ -47,6 +47,7 @@ import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks } from "@/lib/permissions";
+import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
 import { MessageCircle, Columns3, Send } from "lucide-react";
 
@@ -477,6 +478,7 @@ export default function TasksPage() {
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardColor, setNewBoardColor] = useState("bg-primary");
+  const [newBoardRoles, setNewBoardRoles] = useState<string[]>([]);
   const [filterMine, setFilterMine] = useState(false);
   const [showForm, setShowForm] = useState<{ open: boolean; status: string; task?: Task }>({
     open: false,
@@ -576,6 +578,7 @@ export default function TasksPage() {
     const { data, error } = await supabase.from("boards").insert({
       name: newBoardName.trim(),
       color: newBoardColor,
+      allowed_roles: newBoardRoles.length > 0 ? newBoardRoles : null,
       created_by: user.id,
     }).select().single();
     if (error) {
@@ -593,6 +596,7 @@ export default function TasksPage() {
     }));
     await supabase.from("board_columns").insert(defaultCols);
     setNewBoardName("");
+    setNewBoardRoles([]);
     setShowCreateBoard(false);
     setBoards([...boards, data as Board]);
     switchBoard(data as Board);
@@ -1426,7 +1430,13 @@ export default function TasksPage() {
               {boards.length > 0 && <div className="border-t border-gray-100 my-2" />}
 
               {/* User boards */}
-              {boards.map((b) => {
+              {boards.filter((b) => {
+                // Filter by allowed_roles: null = everyone, array = check user position
+                if (!b.allowed_roles || b.allowed_roles.length === 0) return true;
+                const userPos = user?.position || "";
+                const userRole = user?.role || "";
+                return b.allowed_roles.some((r) => userPos.toLowerCase().includes(r.toLowerCase()) || userRole === "admin");
+              }).map((b) => {
                 const isActive = activeBoard?.id === b.id;
                 return (
                   <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition group ${
@@ -1438,7 +1448,11 @@ export default function TasksPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
-                        {b.description && <p className="text-[10px] text-gray-500 truncate">{b.description}</p>}
+                        {b.allowed_roles && b.allowed_roles.length > 0 ? (
+                          <p className="text-[10px] text-gray-500 truncate">{b.allowed_roles.join(", ")}</p>
+                        ) : (
+                          <p className="text-[10px] text-gray-500">Semua role</p>
+                        )}
                       </div>
                     </button>
                     {isActive ? (
@@ -1469,19 +1483,42 @@ export default function TasksPage() {
                     autoFocus
                   />
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Pilih warna</p>
+                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Warna</p>
                     <div className="flex gap-2 flex-wrap">
                       {BOARD_COLORS.map((c) => (
                         <button key={c} onClick={() => setNewBoardColor(c)}
-                          className={`w-9 h-9 rounded-xl ${c} transition-all shadow-sm ${
-                            newBoardColor === c ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"
+                          className={`w-8 h-8 rounded-lg ${c} transition-all shadow-sm ${
+                            newBoardColor === c ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-50 hover:opacity-90"
                           }`}
                         />
                       ))}
                     </div>
                   </div>
+                  {/* Role access picker */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Akses Role</p>
+                    <p className="text-[10px] text-gray-400 mb-2">Kosongkan = semua bisa akses</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {POSITIONS.map((role) => {
+                        const selected = newBoardRoles.includes(role);
+                        return (
+                          <button
+                            key={role}
+                            onClick={() => setNewBoardRoles(selected ? newBoardRoles.filter((r) => r !== role) : [...newBoardRoles, role])}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                              selected
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {selected && "✓ "}{role}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); }} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition">Batal</button>
+                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); setNewBoardRoles([]); }} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition">Batal</button>
                     <button onClick={createBoard} disabled={!newBoardName.trim()} className="flex-[2] py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold disabled:opacity-40 transition shadow-sm">Buat Board</button>
                   </div>
                 </div>

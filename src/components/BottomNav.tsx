@@ -53,9 +53,10 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="h-16" />
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
-        <div className="max-w-lg mx-auto grid grid-cols-5 items-center">
+      <div className="h-20" />
+      <nav className="fixed bottom-0 left-0 right-0 z-40">
+        <div className="bg-white border-t border-gray-200 shadow-lg">
+        <div className="max-w-lg mx-auto grid grid-cols-5 items-center pb-6">
           {ITEMS.map((it) => {
             const Icon = it.icon;
             const isActive = active(it.path);
@@ -84,6 +85,7 @@ export default function BottomNav() {
               </Link>
             );
           })}
+        </div>
         </div>
       </nav>
     </>

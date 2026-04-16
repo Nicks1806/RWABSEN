@@ -47,7 +47,8 @@ import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks } from "@/lib/permissions";
-import type { BoardColumn, Board } from "@/lib/types";
+import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
+import { MessageCircle, Columns3, Send } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {
@@ -513,6 +514,10 @@ export default function TasksPage() {
   // Inline edit
   const [editingBoardName, setEditingBoardName] = useState(false);
   const [boardNameDraft, setBoardNameDraft] = useState("");
+  // Bottom bar tab: "board" | "message"
+  const [bottomTab, setBottomTab] = useState<"board" | "message">("board");
+  const [chatMessages, setChatMessages] = useState<BoardMessage[]>([]);
+  const [chatText, setChatText] = useState("");
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -625,6 +630,37 @@ export default function TasksPage() {
     setActiveBoard({ ...activeBoard, name: newName.trim() });
     await supabase.from("boards").update({ name: newName.trim() }).eq("id", activeBoard.id);
   }
+
+  // ===== Chat =====
+  async function fetchChat() {
+    try {
+      const boardId = activeBoard?.id || null;
+      let q = supabase.from("board_messages").select("*").order("created_at", { ascending: true }).limit(100);
+      if (boardId) q = q.eq("board_id", boardId);
+      else q = q.is("board_id", null);
+      const { data } = await q;
+      if (data) setChatMessages(data as BoardMessage[]);
+    } catch { /* table may not exist */ }
+  }
+
+  async function sendChat() {
+    if (!chatText.trim() || !user) return;
+    const msg: Partial<BoardMessage> = {
+      board_id: activeBoard?.id || null,
+      sender_id: user.id,
+      sender_name: user.name,
+      text: chatText.trim(),
+    };
+    setChatText("");
+    const { data } = await supabase.from("board_messages").insert(msg).select().single();
+    if (data) setChatMessages((prev) => [...prev, data as BoardMessage]);
+  }
+
+  // Fetch chat when switching to message tab or board
+  useEffect(() => {
+    if (bottomTab === "message") fetchChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bottomTab, activeBoard]);
 
   async function renameTaskInline(taskId: string, newTitle: string) {
     if (!newTitle.trim()) return;
@@ -1271,7 +1307,110 @@ export default function TasksPage() {
         </DragOverlay>
       </DndContext>
 
-      <BottomNav />
+      {/* Task Bottom Bar (Trello-style) */}
+      <div className="h-14" />
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-bottom">
+        <div className="max-w-3xl mx-auto flex items-center">
+          <button
+            onClick={() => setShowBoardSwitcher(true)}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition ${showBoardSwitcher ? "text-primary" : "text-gray-500"}`}
+          >
+            <LayoutGrid size={18} strokeWidth={showBoardSwitcher ? 2.5 : 2} />
+            <span className="text-[10px] mt-0.5 font-medium">Switch</span>
+          </button>
+          <button
+            onClick={() => setBottomTab("board")}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition ${bottomTab === "board" ? "text-primary" : "text-gray-500"}`}
+          >
+            <Columns3 size={18} strokeWidth={bottomTab === "board" ? 2.5 : 2} />
+            <span className={`text-[10px] mt-0.5 ${bottomTab === "board" ? "font-bold" : "font-medium"}`}>Board</span>
+          </button>
+          <button
+            onClick={() => setBottomTab("message")}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 transition relative ${bottomTab === "message" ? "text-primary" : "text-gray-500"}`}
+          >
+            <MessageCircle size={18} strokeWidth={bottomTab === "message" ? 2.5 : 2} />
+            <span className={`text-[10px] mt-0.5 ${bottomTab === "message" ? "font-bold" : "font-medium"}`}>Message</span>
+          </button>
+          <button
+            onClick={() => router.push("/home")}
+            className="flex-1 flex flex-col items-center justify-center py-2.5 text-gray-500 transition"
+          >
+            <ArrowLeft size={18} />
+            <span className="text-[10px] mt-0.5 font-medium">Kembali</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Message Tab Content */}
+      {bottomTab === "message" && (
+        <div className="fixed inset-0 z-20 bg-gray-50 flex flex-col" style={{ top: 0, bottom: 56 }}>
+          {/* Chat header */}
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
+            <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-sm text-gray-900 truncate">
+                💬 {activeBoard ? activeBoard.name : "General"} Chat
+              </h3>
+              <p className="text-[10px] text-gray-500">{chatMessages.length} pesan</p>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {chatMessages.length === 0 && (
+              <div className="text-center py-16">
+                <MessageCircle size={40} className="text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-400 font-medium">Belum ada pesan</p>
+                <p className="text-xs text-gray-400 mt-1">Mulai percakapan dengan tim</p>
+              </div>
+            )}
+            {chatMessages.map((m) => {
+              const isMe = m.sender_id === user?.id;
+              const emp = employees.find((e) => e.id === m.sender_id);
+              return (
+                <div key={m.id} className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : ""}`}>
+                  {!isMe && <Avatar name={emp?.name || m.sender_name || "?"} photoUrl={emp?.photo_url} size="sm" />}
+                  <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"}`}>
+                    {!isMe && <p className="text-[10px] text-gray-500 font-semibold mb-0.5 px-1">{emp?.name || m.sender_name}</p>}
+                    <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      isMe
+                        ? "bg-primary text-white rounded-br-sm"
+                        : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm"
+                    }`}>
+                      {m.text}
+                    </div>
+                    <p className={`text-[9px] text-gray-400 mt-0.5 px-1 ${isMe ? "text-right" : ""}`}>
+                      {format(new Date(m.created_at), "HH:mm", { locale: idLocale })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Input */}
+          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2 safe-bottom">
+            <input
+              type="text"
+              value={chatText}
+              onChange={(e) => setChatText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
+              placeholder="Ketik pesan..."
+              className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+            />
+            <button
+              onClick={sendChat}
+              disabled={!chatText.trim()}
+              className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-40 transition shadow-sm"
+            >
+              <Send size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (

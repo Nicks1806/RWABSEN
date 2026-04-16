@@ -108,9 +108,19 @@ export interface Board {
   id: string;
   name: string;
   description?: string | null;
-  color: string; // tailwind bg class name or hex
+  color: string;
   cover_url?: string | null;
+  allowed_roles?: string[] | null; // positions/roles that can access (null = everyone)
   created_by?: string | null;
+  created_at: string;
+}
+
+export interface BoardMessage {
+  id: string;
+  board_id: string | null; // null = general channel
+  sender_id: string;
+  sender_name?: string;
+  text: string;
   created_at: string;
 }
 

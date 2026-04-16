@@ -1317,11 +1317,12 @@ export default function TasksPage() {
       {/* Message Panel - inline left panel on desktop, fullscreen on mobile */}
       {bottomTab === "message" && (
         <>
-        <div className={`bg-white flex flex-col border-r border-gray-200 shadow-sm ${
-          isMobile
-            ? "fixed inset-0 z-30"
-            : "fixed top-0 left-0 bottom-0 w-[340px] z-30"
-        }`} style={isMobile ? { bottom: 56 } : undefined}>
+        <div
+          className={`bg-white flex flex-col border-r border-gray-200 shadow-xl ${
+            isMobile ? "fixed inset-0 z-30" : "fixed top-0 left-0 bottom-0 z-30"
+          }`}
+          style={isMobile ? { bottom: 56 } : { width: 340 }}
+        >
           {/* Chat header */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
             <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">

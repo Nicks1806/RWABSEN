@@ -157,97 +157,68 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
           )}
         </div>
 
-        {/* Attachments preview (only for non-image since image is cover) */}
-        {task.attachments?.some((a) => a.type === "link") && (
-          <div className="px-3.5 pb-2 flex gap-1.5 flex-wrap">
-            {task.attachments
-              .filter((a) => a.type === "link")
-              .slice(0, 2)
-              .map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium max-w-[160px] truncate border border-blue-100"
-                >
-                  <LinkIcon size={10} />
-                  {a.name || a.url.replace(/^https?:\/\//, "").slice(0, 18)}
-                </span>
-              ))}
-          </div>
-        )}
-
-        {/* Meta row: due date + checklist progress */}
-        {(task.due_date || totalCount > 0) && (
-          <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
-            {task.due_date && (
-              <span
-                className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                  overdue
-                    ? "bg-red-100 text-red-700"
-                    : todayDue
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                <CalendarIcon size={10} />
-                {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
-                {overdue && " • Lewat"}
-                {todayDue && " • Hari ini"}
-              </span>
-            )}
-            {totalCount > 0 && (
-              <span
-                className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                  doneCount === totalCount
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-                title="Checklist"
-              >
-                <CheckCircle2 size={10} />
-                {doneCount}/{totalCount}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Trello-style badges bar */}
+        <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
+          {/* Checklist done button (green when complete) */}
+          {totalCount > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold ${
+                doneCount === totalCount
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              <CheckCircle2 size={11} />
+              {doneCount}/{totalCount}
+            </span>
+          )}
+          {/* Due date */}
+          {task.due_date && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold ${
+                overdue
+                  ? "bg-red-500 text-white"
+                  : todayDue
+                  ? "bg-amber-400 text-white"
+                  : doneCount === totalCount && totalCount > 0
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              <CalendarIcon size={11} />
+              {format(new Date(task.due_date), "MMM dd", { locale: idLocale })}
+            </span>
+          )}
+          {/* Attachment count */}
+          {attachCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
+              <Paperclip size={11} /> {attachCount}
+            </span>
+          )}
+          {/* Comment count */}
+          {(task.comments?.length || 0) > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
+              💬 {task.comments!.length}
+            </span>
+          )}
+        </div>
 
         {/* Footer: assignees */}
-        <div className="px-3.5 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-2">
+        <div className="px-3.5 py-2 flex items-center justify-end gap-1.5">
           {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div className="flex -space-x-1.5">
-                {task.assigneeObjects.slice(0, 3).map((emp) => (
-                  <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
-                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-                  </div>
-                ))}
-                {task.assigneeObjects.length > 3 && (
-                  <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
-                    +{task.assigneeObjects.length - 3}
-                  </div>
-                )}
-              </div>
-              {task.assigneeObjects.length === 1 && (
-                <span className="text-[11px] text-gray-700 font-medium truncate">
-                  {task.assigneeObjects[0].name.split(" ")[0]}
-                </span>
+            <div className="flex -space-x-1.5 ml-auto">
+              {task.assigneeObjects.slice(0, 4).map((emp) => (
+                <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
+                  <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+                </div>
+              ))}
+              {task.assigneeObjects.length > 4 && (
+                <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                  +{task.assigneeObjects.length - 4}
+                </div>
               )}
             </div>
-          ) : (
-            <span className="text-[10px] text-gray-400 italic">Belum di-assign</span>
-          )}
-          <div className="flex items-center gap-2">
-            {(task.comments?.length || 0) > 0 && (
-              <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">
-                <span className="w-3.5 h-3.5 inline-flex items-center justify-center">💬</span>
-                {task.comments!.length}
-              </span>
-            )}
-            {attachCount > 0 && (
-              <span className="text-[10px] text-gray-500 inline-flex items-center gap-0.5">
-                <Paperclip size={10} /> {attachCount}
-              </span>
-            )}
-          </div>
+          ) : null}
         </div>
       </div>
     </div>

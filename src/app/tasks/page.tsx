@@ -653,26 +653,36 @@ export default function TasksPage() {
   async function reorderTask(taskId: string, direction: "up" | "down") {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
+    // Get column tasks sorted — assign sequential positions if missing
     const colTasks = filteredTasks
       .filter((t) => t.status === task.status)
-      .sort((a, b) => (a.position || 0) - (b.position || 0));
+      .sort((a, b) => {
+        const pa = a.position ?? 999;
+        const pb = b.position ?? 999;
+        if (pa !== pb) return pa - pb;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
     const idx = colTasks.findIndex((t) => t.id === taskId);
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= colTasks.length) return;
-    const other = colTasks[swapIdx];
-    // Swap positions optimistically
-    const myPos = task.position ?? idx;
-    const otherPos = other.position ?? swapIdx;
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, position: otherPos } :
-        t.id === other.id ? { ...t, position: myPos } : t
-      )
+
+    // Build new order: swap the two items
+    const newOrder = [...colTasks];
+    [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
+
+    // Assign fresh sequential positions
+    const updates: { id: string; position: number }[] = newOrder.map((t, i) => ({ id: t.id, position: i }));
+
+    // Optimistic update
+    setTasks((prev) => {
+      const posMap = new Map(updates.map((u) => [u.id, u.position]));
+      return prev.map((t) => posMap.has(t.id) ? { ...t, position: posMap.get(t.id)! } : t);
+    });
+
+    // Persist all positions
+    await Promise.all(
+      updates.map((u) => supabase.from("tasks").update({ position: u.position }).eq("id", u.id))
     );
-    await Promise.all([
-      supabase.from("tasks").update({ position: otherPos }).eq("id", taskId),
-      supabase.from("tasks").update({ position: myPos }).eq("id", other.id),
-    ]);
   }
 
   function openCreate(status: string) {

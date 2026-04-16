@@ -30,12 +30,19 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  useDraggable,
   useDroppable,
   closestCenter,
   type DragStartEvent,
   type DragEndEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
@@ -78,10 +85,14 @@ const BOARD_COLORS = ["bg-primary", "bg-blue-600", "bg-emerald-600", "bg-amber-5
 // ============= Sub-components for dnd-kit =============
 
 function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
-    data: { task },
+    data: { type: "task", task },
   });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
   const overdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
@@ -104,8 +115,8 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
   return (
     <div
       ref={setNodeRef}
-      style={{ opacity: isDragging ? 0 : 1 }}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 ${cardColor.border} transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-gray-300 overflow-hidden touch-none`}
+      style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
+      className={`bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 ${cardColor.border} transition-shadow hover:shadow-md hover:border-gray-300 overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl" : ""}`}
     >
       {/* Drag handle area (top + middle) */}
       <div
@@ -765,14 +776,41 @@ export default function TasksPage() {
     setOverColKey(null);
     if (!overId) return;
 
-    let targetCol: string | null = null;
+    const activeTask = tasks.find((t) => t.id === activeIdStr);
+    if (!activeTask) return;
+
+    // Dropped on a column droppable
     if (overId.startsWith("col-")) {
-      targetCol = overId.replace("col-", "");
-    } else {
-      const overTask = tasks.find((t) => t.id === overId);
-      if (overTask) targetCol = overTask.status;
+      const targetCol = overId.replace("col-", "");
+      if (targetCol !== activeTask.status) moveTaskToColumn(activeIdStr, targetCol);
+      return;
     }
-    if (targetCol) moveTaskToColumn(activeIdStr, targetCol);
+
+    // Dropped on another task
+    const overTask = tasks.find((t) => t.id === overId);
+    if (!overTask) return;
+
+    if (activeTask.status !== overTask.status) {
+      // Moving to different column
+      moveTaskToColumn(activeIdStr, overTask.status);
+    } else {
+      // Reordering within same column
+      const colTasks = filteredTasks
+        .filter((t) => t.status === activeTask.status)
+        .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+      const oldIdx = colTasks.findIndex((t) => t.id === activeIdStr);
+      const newIdx = colTasks.findIndex((t) => t.id === overId);
+      if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+
+      const reordered = arrayMove(colTasks, oldIdx, newIdx);
+      // Assign fresh positions
+      const updates = reordered.map((t, i) => ({ id: t.id, position: i }));
+      setTasks((prev) => {
+        const posMap = new Map(updates.map((u) => [u.id, u.position]));
+        return prev.map((t) => posMap.has(t.id) ? { ...t, position: posMap.get(t.id)! } : t);
+      });
+      Promise.all(updates.map((u) => supabase.from("tasks").update({ position: u.position }).eq("id", u.id)));
+    }
   }
 
   const isMine = (t: Task) =>
@@ -924,7 +962,9 @@ export default function TasksPage() {
         <main className="flex-1 overflow-hidden hidden md:block">
           <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
             {columns.map((col) => {
-              const colTasks = filteredTasks.filter((t) => t.status === col.key);
+              const colTasks = filteredTasks
+                .filter((t) => t.status === col.key)
+                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
               const isOverThis = overColKey === col.key && activeId !== null;
               const topBarColor = COL_COLORS[col.color as ColColor] || "bg-gray-400";
               return (
@@ -979,16 +1019,18 @@ export default function TasksPage() {
                   </div>
 
                   <ColumnDroppable colKey={col.key} isOver={isOverThis}>
-                    {colTasks.length === 0 && (
-                      <div className="text-center py-8 px-4 pointer-events-none">
-                        <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
-                        <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
-                        <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
-                      </div>
-                    )}
-                    {colTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} />
-                    ))}
+                    <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                      {colTasks.length === 0 && (
+                        <div className="text-center py-8 px-4 pointer-events-none">
+                          <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
+                          <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
+                          <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
+                        </div>
+                      )}
+                      {colTasks.map((task) => (
+                        <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} />
+                      ))}
+                    </SortableContext>
                     <button
                       onClick={() => openCreate(col.key)}
                       className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium mt-1"

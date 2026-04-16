@@ -1288,7 +1288,7 @@ export default function TasksPage() {
       <div className="h-20" />
       <nav className="fixed bottom-0 left-0 right-0 z-30">
         <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="max-w-3xl mx-auto flex items-center pb-4">
+          <div className="max-w-3xl mx-auto flex items-center pb-8">
             <button
               onClick={() => setShowBoardSwitcher(true)}
               className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition ${showBoardSwitcher ? "text-primary" : "text-gray-500"}`}

@@ -396,51 +396,66 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder, onRename }:
       {/* Action bottom sheet */}
       {showActions && (
         <>
-          <div className="fixed inset-0 bg-black/30 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 animate-slide-up safe-bottom">
-            <div className="flex justify-center pt-2 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
-            <div className="px-4 pt-2 pb-2 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-900 truncate">{task.title}</p>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onReorder("up"); setShowActions(false); }}
-                  className="flex-1 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  ↑ Atas
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onReorder("down"); setShowActions(false); }}
-                  className="flex-1 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  ↓ Bawah
-                </button>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 animate-slide-up safe-bottom">
+            <div className="flex justify-center pt-2.5 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
+
+            {/* Task info header */}
+            <div className="px-5 pt-2 pb-3 flex items-center gap-3 border-b border-gray-100">
+              <div className={`w-1.5 h-10 rounded-full ${cardColor.dot}`} />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 truncate">{task.title}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {task.assigneeObjects?.map((e) => e.name.split(" ")[0]).join(", ") || "Belum di-assign"}
+                </p>
               </div>
+              <button onClick={(e) => { e.stopPropagation(); setShowActions(false); }} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Reorder */}
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 px-1">Pindah ke kolom</p>
-                <div className="grid grid-cols-2 gap-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Urutan</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onReorder("up"); setShowActions(false); }}
+                    className="flex-1 py-3.5 rounded-2xl bg-gray-50 text-gray-700 text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 active:bg-gray-100 transition"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-base">↑</span>
+                    Atas
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onReorder("down"); setShowActions(false); }}
+                    className="flex-1 py-3.5 rounded-2xl bg-gray-50 text-gray-700 text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 active:bg-gray-100 transition"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-base">↓</span>
+                    Bawah
+                  </button>
+                </div>
+              </div>
+
+              {/* Move to column */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Pindah ke</p>
+                <div className="space-y-1.5">
                   {columns.filter((c) => c.key !== task.status).map((c) => {
                     const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
                     return (
                       <button
                         key={c.id}
                         onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowActions(false); }}
-                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 active:scale-95 transition"
+                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gray-50 text-sm font-medium text-gray-800 active:scale-[0.98] active:bg-gray-100 transition"
                       >
-                        <span className={`w-3 h-3 rounded-full ${topColor}`} />
-                        {c.label}
+                        <span className={`w-4 h-4 rounded-lg ${topColor} shadow-sm`} />
+                        <span className="flex-1 text-left">{c.label}</span>
+                        <span className="text-gray-400 text-xs">→</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowActions(false); }}
-                className="w-full py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold active:scale-95 transition mt-1"
-              >
-                Tutup
-              </button>
             </div>
           </div>
         </>

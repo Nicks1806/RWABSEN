@@ -84,7 +84,9 @@ const BOARD_COLORS = ["bg-primary", "bg-blue-600", "bg-emerald-600", "bg-amber-5
 
 // ============= Sub-components for dnd-kit =============
 
-function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+function TaskCard({ task, onClick, onRename }: { task: Task; onClick: () => void; onRename: (newTitle: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(task.title);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: "task", task },
@@ -151,7 +153,28 @@ function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
           </div>
         )}
         <div className="px-3.5 pt-2 pb-2">
-          <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
+          {editing ? (
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => { onRename(draft); setEditing(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { onRename(draft); setEditing(false); }
+                if (e.key === "Escape") { setDraft(task.title); setEditing(false); }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full font-semibold text-sm text-gray-900 bg-white border-b-2 border-primary outline-none px-0.5 py-0.5"
+              autoFocus
+            />
+          ) : (
+            <p
+              className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2"
+              onDoubleClick={(e) => { e.stopPropagation(); setDraft(task.title); setEditing(true); }}
+            >
+              {task.title}
+            </p>
+          )}
           {task.description && (
             <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
           )}
@@ -247,10 +270,12 @@ function ColumnDroppable({
   );
 }
 
-function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
-  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onReorder: (dir: "up" | "down") => void;
+function MobileTaskCard({ task, columns, onClick, onMove, onReorder, onRename }: {
+  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onReorder: (dir: "up" | "down") => void; onRename: (t: string) => void;
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [editTitle, setEditTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(task.title);
   const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
   const coverUrl = task.cover_url || task.attachments?.find((a) => a.type === "image")?.url;
   const labelSet = new Set<string>(task.labels || []);
@@ -278,7 +303,23 @@ function MobileTaskCard({ task, columns, onClick, onMove, onReorder }: {
             })}
           </div>
         )}
-        <p className="font-bold text-base text-gray-900 leading-snug">{task.title}</p>
+        {editTitle ? (
+          <input
+            type="text"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={() => { onRename(titleDraft); setEditTitle(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { onRename(titleDraft); setEditTitle(false); }
+              if (e.key === "Escape") { setTitleDraft(task.title); setEditTitle(false); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full font-bold text-base text-gray-900 bg-white border-b-2 border-primary outline-none"
+            autoFocus
+          />
+        ) : (
+          <p className="font-bold text-base text-gray-900 leading-snug" onDoubleClick={(e) => { e.stopPropagation(); setTitleDraft(task.title); setEditTitle(true); }}>{task.title}</p>
+        )}
         {task.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>}
       </div>
 
@@ -457,6 +498,9 @@ export default function TasksPage() {
   const [overColKey, setOverColKey] = useState<string | null>(null);
   // Mobile tab view
   const [mobileTab, setMobileTab] = useState(0);
+  // Inline edit
+  const [editingBoardName, setEditingBoardName] = useState(false);
+  const [boardNameDraft, setBoardNameDraft] = useState("");
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -561,6 +605,56 @@ export default function TasksPage() {
     setBoards((prev) => prev.filter((b) => b.id !== board.id));
     if (activeBoard?.id === board.id) switchBoard(null);
   }
+
+  async function renameBoardInline(newName: string) {
+    setEditingBoardName(false);
+    if (!newName.trim() || !activeBoard) return;
+    setBoards((prev) => prev.map((b) => b.id === activeBoard.id ? { ...b, name: newName.trim() } : b));
+    setActiveBoard({ ...activeBoard, name: newName.trim() });
+    await supabase.from("boards").update({ name: newName.trim() }).eq("id", activeBoard.id);
+  }
+
+  async function renameTaskInline(taskId: string, newTitle: string) {
+    if (!newTitle.trim()) return;
+    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, title: newTitle.trim() } : t));
+    await supabase.from("tasks").update({ title: newTitle.trim(), updated_at: new Date().toISOString() }).eq("id", taskId);
+  }
+
+  // ===== Deadline notification =====
+  useEffect(() => {
+    if (!user || tasks.length === 0) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    const sentKey = `deadline-notif-${today}`;
+    if (localStorage.getItem(sentKey)) return; // only once per day
+
+    const dueTodayTasks = tasks.filter(
+      (t) => t.due_date === today && t.status !== "done" && t.status !== "history"
+    );
+    if (dueTodayTasks.length === 0) return;
+
+    // Collect all unique assignee IDs from due-today tasks
+    const assigneeSet = new Set<string>();
+    dueTodayTasks.forEach((t) => {
+      (t.assignees || []).forEach((id) => assigneeSet.add(id));
+      if (t.assignee_id) assigneeSet.add(t.assignee_id);
+    });
+    if (assigneeSet.size === 0) return;
+
+    // Send push notification
+    const taskNames = dueTodayTasks.map((t) => t.title).slice(0, 3).join(", ");
+    const extra = dueTodayTasks.length > 3 ? ` +${dueTodayTasks.length - 3} lainnya` : "";
+    fetch("/api/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employee_ids: Array.from(assigneeSet),
+        title: "⏰ Deadline Hari Ini!",
+        body: `${taskNames}${extra}`,
+        url: "/tasks",
+      }),
+    }).catch(() => {});
+    localStorage.setItem(sentKey, "1");
+  }, [user, tasks]);
 
   // ===== Column CRUD =====
   async function addColumn() {
@@ -849,9 +943,33 @@ export default function TasksPage() {
               </button>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-lg text-gray-900">
-                    {activeBoard ? activeBoard.name : "Task Board"}
-                  </h1>
+                  {editingBoardName && activeBoard ? (
+                    <input
+                      type="text"
+                      value={boardNameDraft}
+                      onChange={(e) => setBoardNameDraft(e.target.value)}
+                      onBlur={() => renameBoardInline(boardNameDraft)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") renameBoardInline(boardNameDraft);
+                        if (e.key === "Escape") setEditingBoardName(false);
+                      }}
+                      className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-primary outline-none px-1 min-w-[120px]"
+                      autoFocus
+                    />
+                  ) : (
+                    <h1
+                      className={`font-bold text-lg text-gray-900 ${activeBoard ? "cursor-pointer hover:text-primary transition" : ""}`}
+                      onClick={() => {
+                        if (activeBoard) {
+                          setBoardNameDraft(activeBoard.name);
+                          setEditingBoardName(true);
+                        }
+                      }}
+                      title={activeBoard ? "Klik untuk rename" : undefined}
+                    >
+                      {activeBoard ? activeBoard.name : "Task Board"}
+                    </h1>
+                  )}
                   <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
                     {tasks.length}
                   </span>
@@ -942,6 +1060,7 @@ export default function TasksPage() {
                   onClick={() => setDetailTask(task)}
                   onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
                   onReorder={(dir) => reorderTask(task.id, dir)}
+                  onRename={(t) => renameTaskInline(task.id, t)}
                 />
               ))}
               <button
@@ -1032,7 +1151,7 @@ export default function TasksPage() {
                         </div>
                       )}
                       {colTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} />
+                        <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} onRename={(t) => renameTaskInline(task.id, t)} />
                       ))}
                     </SortableContext>
                     <button

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Employee, Task, TaskAttachment, TaskLabel, ChecklistItem } from "@/lib/types";
+import { Employee, Task, TaskAttachment, TaskLabel, ChecklistItem, TaskComment } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -22,6 +22,8 @@ import {
   Plus,
   Tag,
   Square,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 
@@ -41,7 +43,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function TaskDetailModal({ task, employees, onClose }: Props) {
+export default function TaskDetailModal({ task, currentUser, employees, onClose }: Props) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
   // Labels: union of `labels[]` + legacy `color`
@@ -61,6 +63,8 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
   const [attachments, setAttachments] = useState<TaskAttachment[]>(task.attachments || []);
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task.checklist || []);
   const [newChecklistText, setNewChecklistText] = useState("");
+  const [comments, setComments] = useState<TaskComment[]>(task.comments || []);
+  const [newCommentText, setNewCommentText] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -80,6 +84,7 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
     setDueDate(task.due_date || "");
     setAttachments(task.attachments || []);
     setChecklist(task.checklist || []);
+    setComments(task.comments || []);
   }, [task]);
 
   async function saveAll() {
@@ -100,6 +105,7 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
         due_date: dueDate || null,
         attachments,
         checklist,
+        comments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", task.id);
@@ -139,6 +145,34 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
   }
   async function removeChecklistItem(id: string) {
     await persistChecklist(checklist.filter((i) => i.id !== id));
+  }
+
+  // ===== Comments =====
+  async function addComment() {
+    if (!newCommentText.trim()) return;
+    const comment: TaskComment = {
+      id: crypto.randomUUID(),
+      text: newCommentText.trim(),
+      by: currentUser.id,
+      byName: currentUser.name,
+      at: new Date().toISOString(),
+    };
+    const updated = [comment, ...comments]; // newest first
+    setComments(updated);
+    setNewCommentText("");
+    await supabase
+      .from("tasks")
+      .update({ comments: updated, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
+  }
+
+  async function deleteComment(id: string) {
+    const updated = comments.filter((c) => c.id !== id);
+    setComments(updated);
+    await supabase
+      .from("tasks")
+      .update({ comments: updated, updated_at: new Date().toISOString() })
+      .eq("id", task.id);
   }
 
   // ===== Attachments =====
@@ -476,6 +510,81 @@ export default function TaskDetailModal({ task, employees, onClose }: Props) {
                 <Plus size={14} />
               </button>
             </div>
+          </div>
+
+          {/* Comments thread */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
+              <MessageSquare size={12} /> Komentar ({comments.length})
+            </label>
+
+            {/* Add comment input */}
+            <div className="flex gap-2 mb-3">
+              <Avatar name={currentUser.name} photoUrl={currentUser.photo_url} size="sm" />
+              <div className="flex-1 flex gap-1.5">
+                <input
+                  type="text"
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addComment();
+                    }
+                  }}
+                  placeholder="Tulis komentar..."
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                />
+                <button
+                  onClick={addComment}
+                  disabled={!newCommentText.trim()}
+                  className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 shrink-0"
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Thread */}
+            {comments.length > 0 && (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                {comments.map((c) => {
+                  const emp = employees.find((e) => e.id === c.by);
+                  const isMe = c.by === currentUser.id;
+                  return (
+                    <div key={c.id} className="flex gap-2 group">
+                      <Avatar
+                        name={emp?.name || c.byName || "?"}
+                        photoUrl={emp?.photo_url}
+                        size="sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-semibold text-gray-800">
+                            {emp?.name || c.byName || "User"}
+                          </span>
+                          <span className="text-[10px] text-gray-400">
+                            {format(new Date(c.at), "dd MMM HH:mm", { locale: idLocale })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap break-words">
+                          {c.text}
+                        </p>
+                      </div>
+                      {isMe && (
+                        <button
+                          onClick={() => deleteComment(c.id)}
+                          className="opacity-0 group-hover:opacity-100 transition w-6 h-6 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0 mt-1"
+                          title="Hapus"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Attachments */}

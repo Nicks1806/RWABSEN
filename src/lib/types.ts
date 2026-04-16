@@ -104,11 +104,22 @@ export interface TaskAttachment {
 
 export type TaskLabel = "red" | "yellow" | "green" | "blue" | "purple" | "gray";
 
+export interface BoardColumn {
+  id: string;
+  key: string; // unique slug
+  label: string;
+  description?: string | null;
+  color: "rose" | "amber" | "emerald" | "blue" | "purple" | "slate" | "pink" | "indigo" | "teal";
+  position: number;
+  is_default?: boolean;
+  created_at?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
-  status: "brief" | "today" | "done" | "history";
+  status: string; // dynamic — matches BoardColumn.key (brief/today/done/history are defaults but custom allowed)
   color: TaskLabel; // primary/legacy single color (kept for backward compat)
   labels?: TaskLabel[] | null; // array of label colors (multi-label)
   assignee_id?: string | null; // legacy single assignee (kept for backward compat)

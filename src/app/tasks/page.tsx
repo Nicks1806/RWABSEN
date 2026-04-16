@@ -271,7 +271,7 @@ function ColumnDroppable({
 }
 
 function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
-  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (status: string) => void; onRename: (t: string) => void;
+  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (colKey: string) => void; onRename: (t: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -1083,7 +1083,12 @@ export default function TasksPage() {
                       task={task}
                       columns={columns}
                       onClick={() => setDetailTask(task)}
-                      onMove={(newStatus) => moveTaskToColumn(task.id, newStatus)}
+                      onMove={(newStatus) => {
+                        moveTaskToColumn(task.id, newStatus);
+                        // Auto-switch to target tab
+                        const targetIdx = columns.findIndex((c) => c.key === newStatus);
+                        if (targetIdx >= 0) setTimeout(() => setMobileTab(targetIdx), 300);
+                      }}
                       onRename={(t) => renameTaskInline(task.id, t)}
                     />
                   ))}

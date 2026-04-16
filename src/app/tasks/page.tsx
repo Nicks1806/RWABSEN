@@ -824,82 +824,102 @@ export default function TasksPage() {
 
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-16 px-4" onClick={() => setShowBoardSwitcher(false)}>
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">Switch Board</h3>
-              <button onClick={() => setShowBoardSwitcher(false)} className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-400 flex items-center justify-center"><X size={16} /></button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-slide-up border border-gray-200" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary to-primary-dark px-5 pt-5 pb-4 text-white relative">
+              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"><X size={14} /></button>
+              <LayoutGrid size={20} className="mb-1.5 opacity-80" />
+              <h3 className="font-bold text-lg">Board Anda</h3>
+              <p className="text-xs text-white/70 mt-0.5">Pilih atau buat board per divisi</p>
             </div>
-            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+
+            <div className="p-3 max-h-[55vh] overflow-y-auto space-y-1.5">
               {/* Default board */}
               <button
                 onClick={() => switchBoard(null)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition ${
-                  !activeBoard ? "bg-primary/5 border-primary ring-2 ring-primary/20" : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition group ${
+                  !activeBoard ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-gray-50"
                 }`}
               >
-                <div className="w-12 h-9 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold shadow-sm">RW</div>
-                <div className="text-left flex-1">
-                  <p className="text-sm font-semibold text-gray-900">Default Board</p>
-                  <p className="text-[10px] text-gray-500">Board utama RedWine</p>
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
+                  RW
                 </div>
-                {!activeBoard && <CheckCircle2 size={16} className="text-primary" />}
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">RedWine Board</p>
+                  <p className="text-[10px] text-gray-500">Board utama • Semua divisi</p>
+                </div>
+                {!activeBoard && (
+                  <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold shrink-0">AKTIF</span>
+                )}
               </button>
 
-              {/* User boards */}
-              {boards.map((b) => (
-                <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl border transition ${
-                  activeBoard?.id === b.id ? "bg-primary/5 border-primary ring-2 ring-primary/20" : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                }`}>
-                  <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                    <div className={`w-12 h-9 rounded-lg ${b.color} flex items-center justify-center text-white text-xs font-bold shadow-sm`}>
-                      {b.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
-                      {b.description && <p className="text-[10px] text-gray-500 truncate">{b.description}</p>}
-                    </div>
-                    {activeBoard?.id === b.id && <CheckCircle2 size={16} className="text-primary shrink-0" />}
-                  </button>
-                  <button
-                    onClick={() => deleteBoard(b)}
-                    className="w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0"
-                    title="Hapus board"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
+              {boards.length > 0 && <div className="border-t border-gray-100 my-2" />}
 
-              {/* Create new board */}
+              {/* User boards */}
+              {boards.map((b) => {
+                const isActive = activeBoard?.id === b.id;
+                return (
+                  <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition group ${
+                    isActive ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-gray-50"
+                  }`}>
+                    <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                      <div className={`w-11 h-11 rounded-xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0`}>
+                        {b.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
+                        {b.description && <p className="text-[10px] text-gray-500 truncate">{b.description}</p>}
+                      </div>
+                    </button>
+                    {isActive ? (
+                      <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold shrink-0">AKTIF</span>
+                    ) : (
+                      <button
+                        onClick={() => deleteBoard(b)}
+                        className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0 transition"
+                        title="Hapus board"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Create new board - always visible at bottom */}
+            <div className="border-t border-gray-100 p-3">
               {showCreateBoard ? (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+                <div className="space-y-3">
                   <input
                     type="text" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") createBoard(); if (e.key === "Escape") setShowCreateBoard(false); }}
-                    placeholder="Nama board (misal: Sales Team)"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Nama board — misal: Sales Team, CS, Design..."
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
                     autoFocus
                   />
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-1 uppercase">Warna</p>
-                    <div className="flex gap-1.5 flex-wrap">
+                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Pilih warna</p>
+                    <div className="flex gap-2 flex-wrap">
                       {BOARD_COLORS.map((c) => (
                         <button key={c} onClick={() => setNewBoardColor(c)}
-                          className={`w-8 h-6 rounded-md ${c} transition ${newBoardColor === c ? "ring-2 ring-offset-1 ring-gray-800 scale-110" : "opacity-60 hover:opacity-100"}`}
+                          className={`w-9 h-9 rounded-xl ${c} transition-all shadow-sm ${
+                            newBoardColor === c ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"
+                          }`}
                         />
                       ))}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowCreateBoard(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700">Batal</button>
-                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-40">Buat Board</button>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); }} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition">Batal</button>
+                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="flex-[2] py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold disabled:opacity-40 transition shadow-sm">Buat Board</button>
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowCreateBoard(true)}
-                  className="w-full py-3 rounded-xl text-sm text-gray-600 hover:text-primary bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 hover:border-primary transition font-medium inline-flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-primary hover:text-white bg-primary/5 hover:bg-primary border border-primary/20 hover:border-primary transition-all inline-flex items-center justify-center gap-2"
                 >
                   <Plus size={16} /> Buat Board Baru
                 </button>

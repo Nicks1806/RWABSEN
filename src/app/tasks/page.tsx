@@ -761,179 +761,189 @@ export default function TasksPage() {
         />
       )}
 
-      {showForm.open && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
-          onClick={() => !loading && setShowForm({ open: false, status: "brief" })}
-        >
+      {showForm.open && (() => {
+        const colInfo = columns.find((c) => c.key === showForm.status) || columns[0];
+        const colBg = COL_COLORS[colInfo.color as ColColor] || "bg-gray-500";
+        const selectedEmps = employees.filter((e) => form.assignee_ids.includes(e.id));
+        return (
           <div
-            className="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+            onClick={() => !loading && setShowForm({ open: false, status: "brief" })}
           >
-            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 bg-white z-10">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
-            </div>
-
-            {(() => {
-              const colInfo = columns.find((c) => c.key === showForm.status) || columns[0];
-              const colBg = COL_COLORS[colInfo.color as ColColor] || "bg-gray-500";
-              return (
-                <div className={`${colBg} px-5 pt-5 pb-6 text-white relative`}>
-                  <button
-                    onClick={() => setShowForm({ open: false, status: "brief" })}
-                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"
-                  >
-                    <X size={18} />
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                      <Plus size={22} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
-                      <p className="text-xs text-white/80">
-                        {colInfo.label}
-                        {colInfo.description ? ` • ${colInfo.description}` : ""}
-                      </p>
-                    </div>
-                  </div>
+            <div
+              className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl animate-slide-up max-h-[92vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Compact header with color accent */}
+              <div className={`h-1.5 ${colBg}`} />
+              <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
+                <div>
+                  <h3 className="font-bold text-gray-900">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Kolom: <span className="font-medium text-gray-700">{colInfo.label}</span>
+                  </p>
                 </div>
-              );
-            })()}
+                <button
+                  onClick={() => setShowForm({ open: false, status: "brief" })}
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-            <form onSubmit={saveTask} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Judul *
-                </label>
+              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-5">
+                {/* Title */}
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="misal: Follow up client A"
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition font-medium"
+                  placeholder="Nama task..."
+                  className="w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-200 focus:border-primary text-base font-semibold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-normal"
                   required
                   autoFocus
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Deskripsi
-                </label>
+                {/* Description */}
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                  placeholder="Detail tugas..."
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition resize-none"
+                  rows={2}
+                  placeholder="Deskripsi (opsional)..."
+                  className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-100 focus:border-gray-300 text-sm text-gray-700 outline-none transition resize-none placeholder:text-gray-400"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  Warna Label
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {CARD_COLORS.map((c) => {
-                    const active = form.color === c.key;
-                    return (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => setForm({ ...form, color: c.key })}
-                        className={`w-10 h-10 rounded-xl ${c.dot} transition-all ${
-                          active ? "ring-2 ring-offset-2 ring-white scale-110 shadow-md" : "hover:scale-105 opacity-80"
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-1">
-                  <UserIcon size={12} /> Di-assign ({form.assignee_ids.length})
-                </label>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-200">
-                  {form.assignee_ids.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, assignee_ids: [] })}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-white/60 italic"
-                    >
-                      <X size={14} /> Hapus semua
-                    </button>
-                  )}
-                  {employees
-                    .filter((e) => e.is_active)
-                    .map((e) => {
-                      const active = form.assignee_ids.includes(e.id);
+                {/* Color label pills */}
+                <div>
+                  <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider">Label</p>
+                  <div className="flex gap-1.5">
+                    {CARD_COLORS.map((c) => {
+                      const active = form.color === c.key;
                       return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          onClick={() => setForm({ ...form, color: c.key })}
+                          className={`h-7 flex-1 rounded-full ${c.dot} transition-all ${
+                            active ? "ring-2 ring-offset-1 ring-gray-800 scale-y-125" : "opacity-50 hover:opacity-80"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Assignees - compact */}
+                <div>
+                  <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider flex items-center gap-1">
+                    <UserIcon size={11} /> Anggota
+                    {selectedEmps.length > 0 && (
+                      <span className="text-primary ml-1 normal-case">({selectedEmps.length})</span>
+                    )}
+                  </p>
+                  {/* Selected chips */}
+                  {selectedEmps.length > 0 && (
+                    <div className="flex gap-1.5 flex-wrap mb-2">
+                      {selectedEmps.map((e) => (
                         <button
                           key={e.id}
                           type="button"
                           onClick={() =>
                             setForm({
                               ...form,
-                              assignee_ids: active
-                                ? form.assignee_ids.filter((x) => x !== e.id)
-                                : [...form.assignee_ids, e.id],
+                              assignee_ids: form.assignee_ids.filter((x) => x !== e.id),
                             })
                           }
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition ${
-                            active ? "bg-white shadow-sm ring-2 ring-primary/30 font-semibold" : "hover:bg-white/60"
-                          }`}
+                          className="inline-flex items-center gap-1.5 bg-primary/5 border border-primary/20 rounded-full pl-0.5 pr-2.5 py-0.5 group hover:bg-red-50 hover:border-red-200 transition"
+                        >
+                          <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
+                          <span className="text-xs font-medium text-gray-700 group-hover:text-red-600">
+                            {e.name.split(" ")[0]}
+                          </span>
+                          <X size={10} className="text-gray-400 group-hover:text-red-500" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Picker */}
+                  <div className="space-y-0.5 max-h-36 overflow-y-auto bg-gray-50 rounded-xl border border-gray-200 p-1">
+                    {employees
+                      .filter((e) => e.is_active && !form.assignee_ids.includes(e.id))
+                      .map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              assignee_ids: [...form.assignee_ids, e.id],
+                            })
+                          }
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-white transition"
                         >
                           <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
                           <div className="text-left flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">{e.name}</p>
+                            <p className="text-sm text-gray-800 truncate">{e.name}</p>
                             {e.position && <p className="text-[10px] text-gray-500 truncate">{e.position}</p>}
                           </div>
-                          {active && <CheckCircle2 size={16} className="text-primary shrink-0" />}
+                          <Plus size={14} className="text-gray-400" />
                         </button>
-                      );
-                    })}
+                      ))}
+                    {employees.filter((e) => e.is_active && !form.assignee_ids.includes(e.id)).length === 0 && (
+                      <p className="text-[11px] text-gray-400 text-center py-2 italic">Semua sudah dipilih</p>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-1">
-                  <CalendarIcon size={12} /> Deadline
-                </label>
-                <input
-                  type="date"
-                  value={form.due_date}
-                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
-                />
-              </div>
+                {/* Deadline */}
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                  <CalendarIcon size={16} className="text-gray-500 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Deadline</p>
+                    <input
+                      type="date"
+                      value={form.due_date}
+                      onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                      className="w-full bg-transparent text-sm font-medium text-gray-800 outline-none mt-0.5"
+                    />
+                  </div>
+                  {form.due_date && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, due_date: "" })}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
 
-              <p className="text-[10px] text-gray-400 italic flex items-center gap-1">
-                <ImageIcon size={11} /> Attach gambar/link bisa ditambah setelah task dibuat
-              </p>
+                <p className="text-[10px] text-gray-400 italic flex items-center gap-1">
+                  <Paperclip size={10} /> Gambar & link bisa ditambah setelah task dibuat
+                </p>
+              </form>
 
-              <div className="flex gap-2 pt-2">
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/80 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowForm({ open: false, status: "brief" })}
                   disabled={loading}
-                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:bg-white disabled:opacity-50 transition"
                 >
                   Batal
                 </button>
                 <button
-                  type="submit"
+                  onClick={saveTask}
                   disabled={loading || !form.title.trim()}
-                  className="flex-[2] py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition"
+                  className="flex-[2] py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition shadow-sm"
                 >
                   {loading ? "Menyimpan..." : showForm.task ? "Simpan" : "Buat Task"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -228,20 +228,25 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
             <section>
               <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
                 <AlignLeft size={16} /> Deskripsi
+                {!editingDesc && description && (
+                  <button onClick={() => setEditingDesc(true)} className="ml-auto text-[10px] text-gray-500 hover:text-primary font-medium px-2 py-0.5 bg-gray-100 hover:bg-primary/10 rounded transition">
+                    Edit
+                  </button>
+                )}
               </h4>
               {editingDesc ? (
                 <div>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary resize-none"
-                    autoFocus
+                    className="w-full px-3 py-3 bg-white border-2 border-primary/30 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary resize-none shadow-sm"
+                    autoFocus placeholder="Tulis deskripsi task..."
                   />
-                  <div className="flex gap-2 mt-1.5">
-                    <button onClick={() => setEditingDesc(false)} className="px-3 py-1.5 bg-primary text-white text-xs rounded-md font-semibold">Simpan</button>
-                    <button onClick={() => { setDescription(task.description || ""); setEditingDesc(false); }} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-md">Batal</button>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => setEditingDesc(false)} className="px-4 py-2 bg-primary text-white text-xs rounded-lg font-semibold shadow-sm hover:bg-primary-dark transition">Simpan</button>
+                    <button onClick={() => { setDescription(task.description || ""); setEditingDesc(false); }} className="px-4 py-2 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition">Batal</button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => setEditingDesc(true)} className="min-h-[60px] bg-white rounded-lg p-3 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 border border-gray-200 transition whitespace-pre-wrap">
+                <div onClick={() => setEditingDesc(true)} className="min-h-[56px] bg-white rounded-xl p-3.5 text-sm text-gray-700 cursor-pointer hover:bg-blue-50/50 border border-gray-200 hover:border-primary/30 transition whitespace-pre-wrap leading-relaxed">
                   {description || <span className="text-gray-400 italic">Tambahkan deskripsi yang lebih detail...</span>}
                 </div>
               )}
@@ -251,37 +256,55 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
             <section>
               <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
                 <CheckCircle2 size={16} /> Checklist
-                {checklist.length > 0 && <span className="text-[10px] text-gray-500 font-normal ml-auto">{clDone}/{checklist.length}</span>}
+                {checklist.length > 0 && (
+                  <span className={`text-[11px] font-semibold ml-auto px-2 py-0.5 rounded-full ${clPct === 100 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                    {clDone}/{checklist.length}
+                  </span>
+                )}
               </h4>
               {checklist.length > 0 && (
-                <div className="mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-500 w-6 text-right">{clPct}%</span>
-                    <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] text-gray-500 w-8 text-right font-medium">{clPct}%</span>
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div className={`h-full transition-all duration-500 rounded-full ${clPct === 100 ? "bg-emerald-500" : "bg-primary"}`} style={{ width: `${clPct}%` }} />
                     </div>
                   </div>
                 </div>
               )}
-              <div className="space-y-0.5 mb-2">
+              <div className="space-y-1 mb-3">
                 {checklist.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 py-1.5 px-1 rounded group hover:bg-white transition">
-                    <button onClick={() => toggleChecklistItem(item.id)}
-                      className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition ${item.done ? "bg-primary border-primary" : "bg-white border-gray-300"}`}>
-                      {item.done && <Check size={10} className="text-white" strokeWidth={3} />}
-                    </button>
+                  <div
+                    key={item.id}
+                    onClick={() => toggleChecklistItem(item.id)}
+                    className={`flex items-center gap-3 py-2.5 px-3 rounded-lg group cursor-pointer transition ${
+                      item.done ? "bg-emerald-50 hover:bg-emerald-100/80" : "bg-white hover:bg-gray-50 border border-gray-100"
+                    }`}
+                  >
+                    <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${
+                      item.done ? "bg-emerald-500 border-emerald-500" : "bg-white border-gray-300 group-hover:border-primary"
+                    }`}>
+                      {item.done && <Check size={12} className="text-white" strokeWidth={3} />}
+                    </div>
                     <span className={`flex-1 text-sm ${item.done ? "text-gray-400 line-through" : "text-gray-700"}`}>{item.text}</span>
-                    <button onClick={() => removeChecklistItem(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition"><X size={12} /></button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeChecklistItem(item.id); }}
+                      className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-md hover:bg-red-100 text-gray-400 hover:text-red-500 flex items-center justify-center transition"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
-              <div className="flex gap-1.5">
-                <input type="text" value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)}
+              <div className="flex gap-2">
+                <input id="cl-input" type="text" value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addChecklistItem(); } }}
-                  placeholder="Tambah item..."
-                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Tambah item checklist..."
+                  className="flex-1 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
                 />
-                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="px-2.5 py-1.5 bg-primary text-white rounded-md text-xs font-semibold disabled:opacity-40"><Plus size={14} /></button>
+                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="px-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 inline-flex items-center gap-1 transition">
+                  <Plus size={14} /> Tambah
+                </button>
               </div>
             </section>
 
@@ -331,36 +354,52 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
             {/* Activity / Comments */}
             <section>
               <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                <MessageSquare size={16} /> Komentar & Activity
+                <MessageSquare size={16} /> Komentar
+                {comments.length > 0 && (
+                  <span className="text-[11px] text-gray-500 font-normal bg-gray-100 px-2 py-0.5 rounded-full">{comments.length}</span>
+                )}
               </h4>
-              <div className="flex gap-2 mb-4">
+              {/* Input */}
+              <div className="flex gap-2.5 mb-4">
                 <Avatar name={currentUser.name} photoUrl={currentUser.photo_url} size="sm" />
-                <div className="flex-1 flex gap-1.5">
+                <div className="flex-1 relative">
                   <input type="text" value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }}
                     placeholder="Tulis komentar..."
-                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3.5 py-2.5 pr-11 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition"
                   />
-                  <button onClick={addComment} disabled={!newCommentText.trim()} className="px-2.5 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-40 shrink-0"><Send size={14} /></button>
+                  <button onClick={addComment} disabled={!newCommentText.trim()}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-30 transition"
+                  >
+                    <Send size={13} />
+                  </button>
                 </div>
               </div>
+              {/* Thread */}
               {comments.length > 0 && (
                 <div className="space-y-3">
                   {comments.map((c) => {
                     const emp = employees.find((e) => e.id === c.by);
+                    const isMe = c.by === currentUser.id;
                     return (
-                      <div key={c.id} className="flex gap-2 group">
+                      <div key={c.id} className="flex gap-2.5 group">
                         <Avatar name={emp?.name || c.byName || "?"} photoUrl={emp?.photo_url} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs font-bold text-gray-800">{emp?.name || c.byName}</span>
-                            <span className="text-[10px] text-gray-400">{format(new Date(c.at), "dd MMM HH:mm", { locale: idLocale })}</span>
+                            <span className="text-[10px] text-gray-400">{format(new Date(c.at), "dd MMM • HH:mm", { locale: idLocale })}</span>
+                            {isMe && (
+                              <button onClick={() => deleteComment(c.id)}
+                                className="opacity-0 group-hover:opacity-100 text-[10px] text-gray-400 hover:text-red-500 transition ml-auto"
+                              >
+                                Hapus
+                              </button>
+                            )}
                           </div>
-                          <div className="bg-white rounded-lg p-2.5 mt-1 border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words">{c.text}</div>
+                          <div className="bg-white rounded-xl rounded-tl-sm p-3 border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed shadow-sm">
+                            {c.text}
+                          </div>
                         </div>
-                        {c.by === currentUser.id && (
-                          <button onClick={() => deleteComment(c.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition mt-1"><X size={12} /></button>
-                        )}
                       </div>
                     );
                   })}

@@ -1312,9 +1312,16 @@ export default function TasksPage() {
         </div>
       </nav>
 
-      {/* Message Tab Content */}
+      {/* Message Panel - side panel on desktop, fullscreen on mobile */}
       {bottomTab === "message" && (
-        <div className="fixed inset-0 z-20 bg-gray-50 flex flex-col" style={{ top: 0, bottom: 56 }}>
+        <>
+        {/* Desktop: backdrop click to close */}
+        {!isMobile && <div className="fixed inset-0 z-20 bg-black/20" onClick={() => setBottomTab("board")} />}
+        <div className={`fixed z-30 bg-white flex flex-col shadow-2xl ${
+          isMobile
+            ? "inset-0"
+            : "top-0 right-0 bottom-0 w-[380px] border-l border-gray-200"
+        }`} style={isMobile ? { bottom: 56 } : undefined}>
           {/* Chat header */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
             <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">
@@ -1380,6 +1387,7 @@ export default function TasksPage() {
             </button>
           </div>
         </div>
+        </>
       )}
 
       {/* Board Switcher Modal */}

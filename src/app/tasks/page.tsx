@@ -301,20 +301,19 @@ function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
     >
       {/* Cover + drag handle */}
       <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing select-none">
-        {coverUrl && (
+        {coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt="" className="w-full h-32 object-cover rounded-t-2xl" draggable={false} />
-        )}
-        {!coverUrl && (
-          <div className="flex justify-center pt-2">
-            <div className="w-8 h-1 bg-gray-200 rounded-full" />
+          <img src={coverUrl} alt="" className="w-full h-36 object-cover rounded-t-2xl" draggable={false} />
+        ) : (
+          <div className="flex justify-center pt-2.5 pb-0.5">
+            <div className="w-10 h-1 bg-gray-200 rounded-full" />
           </div>
         )}
       </div>
 
-      <div onClick={onClick} className="px-4 pt-3 pb-2.5">
+      <div onClick={onClick} className="px-4 pt-2 pb-2.5">
         {/* Labels */}
-        {!coverUrl && labelSet.size > 0 && (
+        {labelSet.size > 0 && (
           <div className="flex gap-1.5 mb-2">
             {Array.from(labelSet).map((l) => {
               const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
@@ -1031,32 +1030,34 @@ export default function TasksPage() {
           </div>
 
           {/* Mobile: Column Tab Bar */}
-          <div className={`${isMobile ? "flex" : "hidden"} gap-1 overflow-x-auto -mx-4 px-4 pb-1 snap-x`}>
-            {columns.map((col, idx) => {
-              const count = filteredTasks.filter((t) => t.status === col.key).length;
-              const isActive = mobileTab === idx;
-              const topBarColor = COL_COLORS[col.color as ColColor] || "bg-gray-400";
-              return (
-                <button
-                  key={col.id}
-                  onClick={() => setMobileTab(idx)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition snap-start ${
-                    isActive
-                      ? "bg-gray-900 text-white shadow-sm"
-                      : "bg-white text-gray-600 border border-gray-200"
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${topBarColor}`} />
-                  {col.label}
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-bold ${
-                    isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {isMobile && (
+            <div className="flex gap-2 overflow-x-auto pb-1 pt-1 snap-x scrollbar-hide">
+              {columns.map((col, idx) => {
+                const count = filteredTasks.filter((t) => t.status === col.key).length;
+                const isActive = mobileTab === idx;
+                const topBarColor = COL_COLORS[col.color as ColColor] || "bg-gray-400";
+                return (
+                  <button
+                    key={col.id}
+                    onClick={() => setMobileTab(idx)}
+                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition snap-start ${
+                      isActive
+                        ? "bg-gray-900 text-white shadow-md"
+                        : "bg-white text-gray-600 border border-gray-200 shadow-sm"
+                    }`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${topBarColor} ${isActive ? "ring-2 ring-white/30" : ""}`} />
+                    {col.label}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full min-w-[20px] text-center font-bold ${
+                      isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </header>
 
@@ -1070,7 +1071,7 @@ export default function TasksPage() {
       >
         {/* MOBILE: Single column view */}
         {isMobile && (
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 pb-20">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-24">
             {(() => {
               const col = columns[mobileTab];
               if (!col) return null;

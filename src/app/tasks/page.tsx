@@ -506,6 +506,9 @@ export default function TasksPage() {
   const [chatText, setChatText] = useState("");
   // Task form advanced toggle
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // Inline quick add per column
+  const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
+  const [quickAddText, setQuickAddText] = useState("");
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -649,6 +652,31 @@ export default function TasksPage() {
   // Fetch chat when switching to message tab or board
   useEffect(() => {
     if (bottomTab === "message") fetchChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bottomTab, activeBoard]);
+
+  // Chat realtime subscription — new messages from any device auto-appear
+  useEffect(() => {
+    if (bottomTab !== "message") return;
+    const boardId = activeBoard?.id || null;
+    const channel = supabase
+      .channel(`chat-${boardId || "general"}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "board_messages" },
+        (payload) => {
+          const msg = payload.new as BoardMessage;
+          // Filter for this board only
+          if ((msg.board_id || null) !== boardId) return;
+          // Avoid duplicate (sendChat already adds optimistically)
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bottomTab, activeBoard]);
 
@@ -878,6 +906,25 @@ export default function TasksPage() {
     }
     setLoading(false);
     setShowForm({ open: false, status: "brief" });
+  }
+
+  async function quickAddTask(colKey: string, title: string) {
+    if (!title.trim() || !user) return;
+    const { data } = await supabase.from("tasks").insert({
+      title: title.trim(),
+      status: colKey,
+      color: "red",
+      assignees: [user.id],
+      assignee_id: user.id,
+      created_by: user.id,
+      board_id: activeBoard?.id || null,
+    }).select().single();
+    if (data) {
+      const newTask: Task = { ...data, assignees: [user.id], assigneeObjects: [user], assignee: user };
+      setTasks((prev) => [...prev, newTask]);
+    }
+    setQuickAddText("");
+    // Keep quickAddCol open for continuous add
   }
 
   async function moveTaskToColumn(taskId: string, newStatus: string) {
@@ -1118,12 +1165,64 @@ export default function TasksPage() {
                     onRename={(t) => renameTaskInline(task.id, t)}
                   />
                 ))}
-                <button
-                  onClick={() => openCreate(col.key)}
-                  className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium"
-                >
-                  <Plus size={16} /> Tambah task
-                </button>
+                {/* Quick inline add */}
+                {quickAddCol === col.key ? (
+                  <div className="bg-white rounded-xl shadow-md border-2 border-primary p-3">
+                    <input
+                      type="text"
+                      value={quickAddText}
+                      onChange={(e) => setQuickAddText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && quickAddText.trim()) {
+                          e.preventDefault();
+                          quickAddTask(col.key, quickAddText);
+                        } else if (e.key === "Escape") {
+                          setQuickAddCol(null);
+                          setQuickAddText("");
+                        }
+                      }}
+                      placeholder="Nama task... (Enter untuk simpan)"
+                      autoFocus
+                      className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => { setQuickAddCol(null); setQuickAddText(""); }}
+                        className="px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 rounded-lg font-medium"
+                      >
+                        Tutup
+                      </button>
+                      <button
+                        onClick={() => quickAddText.trim() && quickAddTask(col.key, quickAddText)}
+                        disabled={!quickAddText.trim()}
+                        className="flex-1 px-3 py-2 bg-primary text-white rounded-lg text-xs font-bold disabled:opacity-40 shadow-sm active:scale-95 transition"
+                      >
+                        + Tambah
+                      </button>
+                      <button
+                        onClick={() => {
+                          setQuickAddCol(null);
+                          setQuickAddText("");
+                          openCreate(col.key);
+                        }}
+                        className="px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium"
+                        title="Form lengkap"
+                      >
+                        ⚙
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1.5 px-1">
+                      💡 Enter untuk simpan & tambah lagi • ⚙ untuk detail lengkap
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setQuickAddCol(col.key); setQuickAddText(""); }}
+                    className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium active:scale-[0.98]"
+                  >
+                    <Plus size={16} /> Tambah task
+                  </button>
+                )}
               </>
             );
           })()}
@@ -1458,17 +1557,18 @@ export default function TasksPage() {
                         )}
                       </div>
                     </button>
-                    {isActive ? (
-                      <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold shrink-0">AKTIF</span>
-                    ) : (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isActive && (
+                        <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">AKTIF</span>
+                      )}
                       <button
                         onClick={() => deleteBoard(b)}
-                        className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center shrink-0 transition"
+                        className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
                         title="Hapus board"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
                       </button>
-                    )}
+                    </div>
                   </div>
                 );
               })}

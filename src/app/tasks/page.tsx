@@ -520,7 +520,6 @@ export default function TasksPage() {
   const [quickAddDesc, setQuickAddDesc] = useState("");
   const [quickAddDeadline, setQuickAddDeadline] = useState("");
   const [quickAddAssignees, setQuickAddAssignees] = useState<string[]>([]);
-  const [quickAddColor, setQuickAddColor] = useState<Task["color"]>("red");
   const [quickAddImage, setQuickAddImage] = useState<string | null>(null);
   const [quickAddUploading, setQuickAddUploading] = useState(false);
   const quickAddFileRef = useRef<HTMLInputElement>(null);
@@ -998,7 +997,7 @@ export default function TasksPage() {
       title: title.trim(),
       description: quickAddDesc.trim() || null,
       status: colKey,
-      color: quickAddColor,
+      color: CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)].key,
       assignees,
       assignee_id: assignees[0],
       due_date: quickAddDeadline || null,
@@ -1301,26 +1300,8 @@ export default function TasksPage() {
                       className="w-full px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 outline-none border-b border-gray-100 resize-none"
                     />
 
-                    {/* Color pills */}
-                    <div className="px-3 pt-2.5 pb-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-1">🏷</span>
-                      {CARD_COLORS.map((c) => {
-                        const active = quickAddColor === c.key;
-                        return (
-                          <button
-                            key={c.key}
-                            onClick={() => setQuickAddColor(c.key)}
-                            className={`shrink-0 w-8 h-8 rounded-lg ${c.dot} transition-all shadow-sm ${
-                              active ? "ring-2 ring-offset-1 ring-gray-900 scale-110" : "opacity-40"
-                            }`}
-                            aria-label={c.key}
-                          />
-                        );
-                      })}
-                    </div>
-
                     {/* Assignees */}
-                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5">
+                    <div className="px-3 pb-2.5 pt-2.5">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <UserIcon size={10} /> Assign ke
                         {quickAddAssignees.length > 0 && <span className="bg-primary text-white px-1.5 py-0.5 rounded-full text-[9px] ml-1 normal-case tracking-normal">{quickAddAssignees.length}</span>}

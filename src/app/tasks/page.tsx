@@ -517,6 +517,7 @@ export default function TasksPage() {
   // Inline quick add per column
   const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
   const [quickAddText, setQuickAddText] = useState("");
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [quickAddDesc, setQuickAddDesc] = useState("");
   const [quickAddDeadline, setQuickAddDeadline] = useState("");
   const [quickAddAssignees, setQuickAddAssignees] = useState<string[]>([]);
@@ -1114,6 +1115,20 @@ export default function TasksPage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // Detect keyboard open/close via visualViewport (mobile Safari/Chrome)
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const threshold = 150; // px difference = keyboard open
+    const check = () => {
+      const diff = window.innerHeight - vv.height;
+      setKeyboardOpen(diff > threshold);
+    };
+    vv.addEventListener("resize", check);
+    check();
+    return () => vv.removeEventListener("resize", check);
+  }, []);
+
   const isMine = (t: Task) =>
     t.assignee_id === user?.id || (Array.isArray(t.assignees) && t.assignees.includes(user?.id || ""));
   const filteredTasks = filterMine && user ? tasks.filter(isMine) : tasks;
@@ -1581,8 +1596,8 @@ export default function TasksPage() {
       </DndContext>
       )}
 
-      {/* Task Bottom Bar — hidden when chat is open OR when creating task on mobile */}
-      {!(isMobile && (bottomTab === "message" || quickAddCol)) && (
+      {/* Task Bottom Bar — hidden when chat open OR keyboard open on mobile */}
+      {!(isMobile && (bottomTab === "message" || keyboardOpen)) && (
         <>
       <div className="h-24" />
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>

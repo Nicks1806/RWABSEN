@@ -947,6 +947,36 @@ export default function TasksPage() {
     setShowForm({ open: true, status });
   }
 
+  // Notify all employees in board's allowed_roles when task is created
+  async function notifyBoardMembers(taskTitle: string) {
+    if (!user || !activeBoard || !activeBoard.allowed_roles || activeBoard.allowed_roles.length === 0) return;
+    // Find all active employees matching any allowed_role (by position or admin role)
+    const matchingEmps = employees.filter((e) => {
+      if (!e.is_active) return false;
+      if (e.id === user.id) return false; // don't notify the creator
+      if (e.role === "admin") return true;
+      const pos = (e.position || "").toLowerCase();
+      return activeBoard.allowed_roles!.some((r) => {
+        const rLower = r.toLowerCase();
+        return pos.includes(rLower) || rLower.includes(pos);
+      });
+    });
+    if (matchingEmps.length === 0) return;
+    const roleLabel = activeBoard.allowed_roles.join(", ");
+    try {
+      await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_ids: matchingEmps.map((e) => e.id),
+          title: `📋 Task baru di ${activeBoard.name}`,
+          body: `${taskTitle} — ditambahkan untuk role ${roleLabel}`,
+          url: "/tasks",
+        }),
+      });
+    } catch { /* fail silently */ }
+  }
+
   async function saveTask(e?: React.FormEvent | React.MouseEvent) {
     if (e) e.preventDefault();
     if (!user || !form.title.trim()) return;
@@ -979,6 +1009,7 @@ export default function TasksPage() {
         board_id: activeBoard?.id || null,
       });
       if (error) alert("Gagal: " + error.message);
+      else notifyBoardMembers(form.title.trim()); // notify role members on new task
     }
     setLoading(false);
     setShowForm({ open: false, status: "brief" });
@@ -1013,6 +1044,8 @@ export default function TasksPage() {
       const newTask: Task = { ...data, assignees, assigneeObjects, assignee: assigneeObjects[0] };
       setTasks((prev) => [...prev, newTask]);
     }
+    // Notify role members
+    notifyBoardMembers(title.trim());
     // Reset form but keep assignees & color for continuous add
     setQuickAddText("");
     setQuickAddDesc("");

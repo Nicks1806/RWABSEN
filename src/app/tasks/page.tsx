@@ -1115,18 +1115,33 @@ export default function TasksPage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Detect keyboard open/close via visualViewport (mobile Safari/Chrome)
+  // Detect keyboard open via input focus (more reliable than visualViewport on iOS)
   useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
-    const vv = window.visualViewport;
-    const threshold = 150; // px difference = keyboard open
-    const check = () => {
-      const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(diff > threshold);
+    if (typeof window === "undefined") return;
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        setKeyboardOpen(true);
+      }
     };
-    vv.addEventListener("resize", check);
-    check();
-    return () => vv.removeEventListener("resize", check);
+    const onFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        // Delay to allow focus move to another input without flicker
+        setTimeout(() => {
+          const active = document.activeElement;
+          if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) {
+            setKeyboardOpen(false);
+          }
+        }, 100);
+      }
+    };
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
   }, []);
 
   const isMine = (t: Task) =>

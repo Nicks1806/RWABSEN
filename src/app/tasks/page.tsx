@@ -504,6 +504,8 @@ export default function TasksPage() {
   const [bottomTab, setBottomTab] = useState<"board" | "message">("board");
   const [chatMessages, setChatMessages] = useState<BoardMessage[]>([]);
   const [chatText, setChatText] = useState("");
+  // Task form advanced toggle
+  const [showAdvanced, setShowAdvanced] = useState(false);
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -1589,46 +1591,69 @@ export default function TasksPage() {
                 </button>
               </div>
 
-              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-5">
-                {/* Title */}
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Nama task..."
-                  className="w-full px-0 py-2 bg-transparent border-0 border-b-2 border-gray-200 focus:border-primary text-base font-semibold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-normal"
-                  required
-                  autoFocus
-                />
+              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Title — BIG and focused */}
+                <div>
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="Apa yang mau dikerjakan?"
+                    className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-100 focus:border-primary focus:bg-white rounded-2xl text-lg font-semibold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-normal"
+                    required
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && form.title.trim() && !e.shiftKey) {
+                        e.preventDefault();
+                        saveTask(e as unknown as React.FormEvent);
+                      }
+                    }}
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1.5 px-1">💡 Tekan <b>Enter</b> untuk buat task langsung</p>
+                </div>
+
+                {/* Quick label selection — compact pills */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                  {CARD_COLORS.map((c) => {
+                    const active = form.color === c.key;
+                    return (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => setForm({ ...form, color: c.key })}
+                        className={`shrink-0 w-10 h-10 rounded-xl ${c.dot} transition-all shadow-sm ${
+                          active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40"
+                        }`}
+                        aria-label={c.label}
+                      />
+                    );
+                  })}
+                  <div className="w-px h-8 bg-gray-200 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className={`shrink-0 px-3 h-10 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5 ${
+                      showAdvanced
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {showAdvanced ? "▲ Tutup" : "▼ Detail"}
+                  </button>
+                </div>
+
+                {/* Advanced options (collapsible) */}
+                {showAdvanced && (
+                <div className="space-y-4 pt-2 border-t border-gray-100 animate-fade-in">
 
                 {/* Description */}
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
-                  placeholder="Deskripsi (opsional)..."
-                  className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-100 focus:border-gray-300 text-sm text-gray-700 outline-none transition resize-none placeholder:text-gray-400"
+                  placeholder="Deskripsi / catatan (opsional)..."
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 focus:border-primary focus:bg-white rounded-xl text-sm text-gray-700 outline-none transition resize-none placeholder:text-gray-400"
                 />
-
-                {/* Color label */}
-                <div>
-                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Label</p>
-                  <div className="flex gap-2">
-                    {CARD_COLORS.map((c) => {
-                      const active = form.color === c.key;
-                      return (
-                        <button
-                          key={c.key}
-                          type="button"
-                          onClick={() => setForm({ ...form, color: c.key })}
-                          className={`w-10 h-10 rounded-xl ${c.dot} transition-all shadow-sm ${
-                            active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40 hover:opacity-70 hover:scale-105"
-                          }`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
 
                 {/* Assignees - compact */}
                 <div>
@@ -1724,6 +1749,8 @@ export default function TasksPage() {
                 <p className="text-[10px] text-gray-400 italic flex items-center gap-1">
                   <Paperclip size={10} /> Gambar & link bisa ditambah setelah task dibuat
                 </p>
+                </div>
+                )}
               </form>
 
               {/* Footer — sticky, keyboard-aware */}

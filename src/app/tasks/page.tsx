@@ -970,7 +970,7 @@ export default function TasksPage() {
       const { error } = await supabase.from("tasks").insert({
         title: form.title.trim(),
         description: form.description.trim() || null,
-        color: form.color,
+        color: CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)].key,
         status: showForm.status,
         assignees: form.assignee_ids,
         assignee_id: primaryAssignee,
@@ -2096,43 +2096,8 @@ export default function TasksPage() {
                   </div>
                 </div>
 
-                {/* Label picker + Detail toggle */}
-                <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1">🏷 Label Warna</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 ${
-                        showAdvanced
-                          ? "bg-primary text-white shadow-sm"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {showAdvanced ? "▲ Tutup" : "⚙ Lebih Detail"}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-                    {CARD_COLORS.map((c) => {
-                      const active = form.color === c.key;
-                      return (
-                        <button
-                          key={c.key}
-                          type="button"
-                          onClick={() => setForm({ ...form, color: c.key })}
-                          className={`shrink-0 w-11 h-11 rounded-xl ${c.dot} transition-all shadow-sm ${
-                            active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40 hover:opacity-70"
-                          }`}
-                          aria-label={c.key}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Advanced options (collapsible) */}
-                {showAdvanced && (
-                <div className="space-y-4 pt-2 border-t border-gray-100 animate-fade-in">
+                {/* All fields — no color picker, no toggle */}
+                <div className="space-y-4">
 
                 {/* Description */}
                 <textarea
@@ -2238,7 +2203,6 @@ export default function TasksPage() {
                   <Paperclip size={10} /> Gambar & link bisa ditambah setelah task dibuat
                 </p>
                 </div>
-                )}
               </form>
 
               {/* Footer — sticky, keyboard-aware */}

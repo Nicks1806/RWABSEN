@@ -1624,7 +1624,7 @@ export default function TasksPage() {
                         className={`shrink-0 w-10 h-10 rounded-xl ${c.dot} transition-all shadow-sm ${
                           active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40"
                         }`}
-                        aria-label={c.label}
+                        aria-label={c.key}
                       />
                     );
                   })}

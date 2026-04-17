@@ -376,6 +376,15 @@ export default function AdminPage() {
     fetchData();
   }
 
+  // Soft delete: nonaktifkan karyawan (data history tetap aman)
+  async function toggleEmployeeActive(emp: Employee) {
+    await supabase.from("employees")
+      .update({ is_active: !emp.is_active })
+      .eq("id", emp.id);
+    setDeleteEmpTarget(null);
+    fetchData();
+  }
+
   // Save employee profile
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -2207,42 +2216,73 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Delete Employee Confirmation Modal */}
+      {/* Delete/Deactivate Employee Modal */}
       {deleteEmpTarget && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setDeleteEmpTarget(null)}
         >
           <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm"
+            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-3">
-                <Trash2 size={24} className="text-red-600" />
+              <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-3">
+                <span className="text-3xl">⚠️</span>
               </div>
-              <h3 className="font-bold text-gray-800 text-lg">Hapus Karyawan?</h3>
-              <p className="text-sm text-gray-500 mt-2">
-                Yakin ingin menghapus <strong className="text-gray-800">{deleteEmpTarget.name}</strong>?
-              </p>
-              <p className="text-xs text-red-500 mt-2">
-                ⚠️ Semua data absensi karyawan ini akan ikut terhapus dan tidak bisa dikembalikan.
+              <h3 className="font-bold text-gray-900 text-lg">Kelola <span className="text-primary">{deleteEmpTarget.name}</span></h3>
+              <p className="text-sm text-gray-600 mt-2">
+                {deleteEmpTarget.is_active
+                  ? "Pilih tindakan untuk karyawan ini"
+                  : "Karyawan ini sedang nonaktif"}
               </p>
             </div>
-            <div className="flex gap-2 mt-5">
+
+            <div className="flex flex-col gap-2 mt-5">
+              {/* Soft delete — recommended */}
+              {deleteEmpTarget.is_active ? (
+                <button
+                  type="button"
+                  onClick={() => toggleEmployeeActive(deleteEmpTarget)}
+                  className="py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  🔒 Nonaktifkan Karyawan
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggleEmployeeActive(deleteEmpTarget)}
+                  className="py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  ✓ Aktifkan Kembali
+                </button>
+              )}
+
+              {deleteEmpTarget.is_active && (
+                <p className="text-[11px] text-gray-500 text-center -mt-1 mb-1">
+                  💡 Login terblokir, history absensi tetap aman
+                </p>
+              )}
+
+              {/* Hard delete — danger */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`HAPUS PERMANEN ${deleteEmpTarget.name}?\n\nSemua data absensi, cuti, reimburse akan hilang dan TIDAK BISA dikembalikan.\n\nYakin?`)) {
+                    deleteEmployee(deleteEmpTarget.id);
+                  }
+                }}
+                className="py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition flex items-center justify-center gap-2"
+              >
+                <Trash2 size={15} /> Hapus Permanen (tidak bisa dibatalkan)
+              </button>
+
               <button
                 type="button"
                 onClick={() => setDeleteEmpTarget(null)}
-                className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                className="py-2.5 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50"
               >
                 Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteEmployee(deleteEmpTarget.id)}
-                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700"
-              >
-                Hapus Permanen
               </button>
             </div>
           </div>

@@ -476,6 +476,7 @@ export default function TasksPage() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [showBoardSwitcher, setShowBoardSwitcher] = useState(false);
+  const [boardSearch, setBoardSearch] = useState("");
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardColor, setNewBoardColor] = useState("bg-primary");
@@ -1867,52 +1868,94 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="p-3 space-y-1.5 bg-gradient-to-b from-white to-gray-50/50">
+            <div className="bg-gradient-to-b from-white to-gray-50/50">
+              {/* Search bar (only if > 3 boards) */}
+              {boards.length > 3 && (
+                <div className="px-3 pt-3 pb-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={boardSearch}
+                      onChange={(e) => setBoardSearch(e.target.value)}
+                      placeholder="🔍 Cari board..."
+                      className="w-full pl-3.5 pr-9 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                    />
+                    {boardSearch && (
+                      <button onClick={() => setBoardSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 hover:bg-gray-400 text-white flex items-center justify-center">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 space-y-1.5">
+              {/* Section label: Default */}
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2 pt-1 pb-1">Utama</p>
               {/* Default board */}
               <button
                 onClick={() => switchBoard(null)}
                 className={`w-full flex items-center gap-3 p-3 rounded-2xl transition group ${
-                  !activeBoard ? "bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                  !activeBoard ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-2 ring-primary/30 shadow-md" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
                 }`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold shadow-md shadow-primary/30 shrink-0">
-                  <Sparkles size={18} strokeWidth={2} />
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary-dark flex items-center justify-center text-white shadow-md shadow-primary/30 shrink-0 overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent" />
+                  <Sparkles size={18} strokeWidth={2.2} className="relative" />
                 </div>
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900">RedWine Board</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Board utama • Semua divisi</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5 inline-flex items-center gap-1">
+                    <Sparkles size={9} className="text-primary/60" /> Board utama • Semua divisi
+                  </p>
                 </div>
                 {!activeBoard && (
                   <span className="text-[9px] bg-gradient-to-br from-primary to-primary-dark text-white px-2.5 py-1 rounded-full font-bold shrink-0 shadow-sm">AKTIF</span>
                 )}
               </button>
 
-              {boards.length > 0 && <div className="border-t border-gray-100 my-2" />}
-
-              {/* User boards — filtered by canAccessBoard (allowed_roles) */}
-              {boards.filter((b) => canAccessBoard(user, b)).map((b) => {
-                const isActive = activeBoard?.id === b.id;
-                const isEditing = editBoardId === b.id;
+              {/* Section label: Boards per divisi */}
+              {(() => {
+                const filtered = boards
+                  .filter((b) => canAccessBoard(user, b))
+                  .filter((b) => !boardSearch.trim() || b.name.toLowerCase().includes(boardSearch.toLowerCase()));
+                if (filtered.length === 0) {
+                  if (boardSearch) return <p className="text-center text-xs text-gray-400 py-6">Tidak ada board cocok dengan &quot;{boardSearch}&quot;</p>;
+                  return null;
+                }
                 return (
+                  <>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2 pt-3 pb-1">Board per Divisi</p>
+                    {filtered.map((b) => {
+                      const isActive = activeBoard?.id === b.id;
+                      const isEditing = editBoardId === b.id;
+                      return (
                   <div key={b.id} className={`rounded-2xl transition ${
-                    isActive ? "bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                  } ${isEditing ? "ring-2 ring-primary shadow-md" : ""}`}>
+                    isActive ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-2 ring-primary/30 shadow-md" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                  } ${isEditing ? "ring-2 ring-primary shadow-md bg-white" : ""}`}>
                     <div className="flex items-center gap-3 p-3">
                       <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                        <div className={`w-12 h-12 rounded-2xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0`}>
-                          {b.name.slice(0, 2).toUpperCase()}
+                        <div className={`relative w-12 h-12 rounded-2xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0 overflow-hidden`}>
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent" />
+                          <span className="relative">{b.name.slice(0, 2).toUpperCase()}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{b.name}</p>
                           {b.allowed_roles && b.allowed_roles.length > 0 ? (
-                            <p className="text-[10px] text-gray-500 truncate mt-0.5 inline-flex items-center gap-1">
-                              <Users size={10} className="shrink-0" />
-                              <span className="truncate">{b.allowed_roles.join(", ")}</span>
-                            </p>
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              {b.allowed_roles.slice(0, 2).map((r) => (
+                                <span key={r} className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md font-medium">
+                                  {r}
+                                </span>
+                              ))}
+                              {b.allowed_roles.length > 2 && (
+                                <span className="text-[9px] text-gray-400 font-medium">+{b.allowed_roles.length - 2}</span>
+                              )}
+                            </div>
                           ) : (
-                            <p className="text-[10px] text-gray-500 mt-0.5 inline-flex items-center gap-1">
-                              <span>🌐</span> Semua role
-                            </p>
+                            <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md font-medium mt-1">
+                              🌐 Semua role
+                            </span>
                           )}
                         </div>
                       </button>
@@ -1954,7 +1997,7 @@ export default function TasksPage() {
                     </div>
 
                     {/* Inline role editor */}
-                    {isEditing && canManageBoards(user) && (
+                    {isEditing && canManageBoards(user) ? (
                       <div className="border-t border-primary/20 p-4 bg-gradient-to-b from-white to-gray-50/50 rounded-b-xl">
                         <div className="flex items-center justify-between mb-3">
                           <div>
@@ -2007,10 +2050,14 @@ export default function TasksPage() {
                           </button>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
-              })}
+                    })}
+                  </>
+                );
+              })()}
+              </div>
             </div>
 
             {/* Create new board - only for managers */}

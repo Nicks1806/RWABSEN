@@ -1,16 +1,27 @@
-import { Employee } from "./types";
+import { Employee, Board } from "./types";
 
 /**
- * Task Board access: Admin, Founder, GM/General Manager, Personal Assistant.
+ * Task Board page access: All employees can access the page.
+ * Per-board access is controlled via Board.allowed_roles.
  */
 export function canAccessTasks(emp: Employee | null | undefined): boolean {
+  return !!emp; // any logged-in employee can access /tasks page
+}
+
+/**
+ * Check if an employee can see/access a specific board.
+ * - allowed_roles = null/empty → everyone can access
+ * - allowed_roles has values → check if emp.position or emp.role matches
+ * - Admin always has access to all boards
+ */
+export function canAccessBoard(emp: Employee | null | undefined, board: Board): boolean {
   if (!emp) return false;
-  if (emp.role === "admin") return true;
+  if (emp.role === "admin") return true; // admin always sees all
+  if (!board.allowed_roles || board.allowed_roles.length === 0) return true; // public board
+
   const pos = (emp.position || "").toLowerCase();
-  return (
-    pos.includes("founder") ||
-    pos.includes("gm") ||
-    pos.includes("general manager") ||
-    pos.includes("personal assistant")
-  );
+  return board.allowed_roles.some((role) => {
+    const r = role.toLowerCase();
+    return pos.includes(r) || r.includes(pos);
+  });
 }

@@ -46,7 +46,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
-import { canAccessTasks } from "@/lib/permissions";
+import { canAccessTasks, canAccessBoard } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
 import { MessageCircle, Columns3, Send, Upload } from "lucide-react";
@@ -275,6 +275,7 @@ function ColumnDroppable({
 function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
   task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (colKey: string) => void; onRename: (t: string) => void;
 }) {
+  void onRename;
   const [showActions, setShowActions] = useState(false);
   const [editTitle, setEditTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(task.title);
@@ -578,6 +579,11 @@ export default function TasksPage() {
 
   // ===== Board CRUD =====
   async function switchBoard(board: Board | null) {
+    // Guard: if switching to a specific board, check access
+    if (board && !canAccessBoard(user, board)) {
+      alert("Anda tidak punya akses ke board ini.");
+      return;
+    }
     setActiveBoard(board);
     setShowBoardSwitcher(false);
     setColumns(DEFAULT_COLUMNS);
@@ -1571,25 +1577,28 @@ export default function TasksPage() {
               const isMe = m.sender_id === user?.id;
               const emp = employees.find((e) => e.id === m.sender_id);
               const canDelete = isMe || user?.role === "admin";
+              const isImageOnly = m.image_url && (!m.text || m.text === "📷 Gambar");
               return (
                 <div key={m.id} className={`flex gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
                   {!isMe && <Avatar name={emp?.name || m.sender_name || "?"} photoUrl={emp?.photo_url} size="sm" />}
-                  <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"}`}>
+                  <div className={`max-w-[72%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                     {!isMe && <p className="text-[10px] text-gray-500 font-semibold mb-0.5 px-1">{emp?.name || m.sender_name}</p>}
-                    <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                      isMe
-                        ? "bg-primary text-white rounded-br-sm"
-                        : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm"
+                    <div className={`rounded-2xl text-sm leading-relaxed overflow-hidden ${
+                      isImageOnly
+                        ? "bg-transparent p-0"
+                        : isMe
+                        ? "bg-primary text-white rounded-br-sm px-3 py-2"
+                        : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm px-3 py-2"
                     }`}>
                       {/* Reply preview */}
                       {m.reply_to_id && m.reply_to_text && (
                         <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 ${
-                          isMe ? "bg-white/15 border-white/60" : "bg-gray-50 border-primary/50"
+                          isMe && !isImageOnly ? "bg-white/15 border-white/60" : "bg-gray-50 border-primary/50"
                         }`}>
-                          <p className={`text-[9px] font-bold ${isMe ? "text-white/80" : "text-primary"}`}>
+                          <p className={`text-[9px] font-bold ${isMe && !isImageOnly ? "text-white/80" : "text-primary"}`}>
                             ↩ {m.reply_to_sender}
                           </p>
-                          <p className={`text-[11px] truncate ${isMe ? "text-white/70" : "text-gray-500"}`}>
+                          <p className={`text-[11px] truncate ${isMe && !isImageOnly ? "text-white/70" : "text-gray-500"}`}>
                             {m.reply_to_text}
                           </p>
                         </div>
@@ -1600,7 +1609,8 @@ export default function TasksPage() {
                         <img
                           src={m.image_url}
                           alt=""
-                          className="rounded-lg mb-1.5 max-w-[240px] cursor-pointer"
+                          className={`cursor-pointer w-full h-auto object-cover ${isImageOnly ? "rounded-2xl" : "rounded-lg mb-1.5 max-h-64"}`}
+                          style={{ maxWidth: 240 }}
                           onClick={() => window.open(m.image_url!, "_blank")}
                         />
                       )}
@@ -1608,22 +1618,22 @@ export default function TasksPage() {
                         <p className="whitespace-pre-wrap break-words">{m.text}</p>
                       )}
                     </div>
-                    <div className={`flex items-center gap-2 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
+                    <div className={`flex items-center gap-2 mt-1 px-1 ${isMe ? "justify-end" : ""}`}>
                       <p className="text-[9px] text-gray-400">
                         {format(new Date(m.created_at), "HH:mm", { locale: idLocale })}
                       </p>
                       <button
                         onClick={() => setChatReplyTo(m)}
-                        className="text-[9px] text-gray-400 hover:text-primary font-medium"
+                        className="text-[9px] text-gray-400 hover:text-primary font-medium transition"
                       >
-                        ↩ Balas
+                        ↩
                       </button>
                       {canDelete && (
                         <button
                           onClick={() => deleteChatMessage(m.id)}
-                          className="text-[9px] text-gray-400 hover:text-red-500 font-medium"
+                          className="text-[9px] text-gray-400 hover:text-red-500 font-medium transition"
                         >
-                          🗑 Hapus
+                          🗑
                         </button>
                       )}
                     </div>
@@ -1717,14 +1727,8 @@ export default function TasksPage() {
 
               {boards.length > 0 && <div className="border-t border-gray-100 my-2" />}
 
-              {/* User boards */}
-              {boards.filter((b) => {
-                // Filter by allowed_roles: null = everyone, array = check user position
-                if (!b.allowed_roles || b.allowed_roles.length === 0) return true;
-                const userPos = user?.position || "";
-                const userRole = user?.role || "";
-                return b.allowed_roles.some((r) => userPos.toLowerCase().includes(r.toLowerCase()) || userRole === "admin");
-              }).map((b) => {
+              {/* User boards — filtered by canAccessBoard (allowed_roles) */}
+              {boards.filter((b) => canAccessBoard(user, b)).map((b) => {
                 const isActive = activeBoard?.id === b.id;
                 return (
                   <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition group ${
@@ -1877,15 +1881,15 @@ export default function TasksPage() {
                 </button>
               </div>
 
-              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-4">
-                {/* Title — BIG and focused */}
-                <div>
+              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50/30">
+                {/* Title — clean minimalist card */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <input
                     type="text"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     placeholder="Apa yang mau dikerjakan?"
-                    className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-100 focus:border-primary focus:bg-white rounded-2xl text-lg font-semibold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-normal"
+                    className="w-full px-0 py-1 bg-transparent border-0 text-lg font-bold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-medium"
                     required
                     autoFocus
                     onKeyDown={(e) => {
@@ -1895,37 +1899,49 @@ export default function TasksPage() {
                       }
                     }}
                   />
-                  <p className="text-[11px] text-gray-400 mt-1.5 px-1">💡 Tekan <b>Enter</b> untuk buat task langsung</p>
+                  <div className="h-px bg-gray-100 my-2.5" />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                      <span>💡</span> Enter untuk buat langsung
+                    </p>
+                    {form.title && (
+                      <span className="text-[10px] text-primary font-semibold">{form.title.length} karakter</span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Quick label selection — compact pills */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                  {CARD_COLORS.map((c) => {
-                    const active = form.color === c.key;
-                    return (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => setForm({ ...form, color: c.key })}
-                        className={`shrink-0 w-10 h-10 rounded-xl ${c.dot} transition-all shadow-sm ${
-                          active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40"
-                        }`}
-                        aria-label={c.key}
-                      />
-                    );
-                  })}
-                  <div className="w-px h-8 bg-gray-200 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className={`shrink-0 px-3 h-10 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5 ${
-                      showAdvanced
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {showAdvanced ? "▲ Tutup" : "▼ Detail"}
-                  </button>
+                {/* Label picker + Detail toggle */}
+                <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1">🏷 Label Warna</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 ${
+                        showAdvanced
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {showAdvanced ? "▲ Tutup" : "⚙ Lebih Detail"}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+                    {CARD_COLORS.map((c) => {
+                      const active = form.color === c.key;
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          onClick={() => setForm({ ...form, color: c.key })}
+                          className={`shrink-0 w-11 h-11 rounded-xl ${c.dot} transition-all shadow-sm ${
+                            active ? "ring-[3px] ring-offset-2 ring-gray-900 scale-110" : "opacity-40 hover:opacity-70"
+                          }`}
+                          aria-label={c.key}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Advanced options (collapsible) */}

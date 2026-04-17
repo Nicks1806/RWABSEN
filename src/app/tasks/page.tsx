@@ -49,7 +49,7 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
-import { MessageCircle, Columns3, Send, Upload } from "lucide-react";
+import { MessageCircle, Columns3, Send, Upload, Check } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {

@@ -975,8 +975,8 @@ export default function TasksPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col transition-all duration-300"
-      style={!isMobile && bottomTab === "message" ? { marginLeft: 360 } : undefined}
+      className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col transition-[margin] duration-300 ease-out"
+      style={{ marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
     >
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -1326,7 +1326,7 @@ export default function TasksPage() {
         <>
         <div
           className="bg-white flex flex-col border-r border-gray-200 shadow-xl fixed z-30"
-          style={isMobile ? { inset: 0, bottom: 56 } : { top: 0, left: 0, bottom: 0, width: 360 }}
+          style={isMobile ? { top: 0, left: 0, right: 0, bottom: 0 } : { top: 0, left: 0, bottom: 0, width: 360 }}
         >
           {/* Chat header */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
@@ -1375,7 +1375,7 @@ export default function TasksPage() {
           </div>
 
           {/* Input */}
-          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2 safe-bottom">
+          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2" style={isMobile ? { marginBottom: 76 } : undefined}>
             <input
               type="text"
               value={chatText}
@@ -1549,17 +1549,30 @@ export default function TasksPage() {
         const colInfo = columns.find((c) => c.key === showForm.status) || columns[0];
         const colBg = COL_COLORS[colInfo.color as ColColor] || "bg-gray-500";
         const selectedEmps = employees.filter((e) => form.assignee_ids.includes(e.id));
+        let touchStartY = 0;
+        let touchDeltaY = 0;
         return (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
             onClick={() => !loading && setShowForm({ open: false, status: "brief" })}
           >
             <div
-              className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl animate-slide-up max-h-[92vh] overflow-hidden flex flex-col"
+              className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
+              style={{ maxHeight: "92dvh" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="md:hidden flex justify-center pt-2 pb-0"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
+              {/* Drag handle - swipe down to close on mobile */}
+              <div
+                className="md:hidden flex justify-center pt-2 pb-2 cursor-grab active:cursor-grabbing touch-none"
+                onTouchStart={(e) => { touchStartY = e.touches[0].clientY; touchDeltaY = 0; }}
+                onTouchMove={(e) => { touchDeltaY = e.touches[0].clientY - touchStartY; }}
+                onTouchEnd={() => {
+                  if (touchDeltaY > 80 && !loading) setShowForm({ open: false, status: "brief" });
+                  touchDeltaY = 0;
+                }}
+              >
+                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+              </div>
               <div className={`${colBg} mx-4 mt-3 md:mt-4 rounded-xl px-4 py-3 text-white flex items-center justify-between`}>
                 <div>
                   <h3 className="font-bold text-base">{showForm.task ? "Edit Task" : "Task Baru"}</h3>

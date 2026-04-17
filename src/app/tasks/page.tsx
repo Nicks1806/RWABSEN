@@ -1293,7 +1293,7 @@ export default function TasksPage() {
 
       {/* Task Bottom Bar */}
       <div className="h-24" />
-      <nav className="fixed bottom-0 left-0 right-0 z-30 pb-5 md:pb-4 px-4 pointer-events-none">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 pb-5 md:pb-4 px-4 pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
           <div className="bg-white/90 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center p-1.5">
             {[
@@ -1375,7 +1375,7 @@ export default function TasksPage() {
           </div>
 
           {/* Input */}
-          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2" style={isMobile ? { marginBottom: 76 } : undefined}>
+          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2" style={isMobile ? { paddingBottom: 88 } : undefined}>
             <input
               type="text"
               value={chatText}
@@ -1561,28 +1561,31 @@ export default function TasksPage() {
               style={{ maxHeight: "92dvh" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Drag handle - swipe down to close on mobile */}
+              {/* Swipeable top area (handle + header together) */}
               <div
-                className="md:hidden flex justify-center pt-2 pb-2 cursor-grab active:cursor-grabbing touch-none"
+                className="md:hidden touch-pan-y"
                 onTouchStart={(e) => { touchStartY = e.touches[0].clientY; touchDeltaY = 0; }}
                 onTouchMove={(e) => { touchDeltaY = e.touches[0].clientY - touchStartY; }}
                 onTouchEnd={() => {
-                  if (touchDeltaY > 80 && !loading) setShowForm({ open: false, status: "brief" });
+                  if (touchDeltaY > 60 && !loading) setShowForm({ open: false, status: "brief" });
                   touchDeltaY = 0;
                 }}
               >
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                <div className="flex justify-center pt-2.5 pb-1">
+                  <div className="w-14 h-1.5 bg-gray-300 rounded-full" />
+                </div>
               </div>
-              <div className={`${colBg} mx-4 mt-3 md:mt-4 rounded-xl px-4 py-3 text-white flex items-center justify-between`}>
-                <div>
+              <div className={`${colBg} mx-4 mt-2 md:mt-4 rounded-xl px-4 py-3 text-white flex items-center justify-between`}>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
                   <p className="text-xs text-white/70 mt-0.5">{colInfo.label}{colInfo.description ? ` • ${colInfo.description}` : ""}</p>
                 </div>
                 <button
                   onClick={() => setShowForm({ open: false, status: "brief" })}
-                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition"
+                  className="w-10 h-10 rounded-full bg-white/25 hover:bg-white/40 text-white flex items-center justify-center transition active:scale-90 shrink-0"
+                  aria-label="Tutup"
                 >
-                  <X size={16} />
+                  <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
 

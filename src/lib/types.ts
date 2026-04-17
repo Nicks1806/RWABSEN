@@ -121,6 +121,10 @@ export interface BoardMessage {
   sender_id: string;
   sender_name?: string;
   text: string;
+  image_url?: string | null; // optional image attachment
+  reply_to_id?: string | null; // message ID being replied to
+  reply_to_text?: string | null; // cached text of replied message
+  reply_to_sender?: string | null; // cached sender name of replied message
   created_at: string;
 }
 

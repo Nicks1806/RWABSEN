@@ -49,7 +49,7 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
-import { MessageCircle, Columns3, Send } from "lucide-react";
+import { MessageCircle, Columns3, Send, Upload } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {
@@ -504,11 +504,17 @@ export default function TasksPage() {
   const [bottomTab, setBottomTab] = useState<"board" | "message">("board");
   const [chatMessages, setChatMessages] = useState<BoardMessage[]>([]);
   const [chatText, setChatText] = useState("");
+  const [chatSearch, setChatSearch] = useState("");
+  const [chatReplyTo, setChatReplyTo] = useState<BoardMessage | null>(null);
+  const [chatUploading, setChatUploading] = useState(false);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
   // Task form advanced toggle
   const [showAdvanced, setShowAdvanced] = useState(false);
   // Inline quick add per column
   const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
   const [quickAddText, setQuickAddText] = useState("");
+  const [quickAddAssignees, setQuickAddAssignees] = useState<string[]>([]);
+  const [quickAddColor, setQuickAddColor] = useState<Task["color"]>("red");
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -628,7 +634,12 @@ export default function TasksPage() {
   async function fetchChat() {
     try {
       const boardId = activeBoard?.id || null;
-      let q = supabase.from("board_messages").select("*").order("created_at", { ascending: true }).limit(100);
+      // Cleanup: delete messages older than 90 days (fire and forget, admin-only client trigger)
+      if (user?.role === "admin") {
+        const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        supabase.from("board_messages").delete().lt("created_at", cutoff).then(() => {});
+      }
+      let q = supabase.from("board_messages").select("*").order("created_at", { ascending: true }).limit(200);
       if (boardId) q = q.eq("board_id", boardId);
       else q = q.is("board_id", null);
       const { data } = await q;
@@ -636,17 +647,47 @@ export default function TasksPage() {
     } catch { /* table may not exist */ }
   }
 
-  async function sendChat() {
-    if (!chatText.trim() || !user) return;
+  async function sendChat(imageUrl?: string) {
+    if ((!chatText.trim() && !imageUrl) || !user) return;
     const msg: Partial<BoardMessage> = {
       board_id: activeBoard?.id || null,
       sender_id: user.id,
       sender_name: user.name,
-      text: chatText.trim(),
+      text: chatText.trim() || (imageUrl ? "📷 Gambar" : ""),
+      image_url: imageUrl || null,
+      reply_to_id: chatReplyTo?.id || null,
+      reply_to_text: chatReplyTo?.text?.slice(0, 80) || null,
+      reply_to_sender: chatReplyTo?.sender_name || null,
     };
     setChatText("");
+    setChatReplyTo(null);
     const { data } = await supabase.from("board_messages").insert(msg).select().single();
     if (data) setChatMessages((prev) => [...prev, data as BoardMessage]);
+  }
+
+  async function deleteChatMessage(id: string) {
+    if (!confirm("Hapus pesan ini?")) return;
+    await supabase.from("board_messages").delete().eq("id", id);
+    setChatMessages((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  async function sendChatImage(file: File) {
+    if (!user || !file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    setChatUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filename = `chat/${activeBoard?.id || "general"}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("attendance-photos").upload(filename, file, { contentType: file.type });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
+      await sendChat(urlData.publicUrl);
+    } catch (e) {
+      alert("Upload gagal: " + (e instanceof Error ? e.message : e));
+    } finally {
+      setChatUploading(false);
+      if (chatFileInputRef.current) chatFileInputRef.current.value = "";
+    }
   }
 
   // Fetch chat when switching to message tab or board
@@ -666,13 +707,19 @@ export default function TasksPage() {
         { event: "INSERT", schema: "public", table: "board_messages" },
         (payload) => {
           const msg = payload.new as BoardMessage;
-          // Filter for this board only
           if ((msg.board_id || null) !== boardId) return;
-          // Avoid duplicate (sendChat already adds optimistically)
           setChatMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "board_messages" },
+        (payload) => {
+          const deletedId = (payload.old as { id?: string })?.id;
+          if (deletedId) setChatMessages((prev) => prev.filter((m) => m.id !== deletedId));
         }
       )
       .subscribe();
@@ -910,21 +957,24 @@ export default function TasksPage() {
 
   async function quickAddTask(colKey: string, title: string) {
     if (!title.trim() || !user) return;
+    const assignees = quickAddAssignees.length > 0 ? quickAddAssignees : [user.id];
     const { data } = await supabase.from("tasks").insert({
       title: title.trim(),
       status: colKey,
-      color: "red",
-      assignees: [user.id],
-      assignee_id: user.id,
+      color: quickAddColor,
+      assignees,
+      assignee_id: assignees[0],
       created_by: user.id,
       board_id: activeBoard?.id || null,
     }).select().single();
     if (data) {
-      const newTask: Task = { ...data, assignees: [user.id], assigneeObjects: [user], assignee: user };
+      const empMap = new Map(employees.map((e) => [e.id, e]));
+      const assigneeObjects = assignees.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
+      const newTask: Task = { ...data, assignees, assigneeObjects, assignee: assigneeObjects[0] };
       setTasks((prev) => [...prev, newTask]);
     }
     setQuickAddText("");
-    // Keep quickAddCol open for continuous add
+    // Keep assignees & color for continuous add of similar tasks
   }
 
   async function moveTaskToColumn(taskId: string, newStatus: string) {
@@ -1165,9 +1215,10 @@ export default function TasksPage() {
                     onRename={(t) => renameTaskInline(task.id, t)}
                   />
                 ))}
-                {/* Quick inline add */}
+                {/* Quick inline add — enhanced with assignee + color */}
                 {quickAddCol === col.key ? (
-                  <div className="bg-white rounded-xl shadow-md border-2 border-primary p-3">
+                  <div className="bg-white rounded-2xl shadow-lg border-2 border-primary/40 overflow-hidden">
+                    {/* Title input */}
                     <input
                       type="text"
                       value={quickAddText}
@@ -1181,23 +1232,62 @@ export default function TasksPage() {
                           setQuickAddText("");
                         }
                       }}
-                      placeholder="Nama task... (Enter untuk simpan)"
+                      placeholder="Apa yang mau dikerjakan?"
                       autoFocus
-                      className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                      className="w-full px-4 py-3 text-base font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none border-b border-gray-100"
                     />
-                    <div className="flex gap-2 mt-2">
+
+                    {/* Color pills */}
+                    <div className="px-3 pt-2.5 pb-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                      {CARD_COLORS.map((c) => {
+                        const active = quickAddColor === c.key;
+                        return (
+                          <button
+                            key={c.key}
+                            onClick={() => setQuickAddColor(c.key)}
+                            className={`shrink-0 w-8 h-8 rounded-lg ${c.dot} transition-all shadow-sm ${
+                              active ? "ring-2 ring-offset-1 ring-gray-900 scale-110" : "opacity-40"
+                            }`}
+                            aria-label={c.key}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Assignees */}
+                    <div className="px-3 pb-2.5">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <UserIcon size={10} /> Assign ke
+                        {quickAddAssignees.length > 0 && <span className="bg-primary text-white px-1.5 py-0.5 rounded-full text-[9px] ml-1 normal-case tracking-normal">{quickAddAssignees.length}</span>}
+                      </p>
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                        {employees.filter((e) => e.is_active).map((e) => {
+                          const sel = quickAddAssignees.includes(e.id);
+                          return (
+                            <button
+                              key={e.id}
+                              onClick={() => setQuickAddAssignees((prev) => sel ? prev.filter((x) => x !== e.id) : [...prev, e.id])}
+                              className={`shrink-0 flex items-center gap-1.5 pl-0.5 pr-2.5 py-0.5 rounded-full border-2 transition ${
+                                sel ? "bg-primary/10 border-primary" : "bg-gray-50 border-transparent"
+                              }`}
+                            >
+                              <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
+                              <span className={`text-xs font-medium ${sel ? "text-primary" : "text-gray-600"}`}>
+                                {e.name.split(" ")[0]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="border-t border-gray-100 p-2 flex gap-1.5 bg-gray-50/60">
                       <button
-                        onClick={() => { setQuickAddCol(null); setQuickAddText(""); }}
-                        className="px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 rounded-lg font-medium"
+                        onClick={() => { setQuickAddCol(null); setQuickAddText(""); setQuickAddAssignees([]); }}
+                        className="px-3 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition"
                       >
                         Tutup
-                      </button>
-                      <button
-                        onClick={() => quickAddText.trim() && quickAddTask(col.key, quickAddText)}
-                        disabled={!quickAddText.trim()}
-                        className="flex-1 px-3 py-2 bg-primary text-white rounded-lg text-xs font-bold disabled:opacity-40 shadow-sm active:scale-95 transition"
-                      >
-                        + Tambah
                       </button>
                       <button
                         onClick={() => {
@@ -1205,15 +1295,19 @@ export default function TasksPage() {
                           setQuickAddText("");
                           openCreate(col.key);
                         }}
-                        className="px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium"
-                        title="Form lengkap"
+                        className="w-10 h-10 border border-gray-200 text-gray-600 rounded-xl text-xs font-medium hover:bg-white transition flex items-center justify-center"
+                        title="Form lengkap (deadline, deskripsi, dll)"
                       >
                         ⚙
                       </button>
+                      <button
+                        onClick={() => quickAddText.trim() && quickAddTask(col.key, quickAddText)}
+                        disabled={!quickAddText.trim()}
+                        className="flex-1 px-3 py-2.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl text-sm font-bold disabled:opacity-40 shadow-md active:scale-95 transition inline-flex items-center justify-center gap-1.5"
+                      >
+                        <Plus size={14} strokeWidth={3} /> Tambah Task
+                      </button>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1.5 px-1">
-                      💡 Enter untuk simpan & tambah lagi • ⚙ untuk detail lengkap
-                    </p>
                   </div>
                 ) : (
                   <button
@@ -1392,7 +1486,9 @@ export default function TasksPage() {
       </DndContext>
       )}
 
-      {/* Task Bottom Bar */}
+      {/* Task Bottom Bar — hidden when chat is open on mobile */}
+      {!(isMobile && bottomTab === "message") && (
+        <>
       <div className="h-24" />
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
         <div className="max-w-md mx-auto pointer-events-auto">
@@ -1421,6 +1517,8 @@ export default function TasksPage() {
           </div>
         </div>
       </nav>
+        </>
+      )}
 
       {/* Message Panel */}
       {bottomTab === "message" && (
@@ -1430,15 +1528,31 @@ export default function TasksPage() {
           style={isMobile ? { top: 0, left: 0, right: 0, bottom: 0 } : { top: 0, left: 0, bottom: 0, width: 360 }}
         >
           {/* Chat header */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm">
-            <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">
-              <ArrowLeft size={18} />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm text-gray-900 truncate">
-                💬 {activeBoard ? activeBoard.name : "General"} Chat
-              </h3>
-              <p className="text-[10px] text-gray-500">{chatMessages.length} pesan</p>
+          {/* Header with search */}
+          <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">
+                <ArrowLeft size={18} />
+              </button>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm text-gray-900 truncate">
+                  💬 {activeBoard ? activeBoard.name : "General"} Chat
+                </h3>
+                <p className="text-[10px] text-gray-500">{chatMessages.length} pesan • auto-delete &gt;90 hari</p>
+              </div>
+            </div>
+            {/* Search bar */}
+            <div className="relative">
+              <input
+                type="text"
+                value={chatSearch}
+                onChange={(e) => setChatSearch(e.target.value)}
+                placeholder="🔍 Cari pesan..."
+                className="w-full px-3.5 py-2 bg-gray-100 border-0 rounded-full text-xs outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+              />
+              {chatSearch && (
+                <button onClick={() => setChatSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs"><X size={12} /></button>
+              )}
             </div>
           </div>
 
@@ -1451,44 +1565,116 @@ export default function TasksPage() {
                 <p className="text-xs text-gray-400 mt-1">Mulai percakapan dengan tim</p>
               </div>
             )}
-            {chatMessages.map((m) => {
+            {chatMessages
+              .filter((m) => !chatSearch.trim() || m.text.toLowerCase().includes(chatSearch.toLowerCase()) || (m.sender_name || "").toLowerCase().includes(chatSearch.toLowerCase()))
+              .map((m) => {
               const isMe = m.sender_id === user?.id;
               const emp = employees.find((e) => e.id === m.sender_id);
+              const canDelete = isMe || user?.role === "admin";
               return (
-                <div key={m.id} className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : ""}`}>
+                <div key={m.id} className={`flex gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
                   {!isMe && <Avatar name={emp?.name || m.sender_name || "?"} photoUrl={emp?.photo_url} size="sm" />}
                   <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"}`}>
                     {!isMe && <p className="text-[10px] text-gray-500 font-semibold mb-0.5 px-1">{emp?.name || m.sender_name}</p>}
-                    <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                       isMe
                         ? "bg-primary text-white rounded-br-sm"
                         : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm"
                     }`}>
-                      {m.text}
+                      {/* Reply preview */}
+                      {m.reply_to_id && m.reply_to_text && (
+                        <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 ${
+                          isMe ? "bg-white/15 border-white/60" : "bg-gray-50 border-primary/50"
+                        }`}>
+                          <p className={`text-[9px] font-bold ${isMe ? "text-white/80" : "text-primary"}`}>
+                            ↩ {m.reply_to_sender}
+                          </p>
+                          <p className={`text-[11px] truncate ${isMe ? "text-white/70" : "text-gray-500"}`}>
+                            {m.reply_to_text}
+                          </p>
+                        </div>
+                      )}
+                      {/* Image */}
+                      {m.image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={m.image_url}
+                          alt=""
+                          className="rounded-lg mb-1.5 max-w-[240px] cursor-pointer"
+                          onClick={() => window.open(m.image_url!, "_blank")}
+                        />
+                      )}
+                      {m.text && m.text !== "📷 Gambar" && (
+                        <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                      )}
                     </div>
-                    <p className={`text-[9px] text-gray-400 mt-0.5 px-1 ${isMe ? "text-right" : ""}`}>
-                      {format(new Date(m.created_at), "HH:mm", { locale: idLocale })}
-                    </p>
+                    <div className={`flex items-center gap-2 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
+                      <p className="text-[9px] text-gray-400">
+                        {format(new Date(m.created_at), "HH:mm", { locale: idLocale })}
+                      </p>
+                      <button
+                        onClick={() => setChatReplyTo(m)}
+                        className="text-[9px] text-gray-400 hover:text-primary font-medium"
+                      >
+                        ↩ Balas
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => deleteChatMessage(m.id)}
+                          className="text-[9px] text-gray-400 hover:text-red-500 font-medium"
+                        >
+                          🗑 Hapus
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
 
+          {/* Reply preview bar */}
+          {chatReplyTo && (
+            <div className="bg-primary/5 border-t border-primary/20 px-4 py-2 flex items-center gap-2">
+              <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+                <p className="text-[10px] font-bold text-primary">↩ Balas {chatReplyTo.sender_name}</p>
+                <p className="text-xs text-gray-600 truncate">{chatReplyTo.text}</p>
+              </div>
+              <button onClick={() => setChatReplyTo(null)} className="w-7 h-7 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-500">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {/* Input */}
-          <div className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2" style={isMobile ? { paddingBottom: 88 } : undefined}>
+          <div className="bg-white border-t border-gray-200 px-3 py-2.5 flex items-center gap-1.5" style={isMobile ? { paddingBottom: "max(10px, env(safe-area-inset-bottom))" } : undefined}>
+            <button
+              onClick={() => chatFileInputRef.current?.click()}
+              disabled={chatUploading}
+              className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center shrink-0 disabled:opacity-40 transition active:scale-90"
+              title="Kirim gambar"
+            >
+              {chatUploading ? <Upload size={16} className="animate-pulse" /> : <ImageIcon size={18} />}
+            </button>
+            <input
+              ref={chatFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) sendChatImage(f); }}
+            />
             <input
               type="text"
               value={chatText}
               onChange={(e) => setChatText(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-              placeholder="Ketik pesan..."
-              className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+              placeholder={chatReplyTo ? "Ketik balasan..." : "Ketik pesan..."}
+              className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition min-w-0"
             />
             <button
-              onClick={sendChat}
+              onClick={() => sendChat()}
               disabled={!chatText.trim()}
-              className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-40 transition shadow-sm"
+              className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-40 transition shadow-sm shrink-0 active:scale-90"
             >
               <Send size={16} />
             </button>

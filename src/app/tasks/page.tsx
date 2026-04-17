@@ -869,31 +869,32 @@ export default function TasksPage() {
       .then(({ data }) => {
         const fresh = data || u;
         if (!canAccessTasks(fresh)) {
-          alert("Akses Task Board khusus Admin, Founder, dan GM.");
           router.push(fresh.role === "admin" ? "/admin" : "/home");
           return;
         }
         setUser(fresh);
         fetchData(null); // default board
       });
-  }, [router, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]); // fetchData is stable (useCallback with []), exclude from deps
 
   useEffect(() => {
     if (!user) return;
+    const currentBoardId = activeBoard?.id || null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const trigger = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fetchRef.current(activeBoard?.id || null), 500);
+      timer = setTimeout(() => fetchRef.current(currentBoardId), 500);
     };
     const channel = supabase
-      .channel("tasks-realtime")
+      .channel(`tasks-realtime-${currentBoardId || "default"}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, trigger)
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, activeBoard]);
 
   async function reorderTask(taskId: string, direction: "up" | "down") {
     const task = tasks.find((t) => t.id === taskId);

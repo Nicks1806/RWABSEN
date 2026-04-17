@@ -231,7 +231,8 @@ export default function AdminPage() {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [admin, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [admin]); // fetchData intentionally excluded - uses fetchDataRef
 
   // Fallback refresh only when tab regains focus (more efficient than 30s polling)
   useEffect(() => {

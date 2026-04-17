@@ -46,7 +46,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
-import { canAccessTasks, canAccessBoard } from "@/lib/permissions";
+import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
 import { MessageCircle, Columns3, Send, Upload } from "lucide-react";
@@ -1771,47 +1771,69 @@ export default function TasksPage() {
                         {isActive && (
                           <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">AKTIF</span>
                         )}
-                        <button
-                          onClick={() => {
-                            if (isEditing) {
-                              setEditBoardId(null);
-                              setEditBoardRoles([]);
-                            } else {
-                              setEditBoardId(b.id);
-                              setEditBoardRoles(b.allowed_roles || []);
-                            }
-                          }}
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-90 ${
-                            isEditing ? "bg-primary text-white" : "bg-blue-50 hover:bg-blue-100 text-blue-600"
-                          }`}
-                          title="Edit akses role"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => deleteBoard(b)}
-                          className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
-                          title="Hapus board"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {canManageBoards(user) && (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (isEditing) {
+                                  setEditBoardId(null);
+                                  setEditBoardRoles([]);
+                                } else {
+                                  setEditBoardId(b.id);
+                                  setEditBoardRoles(b.allowed_roles || []);
+                                }
+                              }}
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-90 ${
+                                isEditing ? "bg-primary text-white shadow-md" : "bg-blue-50 hover:bg-blue-100 text-blue-600"
+                              }`}
+                              title="Edit akses role"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => deleteBoard(b)}
+                              className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
+                              title="Hapus board"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     {/* Inline role editor */}
-                    {isEditing && (
-                      <div className="border-t border-gray-200/70 p-3 bg-white rounded-b-xl">
-                        <p className="text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Akses Role</p>
-                        <p className="text-[10px] text-gray-400 mb-2">Kosongkan = semua bisa akses</p>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
+                    {isEditing && canManageBoards(user) && (
+                      <div className="border-t border-primary/20 p-4 bg-gradient-to-b from-white to-gray-50/50 rounded-b-xl">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-[11px] font-bold text-gray-700 uppercase tracking-widest flex items-center gap-1.5">
+                              <UserIcon size={12} /> Akses Role
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                              {editBoardRoles.length === 0 ? "🌐 Semua karyawan bisa akses" : `${editBoardRoles.length} role terpilih`}
+                            </p>
+                          </div>
+                          {editBoardRoles.length > 0 && (
+                            <button
+                              onClick={() => setEditBoardRoles([])}
+                              className="text-[10px] text-gray-500 hover:text-red-500 font-medium px-2 py-1 hover:bg-gray-100 rounded"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-4">
                           {POSITIONS.map((role) => {
                             const selected = editBoardRoles.includes(role);
                             return (
                               <button
                                 key={role}
                                 onClick={() => setEditBoardRoles(selected ? editBoardRoles.filter((r) => r !== role) : [...editBoardRoles, role])}
-                                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                                  selected ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600"
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 ${
+                                  selected
+                                    ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20"
+                                    : "bg-white border border-gray-200 text-gray-600 hover:border-primary/40 hover:bg-primary/5"
                                 }`}
                               >
                                 {selected && "✓ "}{role}
@@ -1822,15 +1844,15 @@ export default function TasksPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => { setEditBoardId(null); setEditBoardRoles([]); }}
-                            className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-600"
+                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-white transition active:scale-95"
                           >
                             Batal
                           </button>
                           <button
                             onClick={() => saveEditBoardRoles(b)}
-                            className="flex-[2] py-2 bg-primary text-white rounded-lg text-xs font-bold shadow-sm active:scale-95 transition"
+                            className="flex-[2] py-2.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl text-xs font-bold shadow-md active:scale-95 transition inline-flex items-center justify-center gap-1.5"
                           >
-                            ✓ Simpan Akses
+                            <Check size={13} strokeWidth={3} /> Simpan Akses
                           </button>
                         </div>
                       </div>
@@ -1840,7 +1862,8 @@ export default function TasksPage() {
               })}
             </div>
 
-            {/* Create new board - always visible at bottom */}
+            {/* Create new board - only for managers */}
+            {canManageBoards(user) && (
             <div className="border-t border-gray-100 p-3">
               {showCreateBoard ? (
                 <div className="space-y-3">
@@ -1900,6 +1923,7 @@ export default function TasksPage() {
                 </button>
               )}
             </div>
+            )}
           </div>
         </div>
       )}

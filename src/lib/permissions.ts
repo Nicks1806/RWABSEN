@@ -25,3 +25,20 @@ export function canAccessBoard(emp: Employee | null | undefined, board: Board): 
     return pos.includes(r) || r.includes(pos);
   });
 }
+
+/**
+ * Only Founder, CEO/Direktur, GM can manage boards (create/edit roles/delete).
+ * Admin (role field) always can.
+ */
+export function canManageBoards(emp: Employee | null | undefined): boolean {
+  if (!emp) return false;
+  if (emp.role === "admin") return true;
+  const pos = (emp.position || "").toLowerCase();
+  return (
+    pos.includes("founder") ||
+    pos.includes("ceo") ||
+    pos.includes("direktur") ||
+    pos.includes("gm") ||
+    pos.includes("general manager")
+  );
+}

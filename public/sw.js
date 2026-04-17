@@ -1,7 +1,7 @@
 // RedWine Attendance - Service Worker
 // Cache static assets + push notifications + auto-update support
 
-const CACHE_NAME = "redwine-v7";
+const CACHE_NAME = "redwine-v8";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
@@ -88,22 +88,26 @@ self.addEventListener("fetch", (event) => {
   // Don't cache Supabase API
   if (url.hostname.includes("supabase.co")) return;
 
-  // Stale-while-revalidate for HTML navigation (instant render, refresh in bg)
+  // Don't cache Next.js content-hashed chunks (hash changes per build,
+  // caching leads to stale references → "Failed to load chunk" errors).
+  // Always fetch fresh from server; browser has own HTTP cache.
+  if (url.pathname.includes("/_next/static/chunks/") || url.pathname.includes("/_next/static/css/")) {
+    event.respondWith(fetch(req).catch(() => caches.match(req)));
+    return;
+  }
+
+  // Network-first for HTML navigation (always fresh to avoid stale chunk refs)
   if (req.mode === "navigate") {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const networkPromise = fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              const clone = res.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-            }
-            return res;
-          })
-          .catch(() => cached || caches.match("/"));
-        // Return cached immediately if available, else wait for network
-        return cached || networkPromise;
-      })
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match("/")))
     );
     return;
   }

@@ -1581,8 +1581,8 @@ export default function TasksPage() {
       </DndContext>
       )}
 
-      {/* Task Bottom Bar — hidden when chat is open on mobile */}
-      {!(isMobile && bottomTab === "message") && (
+      {/* Task Bottom Bar — hidden when chat is open OR when creating task on mobile */}
+      {!(isMobile && (bottomTab === "message" || quickAddCol)) && (
         <>
       <div className="h-24" />
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>

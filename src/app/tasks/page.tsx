@@ -480,6 +480,9 @@ export default function TasksPage() {
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardColor, setNewBoardColor] = useState("bg-primary");
   const [newBoardRoles, setNewBoardRoles] = useState<string[]>([]);
+  // Edit existing board
+  const [editBoardId, setEditBoardId] = useState<string | null>(null);
+  const [editBoardRoles, setEditBoardRoles] = useState<string[]>([]);
   const [filterMine, setFilterMine] = useState(false);
   const [showForm, setShowForm] = useState<{ open: boolean; status: string; task?: Task }>({
     open: false,
@@ -617,6 +620,20 @@ export default function TasksPage() {
     setShowCreateBoard(false);
     setBoards([...boards, data as Board]);
     switchBoard(data as Board);
+  }
+
+  async function saveEditBoardRoles(board: Board) {
+    const newRoles = editBoardRoles.length > 0 ? editBoardRoles : null;
+    const { error } = await supabase.from("boards")
+      .update({ allowed_roles: newRoles })
+      .eq("id", board.id);
+    if (error) { alert("Gagal: " + error.message); return; }
+    setBoards((prev) => prev.map((b) => b.id === board.id ? { ...b, allowed_roles: newRoles } : b));
+    if (activeBoard?.id === board.id) {
+      setActiveBoard({ ...activeBoard, allowed_roles: newRoles });
+    }
+    setEditBoardId(null);
+    setEditBoardRoles([]);
   }
 
   async function deleteBoard(board: Board) {
@@ -1730,35 +1747,93 @@ export default function TasksPage() {
               {/* User boards — filtered by canAccessBoard (allowed_roles) */}
               {boards.filter((b) => canAccessBoard(user, b)).map((b) => {
                 const isActive = activeBoard?.id === b.id;
+                const isEditing = editBoardId === b.id;
                 return (
-                  <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition group ${
+                  <div key={b.id} className={`rounded-xl transition ${
                     isActive ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-gray-50"
-                  }`}>
-                    <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                      <div className={`w-11 h-11 rounded-xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0`}>
-                        {b.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
-                        {b.allowed_roles && b.allowed_roles.length > 0 ? (
-                          <p className="text-[10px] text-gray-500 truncate">{b.allowed_roles.join(", ")}</p>
-                        ) : (
-                          <p className="text-[10px] text-gray-500">Semua role</p>
-                        )}
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isActive && (
-                        <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">AKTIF</span>
-                      )}
-                      <button
-                        onClick={() => deleteBoard(b)}
-                        className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
-                        title="Hapus board"
-                      >
-                        <Trash2 size={15} />
+                  } ${isEditing ? "ring-2 ring-primary" : ""}`}>
+                    <div className="flex items-center gap-3 p-3">
+                      <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                        <div className={`w-11 h-11 rounded-xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0`}>
+                          {b.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
+                          {b.allowed_roles && b.allowed_roles.length > 0 ? (
+                            <p className="text-[10px] text-gray-500 truncate">{b.allowed_roles.join(", ")}</p>
+                          ) : (
+                            <p className="text-[10px] text-gray-500">Semua role</p>
+                          )}
+                        </div>
                       </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isActive && (
+                          <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">AKTIF</span>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (isEditing) {
+                              setEditBoardId(null);
+                              setEditBoardRoles([]);
+                            } else {
+                              setEditBoardId(b.id);
+                              setEditBoardRoles(b.allowed_roles || []);
+                            }
+                          }}
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-90 ${
+                            isEditing ? "bg-primary text-white" : "bg-blue-50 hover:bg-blue-100 text-blue-600"
+                          }`}
+                          title="Edit akses role"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => deleteBoard(b)}
+                          className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
+                          title="Hapus board"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Inline role editor */}
+                    {isEditing && (
+                      <div className="border-t border-gray-200/70 p-3 bg-white rounded-b-xl">
+                        <p className="text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Akses Role</p>
+                        <p className="text-[10px] text-gray-400 mb-2">Kosongkan = semua bisa akses</p>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {POSITIONS.map((role) => {
+                            const selected = editBoardRoles.includes(role);
+                            return (
+                              <button
+                                key={role}
+                                onClick={() => setEditBoardRoles(selected ? editBoardRoles.filter((r) => r !== role) : [...editBoardRoles, role])}
+                                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                                  selected ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {selected && "✓ "}{role}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setEditBoardId(null); setEditBoardRoles([]); }}
+                            className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-600"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            onClick={() => saveEditBoardRoles(b)}
+                            className="flex-[2] py-2 bg-primary text-white rounded-lg text-xs font-bold shadow-sm active:scale-95 transition"
+                          >
+                            ✓ Simpan Akses
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

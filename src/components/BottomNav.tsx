@@ -53,39 +53,41 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="h-20" />
-      <nav className="fixed bottom-0 left-0 right-0 z-40">
-        <div className="bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-lg mx-auto grid grid-cols-5 items-center pb-6">
-          {ITEMS.map((it) => {
-            const Icon = it.icon;
-            const isActive = active(it.path);
-            const badge = it.key === "inbox" ? inboxCount : 0;
+      <div className="h-24" />
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+        <div className="max-w-lg mx-auto pointer-events-auto">
+          <div className="bg-white/95 backdrop-blur-2xl border border-gray-200/60 rounded-2xl shadow-[0_10px_40px_rgba(139,26,26,0.12)] flex items-center gap-1 p-1.5">
+            {ITEMS.map((it) => {
+              const Icon = it.icon;
+              const isActive = active(it.path);
+              const badge = it.key === "inbox" ? inboxCount : 0;
 
-            return (
-              <Link
-                key={it.key}
-                href={it.path}
-                prefetch
-                className={`flex flex-col items-center justify-center py-3 relative transition active:scale-95 ${
-                  isActive ? "text-primary" : "text-gray-400"
-                }`}
-              >
-                <div className="relative">
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                  {badge > 0 ? (
-                    <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[14px] h-[14px] flex items-center justify-center">
-                      {badge > 9 ? "9+" : badge}
-                    </span>
-                  ) : null}
-                </div>
-                <span className={`text-[10px] mt-1 ${isActive ? "font-semibold" : "font-medium"}`}>
-                  {it.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+              return (
+                <Link
+                  key={it.key}
+                  href={it.path}
+                  prefetch
+                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl relative transition-all duration-200 active:scale-90 ${
+                    isActive
+                      ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/30"
+                      : "text-gray-500 hover:bg-gray-50 active:bg-gray-100"
+                  }`}
+                >
+                  <div className="relative">
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    {badge > 0 ? (
+                      <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center ring-2 ring-white">
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
+                    {it.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </nav>
     </>

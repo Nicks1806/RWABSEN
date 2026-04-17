@@ -1293,12 +1293,12 @@ export default function TasksPage() {
 
       {/* Task Bottom Bar */}
       <div className="h-24" />
-      <nav className="fixed bottom-0 left-0 right-0 z-40 pb-5 md:pb-4 px-4 pointer-events-none">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
         <div className="max-w-md mx-auto pointer-events-auto">
-          <div className="bg-white/90 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center p-1.5">
+          <div className="bg-white/95 backdrop-blur-2xl border border-gray-200/60 rounded-2xl shadow-[0_10px_40px_rgba(139,26,26,0.12)] flex items-center gap-1 p-1.5">
             {[
               { key: "switch", label: "Switch", icon: LayoutGrid, active: showBoardSwitcher, onClick: () => setShowBoardSwitcher(!showBoardSwitcher) },
-              { key: "board", label: "Board", icon: Columns3, active: bottomTab === "board", onClick: () => setBottomTab("board") },
+              { key: "board", label: "Board", icon: Columns3, active: bottomTab === "board" && !showBoardSwitcher, onClick: () => { setShowBoardSwitcher(false); setBottomTab("board"); } },
               { key: "message", label: "Chat", icon: MessageCircle, active: bottomTab === "message", onClick: () => setBottomTab(bottomTab === "message" ? "board" : "message") },
             ].map((item) => {
               const Icon = item.icon;
@@ -1306,14 +1306,14 @@ export default function TasksPage() {
                 <button
                   key={item.key}
                   onClick={item.onClick}
-                  className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all active:scale-95 ${
+                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl transition-all duration-200 active:scale-90 ${
                     item.active
-                      ? "bg-primary text-white shadow-md"
-                      : "text-gray-500 hover:bg-gray-100"
+                      ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/30"
+                      : "text-gray-500 hover:bg-gray-50 active:bg-gray-100"
                   }`}
                 >
-                  <Icon size={20} strokeWidth={item.active ? 2.5 : 1.8} />
-                  <span className={`text-[10px] mt-1 ${item.active ? "font-bold" : "font-medium"}`}>{item.label}</span>
+                  <Icon size={20} strokeWidth={item.active ? 2.5 : 2} />
+                  <span className={`text-[10px] ${item.active ? "font-bold" : "font-medium"}`}>{item.label}</span>
                 </button>
               );
             })}
@@ -1726,22 +1726,22 @@ export default function TasksPage() {
                 </p>
               </form>
 
-              {/* Footer */}
-              <div className="p-4 border-t border-gray-100 bg-white flex gap-3 safe-bottom">
+              {/* Footer — sticky, keyboard-aware */}
+              <div className="p-3 border-t border-gray-100 bg-white/95 backdrop-blur-md flex gap-2 shrink-0" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
                 <button
                   type="button"
                   onClick={() => setShowForm({ open: false, status: "brief" })}
                   disabled={loading}
-                  className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+                  className="flex-1 py-3.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition active:scale-95"
                 >
                   Batal
                 </button>
                 <button
                   onClick={saveTask}
                   disabled={loading || !form.title.trim()}
-                  className={`flex-[2] py-3 ${colBg} hover:opacity-90 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition shadow-md`}
+                  className={`flex-[2] py-3.5 ${colBg} text-white rounded-2xl text-sm font-bold disabled:opacity-50 transition shadow-lg active:scale-95 hover:opacity-90`}
                 >
-                  {loading ? "Menyimpan..." : showForm.task ? "Simpan" : "Buat Task"}
+                  {loading ? "Menyimpan..." : showForm.task ? "✓ Simpan" : "+ Buat Task"}
                 </button>
               </div>
             </div>

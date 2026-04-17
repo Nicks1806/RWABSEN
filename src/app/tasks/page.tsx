@@ -1292,31 +1292,31 @@ export default function TasksPage() {
       )}
 
       {/* Task Bottom Bar */}
-      <div className="h-20" />
-      <nav className="fixed bottom-0 left-0 right-0 z-30">
-        <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="max-w-3xl mx-auto flex items-center pb-8">
-            <button
-              onClick={() => setShowBoardSwitcher(true)}
-              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition ${showBoardSwitcher ? "text-primary" : "text-gray-500"}`}
-            >
-              <LayoutGrid size={20} strokeWidth={showBoardSwitcher ? 2.5 : 1.8} />
-              <span className="text-[10px] mt-1 font-medium">Switch</span>
-            </button>
-            <button
-              onClick={() => setBottomTab("board")}
-              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition ${bottomTab === "board" ? "text-primary" : "text-gray-500"}`}
-            >
-              <Columns3 size={20} strokeWidth={bottomTab === "board" ? 2.5 : 1.8} />
-              <span className={`text-[10px] mt-1 ${bottomTab === "board" ? "font-bold" : "font-medium"}`}>Board</span>
-            </button>
-            <button
-              onClick={() => setBottomTab("message")}
-              className={`flex-1 flex flex-col items-center justify-center pt-2.5 pb-3 transition relative ${bottomTab === "message" ? "text-primary" : "text-gray-500"}`}
-            >
-              <MessageCircle size={20} strokeWidth={bottomTab === "message" ? 2.5 : 1.8} />
-              <span className={`text-[10px] mt-1 ${bottomTab === "message" ? "font-bold" : "font-medium"}`}>Message</span>
-            </button>
+      <div className="h-24" />
+      <nav className="fixed bottom-0 left-0 right-0 z-30 pb-5 md:pb-4 px-4 pointer-events-none">
+        <div className="max-w-md mx-auto pointer-events-auto">
+          <div className="bg-white/90 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center p-1.5">
+            {[
+              { key: "switch", label: "Switch", icon: LayoutGrid, active: showBoardSwitcher, onClick: () => setShowBoardSwitcher(!showBoardSwitcher) },
+              { key: "board", label: "Board", icon: Columns3, active: bottomTab === "board", onClick: () => setBottomTab("board") },
+              { key: "message", label: "Chat", icon: MessageCircle, active: bottomTab === "message", onClick: () => setBottomTab(bottomTab === "message" ? "board" : "message") },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={item.onClick}
+                  className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all active:scale-95 ${
+                    item.active
+                      ? "bg-primary text-white shadow-md"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  <Icon size={20} strokeWidth={item.active ? 2.5 : 1.8} />
+                  <span className={`text-[10px] mt-1 ${item.active ? "font-bold" : "font-medium"}`}>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </nav>

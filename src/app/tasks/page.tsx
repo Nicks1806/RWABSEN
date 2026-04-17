@@ -1939,23 +1939,23 @@ export default function TasksPage() {
                           <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent" />
                           <span className="relative">{b.name.slice(0, 2).toUpperCase()}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-sm font-bold text-gray-900 truncate">{b.name}</p>
                           {b.allowed_roles && b.allowed_roles.length > 0 ? (
-                            <div className="flex items-center gap-1 mt-1 flex-wrap">
-                              {b.allowed_roles.slice(0, 2).map((r) => (
-                                <span key={r} className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md font-medium">
-                                  {r}
-                                </span>
-                              ))}
-                              {b.allowed_roles.length > 2 && (
-                                <span className="text-[9px] text-gray-400 font-medium">+{b.allowed_roles.length - 2}</span>
-                              )}
+                            <div className="flex items-center gap-1 mt-1 overflow-hidden max-w-full">
+                              <Users size={10} className="text-gray-400 shrink-0" />
+                              <span className="text-[10px] text-gray-500 truncate">
+                                {b.allowed_roles.length === 1
+                                  ? b.allowed_roles[0]
+                                  : `${b.allowed_roles[0]} +${b.allowed_roles.length - 1}`}
+                              </span>
                             </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md font-medium mt-1">
-                              🌐 Semua role
-                            </span>
+                            <div className="inline-flex items-center gap-1 mt-1">
+                              <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
+                                🌐 Semua role
+                              </span>
+                            </div>
                           )}
                         </div>
                       </button>

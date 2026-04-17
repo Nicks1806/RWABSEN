@@ -1482,17 +1482,12 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* ====== DESKTOP: Kanban with dnd-kit ====== */}
-      {!isMobile && (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
+      {/* ====== DESKTOP: Kanban (drag & horizontal scroll only for managers) ====== */}
+      {!isMobile && (() => {
+        const canDrag = canManageBoards(user);
+        const boardInner = (
         <main className="flex-1 overflow-hidden">
-          <div className="h-full overflow-x-auto px-3 md:px-6 py-5 flex items-start gap-4 snap-x snap-mandatory">
+          <div className={`h-full px-3 md:px-6 py-5 ${canDrag ? "overflow-x-auto flex items-start gap-4 snap-x snap-mandatory" : "overflow-y-auto grid gap-4 auto-rows-min"}`} style={!canDrag ? { gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" } : undefined}>
             {columns.map((col) => {
               const colTasks = filteredTasks
                 .filter((t) => t.status === col.key)
@@ -1502,7 +1497,7 @@ export default function TasksPage() {
               return (
                 <div
                   key={col.id}
-                  className={`shrink-0 w-72 md:w-80 bg-white/85 backdrop-blur-sm rounded-2xl flex flex-col snap-start max-h-[calc(100vh-220px)] overflow-hidden border shadow-md transition-all ${
+                  className={`${canDrag ? "shrink-0 w-72 md:w-80 snap-start" : "w-full"} bg-white/85 backdrop-blur-sm rounded-2xl flex flex-col max-h-[calc(100vh-220px)] overflow-hidden border shadow-md transition-all ${
                     isOverThis ? "border-primary ring-4 ring-primary/20 scale-[1.01]" : "border-gray-200/80"
                   }`}
                 >
@@ -1551,18 +1546,33 @@ export default function TasksPage() {
                   </div>
 
                   <ColumnDroppable colKey={col.key} isOver={isOverThis}>
-                    <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                      {colTasks.length === 0 && (
-                        <div className="text-center py-8 px-4 pointer-events-none">
-                          <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
-                          <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
-                          <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
-                        </div>
-                      )}
-                      {colTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} onRename={(t) => renameTaskInline(task.id, t)} />
-                      ))}
-                    </SortableContext>
+                    {canDrag ? (
+                      <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                        {colTasks.length === 0 && (
+                          <div className="text-center py-8 px-4 pointer-events-none">
+                            <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
+                            <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
+                            <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
+                          </div>
+                        )}
+                        {colTasks.map((task) => (
+                          <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} onRename={(t) => renameTaskInline(task.id, t)} />
+                        ))}
+                      </SortableContext>
+                    ) : (
+                      <>
+                        {colTasks.length === 0 && (
+                          <div className="text-center py-8 px-4 pointer-events-none">
+                            <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
+                            <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
+                            <p className="text-[10px] text-gray-400 mt-1">Tap + untuk menambah</p>
+                          </div>
+                        )}
+                        {colTasks.map((task) => (
+                          <TaskCard key={task.id} task={task} onClick={() => setDetailTask(task)} onRename={(t) => renameTaskInline(task.id, t)} />
+                        ))}
+                      </>
+                    )}
                     <button
                       onClick={() => openCreate(col.key)}
                       className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium mt-1"
@@ -1574,7 +1584,8 @@ export default function TasksPage() {
               );
             })}
 
-            {/* Add another list (Trello-style) */}
+            {/* Add another list (Trello-style) — managers only */}
+            {canDrag && (
             <div className="shrink-0 w-72 md:w-80 snap-start">
               {showAddCol ? (
                 <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-primary/30 shadow-md p-3 space-y-2">
@@ -1636,14 +1647,25 @@ export default function TasksPage() {
                 </button>
               )}
             </div>
+            )}
           </div>
         </main>
-
-        <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-          {activeTask ? <CardOverlay task={activeTask} /> : null}
-        </DragOverlay>
-      </DndContext>
-      )}
+        );
+        return canDrag ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            {boardInner}
+            <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+              {activeTask ? <CardOverlay task={activeTask} /> : null}
+            </DragOverlay>
+          </DndContext>
+        ) : boardInner;
+      })()}
 
       {/* Task Bottom Bar — hidden when chat open OR keyboard open on mobile */}
       {!(isMobile && (bottomTab === "message" || keyboardOpen)) && (
@@ -1697,7 +1719,7 @@ export default function TasksPage() {
                 <h3 className="font-bold text-sm text-gray-900 truncate">
                   💬 {activeBoard ? activeBoard.name : "General"} Chat
                 </h3>
-                <p className="text-[10px] text-gray-500">{chatMessages.length} pesan • auto-delete &gt;90 hari</p>
+                <p className="text-[10px] text-gray-500">{chatMessages.length} pesan</p>
               </div>
             </div>
             {/* Search bar */}
@@ -2355,18 +2377,45 @@ function StatPill({
   color: "primary" | "amber" | "red" | "gray";
 }) {
   const colorMap = {
-    primary: "bg-primary/10 text-primary border-primary/20",
-    amber: "bg-amber-50 text-amber-700 border-amber-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-    gray: "bg-gray-50 text-gray-600 border-gray-200",
+    primary: {
+      wrap: "bg-gradient-to-br from-primary/10 via-primary/5 to-white border-primary/25 hover:border-primary/40 hover:shadow-primary/10",
+      chip: "bg-primary text-white shadow-sm shadow-primary/30",
+      text: "text-primary",
+      label: "text-primary/70",
+    },
+    amber: {
+      wrap: "bg-gradient-to-br from-amber-50 via-amber-50/50 to-white border-amber-200 hover:border-amber-300 hover:shadow-amber-100",
+      chip: "bg-amber-500 text-white shadow-sm shadow-amber-300/50",
+      text: "text-amber-700",
+      label: "text-amber-700/70",
+    },
+    red: {
+      wrap: "bg-gradient-to-br from-red-50 via-red-50/50 to-white border-red-200 hover:border-red-300 hover:shadow-red-100",
+      chip: "bg-red-500 text-white shadow-sm shadow-red-300/50",
+      text: "text-red-700",
+      label: "text-red-700/70",
+    },
+    gray: {
+      wrap: "bg-gradient-to-br from-gray-50 via-gray-50/50 to-white border-gray-200 hover:border-gray-300 hover:shadow-gray-100",
+      chip: "bg-gray-600 text-white shadow-sm shadow-gray-300/50",
+      text: "text-gray-800",
+      label: "text-gray-500",
+    },
   };
+  const c = colorMap[color];
   return (
-    <div className={`rounded-xl border px-3 py-2 ${colorMap[color]}`}>
-      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">
-        {icon}
-        {label}
+    <div className={`relative rounded-2xl border px-3.5 py-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${c.wrap}`}>
+      <div className="flex items-center gap-2">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${c.chip}`}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-[9px] font-bold uppercase tracking-wider ${c.label} leading-none`}>
+            {label}
+          </p>
+          <p className={`text-xl font-extrabold mt-1 leading-none tabular-nums ${c.text}`}>{value}</p>
+        </div>
       </div>
-      <p className="text-lg font-bold mt-0.5">{value}</p>
     </div>
   );
 }

@@ -517,8 +517,13 @@ export default function TasksPage() {
   // Inline quick add per column
   const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
   const [quickAddText, setQuickAddText] = useState("");
+  const [quickAddDesc, setQuickAddDesc] = useState("");
+  const [quickAddDeadline, setQuickAddDeadline] = useState("");
   const [quickAddAssignees, setQuickAddAssignees] = useState<string[]>([]);
   const [quickAddColor, setQuickAddColor] = useState<Task["color"]>("red");
+  const [quickAddImage, setQuickAddImage] = useState<string | null>(null);
+  const [quickAddUploading, setQuickAddUploading] = useState(false);
+  const quickAddFileRef = useRef<HTMLInputElement>(null);
   // Column CRUD state
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColLabel, setEditColLabel] = useState("");
@@ -982,12 +987,23 @@ export default function TasksPage() {
   async function quickAddTask(colKey: string, title: string) {
     if (!title.trim() || !user) return;
     const assignees = quickAddAssignees.length > 0 ? quickAddAssignees : [user.id];
+    const attachments = quickAddImage ? [{
+      id: crypto.randomUUID(),
+      type: "image" as const,
+      url: quickAddImage,
+      name: "Gambar",
+      added_at: new Date().toISOString(),
+    }] : [];
     const { data } = await supabase.from("tasks").insert({
       title: title.trim(),
+      description: quickAddDesc.trim() || null,
       status: colKey,
       color: quickAddColor,
       assignees,
       assignee_id: assignees[0],
+      due_date: quickAddDeadline || null,
+      attachments,
+      cover_url: quickAddImage,
       created_by: user.id,
       board_id: activeBoard?.id || null,
     }).select().single();
@@ -997,8 +1013,29 @@ export default function TasksPage() {
       const newTask: Task = { ...data, assignees, assigneeObjects, assignee: assigneeObjects[0] };
       setTasks((prev) => [...prev, newTask]);
     }
+    // Reset form but keep assignees & color for continuous add
     setQuickAddText("");
-    // Keep assignees & color for continuous add of similar tasks
+    setQuickAddDesc("");
+    setQuickAddDeadline("");
+    setQuickAddImage(null);
+  }
+
+  async function quickAddUploadImage(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    setQuickAddUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filename = `tasks/quick/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("attendance-photos").upload(filename, file, { contentType: file.type });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
+      setQuickAddImage(urlData.publicUrl);
+    } catch (e) { alert("Upload gagal: " + (e instanceof Error ? e.message : e)); }
+    finally {
+      setQuickAddUploading(false);
+      if (quickAddFileRef.current) quickAddFileRef.current.value = "";
+    }
   }
 
   async function moveTaskToColumn(taskId: string, newStatus: string) {
@@ -1239,7 +1276,7 @@ export default function TasksPage() {
                     onRename={(t) => renameTaskInline(task.id, t)}
                   />
                 ))}
-                {/* Quick inline add — enhanced with assignee + color */}
+                {/* Quick inline add — ALL FIELDS (no toggle needed) */}
                 {quickAddCol === col.key ? (
                   <div className="bg-white rounded-2xl shadow-lg border-2 border-primary/40 overflow-hidden">
                     {/* Title input */}
@@ -1248,21 +1285,25 @@ export default function TasksPage() {
                       value={quickAddText}
                       onChange={(e) => setQuickAddText(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && quickAddText.trim()) {
-                          e.preventDefault();
-                          quickAddTask(col.key, quickAddText);
-                        } else if (e.key === "Escape") {
-                          setQuickAddCol(null);
-                          setQuickAddText("");
-                        }
+                        if (e.key === "Escape") { setQuickAddCol(null); setQuickAddText(""); }
                       }}
                       placeholder="Apa yang mau dikerjakan?"
                       autoFocus
-                      className="w-full px-4 py-3 text-base font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none border-b border-gray-100"
+                      className="w-full px-4 py-3.5 text-base font-bold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none border-b border-gray-100"
+                    />
+
+                    {/* Description */}
+                    <textarea
+                      value={quickAddDesc}
+                      onChange={(e) => setQuickAddDesc(e.target.value)}
+                      rows={2}
+                      placeholder="Deskripsi / catatan (opsional)..."
+                      className="w-full px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 outline-none border-b border-gray-100 resize-none"
                     />
 
                     {/* Color pills */}
                     <div className="px-3 pt-2.5 pb-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-1">🏷</span>
                       {CARD_COLORS.map((c) => {
                         const active = quickAddColor === c.key;
                         return (
@@ -1279,7 +1320,7 @@ export default function TasksPage() {
                     </div>
 
                     {/* Assignees */}
-                    <div className="px-3 pb-2.5">
+                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <UserIcon size={10} /> Assign ke
                         {quickAddAssignees.length > 0 && <span className="bg-primary text-white px-1.5 py-0.5 rounded-full text-[9px] ml-1 normal-case tracking-normal">{quickAddAssignees.length}</span>}
@@ -1305,24 +1346,73 @@ export default function TasksPage() {
                       </div>
                     </div>
 
+                    {/* Deadline */}
+                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5 flex items-center gap-2">
+                      <CalendarIcon size={14} className="text-gray-400 shrink-0" />
+                      <input
+                        type="date"
+                        value={quickAddDeadline}
+                        onChange={(e) => setQuickAddDeadline(e.target.value)}
+                        className="flex-1 text-xs font-medium text-gray-700 outline-none bg-transparent"
+                      />
+                      {quickAddDeadline && (
+                        <button
+                          onClick={() => setQuickAddDeadline("")}
+                          className="text-gray-400 hover:text-red-500 text-xs font-medium"
+                        >
+                          × Hapus
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Image attachment */}
+                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5">
+                      {quickAddImage ? (
+                        <div className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={quickAddImage} alt="" className="w-full h-24 object-cover rounded-lg" />
+                          <button
+                            onClick={() => setQuickAddImage(null)}
+                            className="absolute top-1 right-1 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => quickAddFileRef.current?.click()}
+                          disabled={quickAddUploading}
+                          className="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          {quickAddUploading ? (
+                            <><Upload size={14} className="animate-pulse" /> Upload...</>
+                          ) : (
+                            <><ImageIcon size={14} /> + Tambah Gambar</>
+                          )}
+                        </button>
+                      )}
+                      <input
+                        ref={quickAddFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) quickAddUploadImage(f); }}
+                      />
+                    </div>
+
                     {/* Actions */}
                     <div className="border-t border-gray-100 p-2 flex gap-1.5 bg-gray-50/60">
-                      <button
-                        onClick={() => { setQuickAddCol(null); setQuickAddText(""); setQuickAddAssignees([]); }}
-                        className="px-3 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition"
-                      >
-                        Tutup
-                      </button>
                       <button
                         onClick={() => {
                           setQuickAddCol(null);
                           setQuickAddText("");
-                          openCreate(col.key);
+                          setQuickAddDesc("");
+                          setQuickAddDeadline("");
+                          setQuickAddImage(null);
                         }}
-                        className="w-10 h-10 border border-gray-200 text-gray-600 rounded-xl text-xs font-medium hover:bg-white transition flex items-center justify-center"
-                        title="Form lengkap (deadline, deskripsi, dll)"
+                        className="px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition"
                       >
-                        ⚙
+                        Tutup
                       </button>
                       <button
                         onClick={() => quickAddText.trim() && quickAddTask(col.key, quickAddText)}

@@ -49,7 +49,7 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
-import { MessageCircle, Columns3, Send, Upload, Check } from "lucide-react";
+import { MessageCircle, Columns3, Send, Upload, Check, Pencil, Users, Sparkles } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {
@@ -1814,33 +1814,43 @@ export default function TasksPage() {
 
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl animate-slide-up border border-gray-200 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-primary-dark px-5 pt-5 pb-4 text-white relative sticky top-0 z-10">
-              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"><X size={14} /></button>
-              <LayoutGrid size={20} className="mb-1.5 opacity-80" />
-              <h3 className="font-bold text-lg">Board Anda</h3>
-              <p className="text-xs text-white/70 mt-0.5">Pilih atau buat board per divisi</p>
+            <div className="relative bg-gradient-to-br from-primary via-primary to-primary-dark px-6 pt-6 pb-5 text-white sticky top-0 z-10 overflow-hidden">
+              <div className="absolute -top-4 -right-4 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
+              <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition active:scale-90 backdrop-blur-sm">
+                <X size={16} strokeWidth={2.5} />
+              </button>
+              <div className="relative flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <LayoutGrid size={22} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Board Anda</h3>
+                  <p className="text-xs text-white/80 mt-0.5">Pilih atau buat board per divisi</p>
+                </div>
+              </div>
             </div>
 
-            <div className="p-3 space-y-1.5">
+            <div className="p-3 space-y-1.5 bg-gradient-to-b from-white to-gray-50/50">
               {/* Default board */}
               <button
                 onClick={() => switchBoard(null)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl transition group ${
-                  !activeBoard ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-gray-50"
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition group ${
+                  !activeBoard ? "bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
                 }`}
               >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
-                  RW
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold shadow-md shadow-primary/30 shrink-0">
+                  <Sparkles size={18} strokeWidth={2} />
                 </div>
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">RedWine Board</p>
-                  <p className="text-[10px] text-gray-500">Board utama • Semua divisi</p>
+                  <p className="text-sm font-bold text-gray-900">RedWine Board</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Board utama • Semua divisi</p>
                 </div>
                 {!activeBoard && (
-                  <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold shrink-0">AKTIF</span>
+                  <span className="text-[9px] bg-gradient-to-br from-primary to-primary-dark text-white px-2.5 py-1 rounded-full font-bold shrink-0 shadow-sm">AKTIF</span>
                 )}
               </button>
 
@@ -1851,26 +1861,31 @@ export default function TasksPage() {
                 const isActive = activeBoard?.id === b.id;
                 const isEditing = editBoardId === b.id;
                 return (
-                  <div key={b.id} className={`rounded-xl transition ${
-                    isActive ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-gray-50"
-                  } ${isEditing ? "ring-2 ring-primary" : ""}`}>
+                  <div key={b.id} className={`rounded-2xl transition ${
+                    isActive ? "bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                  } ${isEditing ? "ring-2 ring-primary shadow-md" : ""}`}>
                     <div className="flex items-center gap-3 p-3">
                       <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                        <div className={`w-11 h-11 rounded-xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0`}>
+                        <div className={`w-12 h-12 rounded-2xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0`}>
                           {b.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
+                          <p className="text-sm font-bold text-gray-900 truncate">{b.name}</p>
                           {b.allowed_roles && b.allowed_roles.length > 0 ? (
-                            <p className="text-[10px] text-gray-500 truncate">{b.allowed_roles.join(", ")}</p>
+                            <p className="text-[10px] text-gray-500 truncate mt-0.5 inline-flex items-center gap-1">
+                              <Users size={10} className="shrink-0" />
+                              <span className="truncate">{b.allowed_roles.join(", ")}</span>
+                            </p>
                           ) : (
-                            <p className="text-[10px] text-gray-500">Semua role</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5 inline-flex items-center gap-1">
+                              <span>🌐</span> Semua role
+                            </p>
                           )}
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isActive && (
-                          <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">AKTIF</span>
+                          <span className="text-[9px] bg-gradient-to-br from-primary to-primary-dark text-white px-2.5 py-1 rounded-full font-bold shadow-sm">AKTIF</span>
                         )}
                         {canManageBoards(user) && (
                           <>
@@ -1884,19 +1899,21 @@ export default function TasksPage() {
                                   setEditBoardRoles(b.allowed_roles || []);
                                 }
                               }}
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-90 ${
-                                isEditing ? "bg-primary text-white shadow-md" : "bg-blue-50 hover:bg-blue-100 text-blue-600"
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center transition active:scale-90 ${
+                                isEditing
+                                  ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md"
+                                  : "bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100"
                               }`}
                               title="Edit akses role"
                             >
-                              ✏️
+                              <Pencil size={14} strokeWidth={2.5} />
                             </button>
                             <button
                               onClick={() => deleteBoard(b)}
-                              className="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90"
+                              className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90 border border-red-100"
                               title="Hapus board"
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={14} strokeWidth={2.5} />
                             </button>
                           </>
                         )}
@@ -2018,9 +2035,9 @@ export default function TasksPage() {
               ) : (
                 <button
                   onClick={() => setShowCreateBoard(true)}
-                  className="w-full py-3 rounded-xl text-sm font-semibold text-primary hover:text-white bg-primary/5 hover:bg-primary border border-primary/20 hover:border-primary transition-all inline-flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-primary bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary hover:to-primary-dark hover:text-white border-2 border-dashed border-primary/30 hover:border-primary transition-all inline-flex items-center justify-center gap-2 active:scale-95"
                 >
-                  <Plus size={16} /> Buat Board Baru
+                  <Plus size={18} strokeWidth={2.5} /> Buat Board Baru
                 </button>
               )}
             </div>

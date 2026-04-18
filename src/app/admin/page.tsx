@@ -618,6 +618,67 @@ export default function AdminPage() {
     });
   }, [settings, employees, todayRecords]);
 
+  // Employees who clocked in but haven't clocked out yet
+  const missingClockOut = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const pendingIds = new Set(
+      todayRecords
+        .filter((r) => r.date === today && r.clock_in && !r.clock_out)
+        .map((r) => r.employee_id)
+    );
+    return employees.filter((e) => pendingIds.has(e.id));
+  }, [todayRecords, employees]);
+
+  // Top 3 rajin (most present this month) + Top 3 paling sering telat
+  const topRajin = useMemo(() => {
+    return employees
+      .filter((e) => e.role === "employee")
+      .map((e) => ({ emp: e, ...((empStatsMap.get(e.id)) || { present: 0, late: 0 }) }))
+      .sort((a, b) => b.present - a.present)
+      .slice(0, 3);
+  }, [employees, empStatsMap]);
+
+  const topTelat = useMemo(() => {
+    return employees
+      .filter((e) => e.role === "employee")
+      .map((e) => ({ emp: e, ...((empStatsMap.get(e.id)) || { present: 0, late: 0 }) }))
+      .filter((r) => r.late > 0)
+      .sort((a, b) => b.late - a.late)
+      .slice(0, 3);
+  }, [employees, empStatsMap]);
+
+  const [reminderSending, setReminderSending] = useState(false);
+  const [reminderMsg, setReminderMsg] = useState("");
+
+  async function sendClockOutReminder() {
+    if (missingClockOut.length === 0) {
+      setReminderMsg("Semua karyawan sudah clock-out ✓");
+      setTimeout(() => setReminderMsg(""), 3000);
+      return;
+    }
+    if (!confirm(`Kirim reminder clock-out ke ${missingClockOut.length} karyawan?`)) return;
+    setReminderSending(true);
+    try {
+      const res = await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_ids: missingClockOut.map((e) => e.id),
+          title: "⏰ Jangan lupa Clock Out!",
+          body: "Kamu belum clock-out hari ini. Yuk absen pulang sebelum sistem menandai early leave.",
+          url: "/absen",
+        }),
+      });
+      const data = await res.json();
+      setReminderMsg(`Reminder terkirim ke ${data.sent || 0} karyawan ✓`);
+    } catch {
+      setReminderMsg("Gagal kirim reminder");
+    } finally {
+      setReminderSending(false);
+      setTimeout(() => setReminderMsg(""), 4000);
+    }
+  }
+
   function handleLogout() {
     clearEmployee();
     router.push("/");
@@ -746,37 +807,119 @@ export default function AdminPage() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                  <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 text-blue-600 mb-2">
-                      <Users size={18} />
-                      <span className="text-xs font-medium">Total Karyawan</span>
-                    </div>
-                    <p className="text-2xl font-bold">{totalEmployees}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 text-green-600 mb-2">
-                      <CheckCircle size={18} />
-                      <span className="text-xs font-medium">Hadir Hari Ini</span>
-                    </div>
-                    <p className="text-2xl font-bold">{presentToday}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 text-red-600 mb-2">
-                      <AlertTriangle size={18} />
-                      <span className="text-xs font-medium">Terlambat</span>
-                    </div>
-                    <p className="text-2xl font-bold">{lateToday}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Clock size={18} />
-                      <span className="text-xs font-medium">Belum Hadir</span>
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {totalEmployees - presentToday}
-                    </p>
-                  </div>
+                  <AdminStatCard
+                    icon={<Users size={18} />}
+                    label="Total Karyawan"
+                    value={totalEmployees}
+                    gradient="from-blue-500 to-indigo-500"
+                    bg="from-blue-50 via-white to-indigo-50"
+                    textColor="text-blue-700"
+                  />
+                  <AdminStatCard
+                    icon={<CheckCircle size={18} />}
+                    label="Hadir Hari Ini"
+                    value={presentToday}
+                    gradient="from-emerald-500 to-green-500"
+                    bg="from-emerald-50 via-white to-green-50"
+                    textColor="text-emerald-700"
+                    liveBadge={`${totalEmployees > 0 ? Math.round((presentToday / totalEmployees) * 100) : 0}%`}
+                  />
+                  <AdminStatCard
+                    icon={<AlertTriangle size={18} />}
+                    label="Terlambat"
+                    value={lateToday}
+                    gradient="from-amber-500 to-orange-500"
+                    bg="from-amber-50 via-white to-orange-50"
+                    textColor="text-amber-700"
+                  />
+                  <AdminStatCard
+                    icon={<Clock size={18} />}
+                    label="Belum Hadir"
+                    value={totalEmployees - presentToday}
+                    gradient="from-rose-500 to-red-500"
+                    bg="from-rose-50 via-white to-red-50"
+                    textColor="text-rose-700"
+                  />
                 </div>
+
+                {/* Clock-Out Reminder Banner */}
+                {missingClockOut.length > 0 && (
+                  <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <Clock3 size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-amber-900 text-sm">{missingClockOut.length} karyawan belum clock-out</p>
+                        <p className="text-xs text-amber-700">{missingClockOut.slice(0, 3).map((e) => e.name).join(", ")}{missingClockOut.length > 3 ? ` +${missingClockOut.length - 3} lainnya` : ""}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {reminderMsg && <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">{reminderMsg}</span>}
+                      <button
+                        onClick={sendClockOutReminder}
+                        disabled={reminderSending}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition disabled:opacity-60"
+                      >
+                        <Bell size={14} />
+                        {reminderSending ? "Mengirim..." : "Kirim Reminder"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Performer Ranking */}
+                {(topRajin.length > 0 || topTelat.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    {/* Top Rajin */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-green-50 flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 text-white flex items-center justify-center">
+                          <Award size={14} />
+                        </div>
+                        <h3 className="font-bold text-sm text-emerald-900">Top Rajin Bulan Ini</h3>
+                      </div>
+                      <ul className="divide-y divide-gray-100">
+                        {topRajin.map((r, idx) => (
+                          <li key={r.emp.id} className="flex items-center gap-3 px-4 py-2.5">
+                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                              idx === 0 ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-white" :
+                              idx === 1 ? "bg-gradient-to-br from-gray-300 to-gray-400 text-white" :
+                              "bg-gradient-to-br from-orange-400 to-orange-500 text-white"
+                            }`}>
+                              {idx + 1}
+                            </span>
+                            <p className="flex-1 text-sm font-semibold text-gray-800 truncate">{r.emp.name}</p>
+                            <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full tabular-nums">{r.present} hari</span>
+                          </li>
+                        ))}
+                        {topRajin.length === 0 && <li className="px-4 py-6 text-center text-xs text-gray-400">Belum ada data</li>}
+                      </ul>
+                    </div>
+
+                    {/* Top Telat */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-red-50 flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-red-500 text-white flex items-center justify-center">
+                          <AlertTriangle size={14} />
+                        </div>
+                        <h3 className="font-bold text-sm text-rose-900">Paling Sering Terlambat</h3>
+                      </div>
+                      <ul className="divide-y divide-gray-100">
+                        {topTelat.map((r, idx) => (
+                          <li key={r.emp.id} className="flex items-center gap-3 px-4 py-2.5">
+                            <span className="w-7 h-7 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
+                              {idx + 1}
+                            </span>
+                            <p className="flex-1 text-sm font-semibold text-gray-800 truncate">{r.emp.name}</p>
+                            <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full tabular-nums">{r.late}x</span>
+                          </li>
+                        ))}
+                        {topTelat.length === 0 && <li className="px-4 py-6 text-center text-xs text-gray-400">Tidak ada yang terlambat 🎉</li>}
+                      </ul>
+                    </div>
+                  </div>
+                )}
 
                 {/* Month Selector + Export + Search */}
                 <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:justify-between">
@@ -2446,6 +2589,42 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AdminStatCard({
+  icon,
+  label,
+  value,
+  gradient,
+  bg,
+  textColor,
+  liveBadge,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  gradient: string;
+  bg: string;
+  textColor: string;
+  liveBadge?: string;
+}) {
+  return (
+    <div className={`group relative bg-gradient-to-br ${bg} rounded-2xl p-4 border border-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden`}>
+      <div className="flex items-start justify-between mb-2.5">
+        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
+          {icon}
+        </div>
+        {liveBadge && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {liveBadge}
+          </span>
+        )}
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">{label}</p>
+      <p className={`text-2xl md:text-3xl font-extrabold tabular-nums ${textColor} leading-none`}>{value}</p>
     </div>
   );
 }

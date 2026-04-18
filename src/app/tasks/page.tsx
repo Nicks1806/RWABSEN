@@ -19,7 +19,6 @@ import {
   AlertCircle,
   LayoutGrid,
   Image as ImageIcon,
-  Link as LinkIcon,
   Paperclip,
   Trash2,
 } from "lucide-react";
@@ -34,7 +33,6 @@ import {
   closestCenter,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -44,7 +42,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
-import BottomNav from "@/components/BottomNav";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";

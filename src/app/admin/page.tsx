@@ -364,12 +364,6 @@ export default function AdminPage() {
     setTimeout(() => setEmpMsg(""), 3000);
   }
 
-  // Toggle employee active
-  async function toggleEmployee(id: string, isActive: boolean) {
-    await supabase.from("employees").update({ is_active: !isActive }).eq("id", id);
-    fetchData();
-  }
-
   // Delete employee permanently
   async function deleteEmployee(id: string) {
     await supabase.from("employees").delete().eq("id", id);

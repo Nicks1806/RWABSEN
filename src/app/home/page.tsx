@@ -28,7 +28,6 @@ export default function HomePage() {
   const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [pendingLeaves, setPendingLeaves] = useState(0);
   const [monthlyHours, setMonthlyHours] = useState(0);
   const [monthlyDays, setMonthlyDays] = useState(0);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -37,7 +36,7 @@ export default function HomePage() {
     const today = format(new Date(), "yyyy-MM-dd");
     const startOfMonth = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
 
-    const [attRes, setRes, pendingRes, monthRes, annRes] = await Promise.all([
+    const [attRes, setRes, monthRes, annRes] = await Promise.all([
       supabase
         .from("attendance")
         .select("*")
@@ -45,11 +44,6 @@ export default function HomePage() {
         .eq("date", today)
         .maybeSingle(),
       supabase.from("settings").select("*").single(),
-      supabase
-        .from("leaves")
-        .select("id", { count: "exact", head: true })
-        .eq("employee_id", empId)
-        .eq("status", "pending"),
       supabase
         .from("attendance")
         .select("clock_in, clock_out")
@@ -66,8 +60,6 @@ export default function HomePage() {
 
     setTodayRecord(attRes.data || null);
     if (setRes.data) setSettings(setRes.data);
-    setPendingLeaves(pendingRes.count || 0);
-
     // Calc monthly hours
     let totalMins = 0;
     let presentDays = 0;

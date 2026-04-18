@@ -18,6 +18,24 @@ export default function QRCodePage() {
   const [loading, setLoading] = useState(true);
   const [regenLoading, setRegenLoading] = useState(false);
 
+  const createPermanentToken = useCallback(async () => {
+    const tokenValue =
+      Math.random().toString(36).substring(2) +
+      Math.random().toString(36).substring(2) +
+      Date.now().toString(36);
+    const expiresAt = new Date(
+      Date.now() + QR_VALIDITY_YEARS * 365 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    const { error } = await supabase
+      .from("qr_tokens")
+      .insert({ token: tokenValue, expires_at: expiresAt });
+
+    if (!error) {
+      setToken(tokenValue);
+    }
+  }, []);
+
   // Fetch existing permanent token or create one
   const fetchOrCreateToken = useCallback(async () => {
     setLoading(true);
@@ -41,25 +59,7 @@ export default function QRCodePage() {
     // No permanent token exists, create one
     await createPermanentToken();
     setLoading(false);
-  }, []);
-
-  async function createPermanentToken() {
-    const tokenValue =
-      Math.random().toString(36).substring(2) +
-      Math.random().toString(36).substring(2) +
-      Date.now().toString(36);
-    const expiresAt = new Date(
-      Date.now() + QR_VALIDITY_YEARS * 365 * 24 * 60 * 60 * 1000
-    ).toISOString();
-
-    const { error } = await supabase
-      .from("qr_tokens")
-      .insert({ token: tokenValue, expires_at: expiresAt });
-
-    if (!error) {
-      setToken(tokenValue);
-    }
-  }
+  }, [createPermanentToken]);
 
   async function regenerateToken() {
     const confirmed = window.confirm(

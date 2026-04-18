@@ -19,10 +19,7 @@ import {
   FileText,
   Wallet,
   User as UserIcon,
-  CheckCircle,
-  XCircle,
   Image as ImageIcon,
-  AlertTriangle,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours, DAY_LABELS, DAY_ORDER } from "@/lib/workHours";

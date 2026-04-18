@@ -45,7 +45,7 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { SkeletonBoard } from "@/components/Skeleton";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
-import type { BoardColumn, Board, BoardMessage, TaskLabel } from "@/lib/types";
+import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
 import { MessageCircle, Columns3, Send, Upload, Check, Pencil, Users, Sparkles, Search } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
@@ -484,7 +484,6 @@ export default function TasksPage() {
   const [editBoardRoles, setEditBoardRoles] = useState<string[]>([]);
   const [filterMine, setFilterMine] = useState(false);
   const [searchQ, setSearchQ] = useState("");
-  const [filterLabel, setFilterLabel] = useState<TaskLabel | null>(null);
   const [filterOverdue, setFilterOverdue] = useState(false);
   const [showForm, setShowForm] = useState<{ open: boolean; status: string; task?: Task }>({
     open: false,
@@ -1186,10 +1185,6 @@ export default function TasksPage() {
   const q = searchQ.trim().toLowerCase();
   const filteredTasks = tasks.filter((t) => {
     if (filterMine && user && !isMine(t)) return false;
-    if (filterLabel) {
-      const labels = (t.labels && t.labels.length ? t.labels : [t.color]).filter(Boolean);
-      if (!labels.includes(filterLabel)) return false;
-    }
     if (filterOverdue) {
       const od = t.status !== "done" && t.status !== "history" && t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date));
       if (!od) return false;
@@ -1330,40 +1325,15 @@ export default function TasksPage() {
                 </button>
               )}
             </div>
-            {/* Label color chips — minimal inline row */}
-            <div className="flex items-center gap-3 pl-1">
-              <div className="flex items-center gap-2">
-                {(["red", "yellow", "green", "blue", "purple", "gray"] as TaskLabel[]).map((lbl) => {
-                  const bgMap: Record<TaskLabel, string> = {
-                    red: "bg-rose-500", yellow: "bg-amber-400", green: "bg-emerald-500",
-                    blue: "bg-blue-500", purple: "bg-purple-500", gray: "bg-gray-400",
-                  };
-                  const active = filterLabel === lbl;
-                  return (
-                    <button
-                      key={lbl}
-                      onClick={() => setFilterLabel(active ? null : lbl)}
-                      className={`shrink-0 relative w-3 h-3 rounded-full ${bgMap[lbl]} transition-all ${
-                        active
-                          ? "ring-2 ring-offset-2 ring-gray-900 scale-125"
-                          : "opacity-40 hover:opacity-90 hover:scale-125"
-                      }`}
-                      title={`Filter label ${lbl}`}
-                      aria-label={`Filter label ${lbl}`}
-                    />
-                  );
-                })}
-              </div>
-              {(filterLabel || searchQ || filterOverdue || filterMine) && (
-                <button
-                  onClick={() => { setFilterLabel(null); setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
-                  className="shrink-0 text-[10px] text-gray-500 hover:text-primary font-medium tracking-wide transition"
-                  title="Hapus semua filter"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
+            {(searchQ || filterOverdue || filterMine) && (
+              <button
+                onClick={() => { setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
+                className="shrink-0 text-[10px] text-gray-500 hover:text-primary font-medium tracking-wide transition pl-1"
+                title="Hapus semua filter"
+              >
+                Reset
+              </button>
+            )}
           </div>
 
           <div className={`${isMobile ? "hidden" : "grid"} grid-cols-3 gap-2`}>

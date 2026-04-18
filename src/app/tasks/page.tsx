@@ -1503,13 +1503,13 @@ export default function TasksPage() {
               return (
                 <div
                   key={col.id}
-                  className={`${canDrag ? "shrink-0 w-72 md:w-80 snap-start" : "w-full"} bg-white/85 backdrop-blur-sm rounded-2xl flex flex-col max-h-[calc(100vh-220px)] overflow-hidden border shadow-md transition-all ${
-                    isOverThis ? "border-primary ring-4 ring-primary/20 scale-[1.01]" : "border-gray-200/80"
+                  className={`${canDrag ? "shrink-0 w-72 md:w-80 snap-start" : "w-full"} bg-white/90 backdrop-blur-sm rounded-2xl flex flex-col max-h-[calc(100vh-220px)] overflow-hidden border transition-all duration-200 ${
+                    isOverThis ? "border-primary ring-4 ring-primary/20 scale-[1.01] shadow-xl" : "border-gray-200/70 shadow-sm hover:shadow-md"
                   }`}
                 >
                   {/* Trello-style colored top bar */}
-                  <div className={`h-1.5 ${topBarColor}`} />
-                  <div className="px-4 py-3 flex items-center justify-between border-b border-gray-200/60 sticky top-0 z-10 bg-white/80 backdrop-blur-md group">
+                  <div className={`h-1 ${topBarColor}`} />
+                  <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 sticky top-0 z-10 bg-white/90 backdrop-blur-md group">
                     <div className="flex-1 min-w-0">
                       {editingColId === col.id ? (
                         <input
@@ -1527,11 +1527,11 @@ export default function TasksPage() {
                       ) : (
                         <button
                           onClick={() => startEditCol(col)}
-                          className="flex items-center gap-1.5 hover:bg-gray-100/60 -mx-1 px-1 py-0.5 rounded transition w-full text-left"
+                          className="flex items-center gap-2 hover:bg-gray-100/60 -mx-1 px-1 py-0.5 rounded-md transition w-full text-left"
                           title="Klik untuk edit nama"
                         >
-                          <h3 className="font-bold text-sm text-gray-800 truncate">{col.label}</h3>
-                          <span className="text-[10px] bg-gray-900/10 text-gray-700 px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
+                          <h3 className="font-bold text-[15px] text-gray-900 truncate tracking-tight">{col.label}</h3>
+                          <span className={`text-[10px] text-white px-2 py-0.5 rounded-full font-bold min-w-[22px] text-center shadow-sm ${topBarColor}`}>
                             {colTasks.length}
                           </span>
                         </button>
@@ -1555,10 +1555,12 @@ export default function TasksPage() {
                     {canDrag ? (
                       <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                         {colTasks.length === 0 && (
-                          <div className="text-center py-8 px-4 pointer-events-none">
-                            <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
-                            <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
-                            <p className="text-[10px] text-gray-400 mt-1">Drag card ke sini atau tap +</p>
+                          <div className="text-center py-10 px-4 pointer-events-none">
+                            <div className={`relative w-14 h-14 ${topBarColor} opacity-15 rounded-full mx-auto mb-3 flex items-center justify-center`}>
+                              <Plus size={22} className="text-gray-600 opacity-60" />
+                            </div>
+                            <p className="text-xs text-gray-500 font-semibold">Belum ada task</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Drag card atau tap + untuk menambah</p>
                           </div>
                         )}
                         {colTasks.map((task) => (
@@ -1568,10 +1570,12 @@ export default function TasksPage() {
                     ) : (
                       <>
                         {colTasks.length === 0 && (
-                          <div className="text-center py-8 px-4 pointer-events-none">
-                            <div className={`w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-2`} />
-                            <p className="text-xs text-gray-400 font-medium">Belum ada task</p>
-                            <p className="text-[10px] text-gray-400 mt-1">Tap + untuk menambah</p>
+                          <div className="text-center py-10 px-4 pointer-events-none">
+                            <div className={`relative w-14 h-14 ${topBarColor} opacity-15 rounded-full mx-auto mb-3 flex items-center justify-center`}>
+                              <Plus size={22} className="text-gray-600 opacity-60" />
+                            </div>
+                            <p className="text-xs text-gray-500 font-semibold">Belum ada task</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Tap + untuk menambah</p>
                           </div>
                         )}
                         {colTasks.map((task) => (
@@ -1581,9 +1585,9 @@ export default function TasksPage() {
                     )}
                     <button
                       onClick={() => openCreate(col.key)}
-                      className="w-full py-2.5 rounded-xl text-xs text-gray-500 hover:bg-white hover:text-primary hover:shadow-sm transition-all border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1 font-medium mt-1"
+                      className="group/add w-full py-2.5 rounded-xl text-xs text-gray-500 hover:text-primary hover:bg-primary/5 transition-all border border-dashed border-gray-300 hover:border-primary/50 flex items-center justify-center gap-1.5 font-semibold mt-1.5"
                     >
-                      <Plus size={14} /> Tambah task
+                      <Plus size={13} className="group-hover/add:rotate-90 transition-transform" /> Tambah task
                     </button>
                   </ColumnDroppable>
                 </div>
@@ -1647,9 +1651,12 @@ export default function TasksPage() {
               ) : (
                 <button
                   onClick={() => setShowAddCol(true)}
-                  className="w-full py-3 rounded-2xl text-sm text-gray-600 hover:text-primary bg-white/40 hover:bg-white/80 backdrop-blur-sm border-2 border-dashed border-gray-300 hover:border-primary transition-all font-semibold inline-flex items-center justify-center gap-2 shadow-sm"
+                  className="group w-full py-5 rounded-2xl text-sm text-gray-500 hover:text-primary bg-white/50 hover:bg-white backdrop-blur-sm border-2 border-dashed border-gray-300 hover:border-primary/60 transition-all font-semibold inline-flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <Plus size={16} /> Tambah Kolom Baru
+                  <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-primary/10 flex items-center justify-center transition">
+                    <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                  </div>
+                  <span>Tambah Kolom Baru</span>
                 </button>
               )}
             </div>
@@ -2410,16 +2417,16 @@ function StatPill({
   };
   const c = colorMap[color];
   return (
-    <div className={`relative rounded-2xl border px-3.5 py-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${c.wrap}`}>
-      <div className="flex items-center gap-2">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${c.chip}`}>
+    <div className={`group relative rounded-xl border px-3 py-2 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden ${c.wrap}`}>
+      <div className="flex items-center gap-2.5 relative z-10">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${c.chip}`}>
           {icon}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-[9px] font-bold uppercase tracking-wider ${c.label} leading-none`}>
+        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+          <p className={`text-[10px] font-bold uppercase tracking-[0.12em] ${c.label} leading-tight truncate`}>
             {label}
           </p>
-          <p className={`text-xl font-extrabold mt-1 leading-none tabular-nums ${c.text}`}>{value}</p>
+          <p className={`text-2xl font-extrabold leading-none tabular-nums ${c.text}`}>{value}</p>
         </div>
       </div>
     </div>

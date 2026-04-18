@@ -233,7 +233,7 @@ export default function PengajuanPage() {
         transaction_date: format(new Date(), "yyyy-MM-dd"),
         amount: "",
         description: "",
-        bank_account: "",
+        bank_account: employee?.bank_account || "",
       });
       setReimbFile(null);
       setMsg(null);
@@ -578,7 +578,14 @@ export default function PengajuanPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">No. Rekening</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-gray-700">No. Rekening</label>
+                  {employee?.bank_account && reimbForm.bank_account === employee.bank_account && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500" /> Dari profil
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={reimbForm.bank_account}
@@ -588,7 +595,7 @@ export default function PengajuanPage() {
                   required
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
-                  Rekening untuk transfer penggantian. Otomatis tersimpan di profil untuk pengajuan berikutnya.
+                  Rekening untuk transfer penggantian. Ubah sekali → otomatis tersimpan di profil.
                 </p>
               </div>
 

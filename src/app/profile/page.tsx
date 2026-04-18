@@ -21,6 +21,7 @@ import {
   X,
   Camera,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { useRef } from "react";
 import Avatar from "@/components/Avatar";
@@ -32,7 +33,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ phone: "", email: "", address: "" });
+  const [form, setForm] = useState({ phone: "", email: "", address: "", bank_account: "" });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -74,6 +75,7 @@ export default function ProfilePage() {
             phone: data.phone || "",
             email: data.email || "",
             address: data.address || "",
+            bank_account: data.bank_account || "",
           });
         }
       });
@@ -162,6 +164,7 @@ export default function ProfilePage() {
         phone: form.phone || null,
         email: form.email || null,
         address: form.address || null,
+        bank_account: form.bank_account || null,
       })
       .eq("id", employee.id);
     if (error) {
@@ -326,6 +329,22 @@ export default function ProfilePage() {
                 />
               ) : (
                 <span className="text-sm text-gray-700">{employee.address || "-"}</span>
+              )}
+            </InfoRow>
+            <InfoRow icon={<CreditCard size={16} />} label="Nomor Rekening">
+              {editing ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={form.bank_account}
+                    onChange={(e) => setForm({ ...form, bank_account: e.target.value })}
+                    placeholder="Contoh: BCA 1234567890 a/n Nama Lengkap"
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-[10px] text-gray-400 italic">Dipakai otomatis saat pengajuan reimburse</p>
+                </div>
+              ) : (
+                <span className="text-sm text-gray-700 font-mono">{employee.bank_account || "-"}</span>
               )}
             </InfoRow>
           </div>

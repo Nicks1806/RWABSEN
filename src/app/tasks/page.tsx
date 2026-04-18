@@ -1486,8 +1486,14 @@ export default function TasksPage() {
       {!isMobile && (() => {
         const canDrag = canManageBoards(user);
         const boardInner = (
-        <main className="flex-1 overflow-hidden">
-          <div className={`h-full px-3 md:px-6 py-5 ${canDrag ? "overflow-x-auto flex items-start gap-4 snap-x snap-mandatory" : "overflow-y-auto grid gap-4 auto-rows-min"}`} style={!canDrag ? { gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" } : undefined}>
+        <main className="flex-1 overflow-hidden relative">
+          {canDrag && (
+            <>
+              <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-gray-50 to-transparent z-10" />
+              <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10" />
+            </>
+          )}
+          <div className={`h-full px-3 md:px-6 py-5 ${canDrag ? "overflow-x-auto scrollbar-hide flex items-start gap-4 snap-x snap-mandatory" : "overflow-y-auto grid gap-4 auto-rows-min"}`} style={!canDrag ? { gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" } : undefined}>
             {columns.map((col) => {
               const colTasks = filteredTasks
                 .filter((t) => t.status === col.key)

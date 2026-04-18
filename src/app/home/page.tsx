@@ -21,6 +21,7 @@ import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import { getEffectiveWorkHours } from "@/lib/workHours";
 import { canAccessTasks } from "@/lib/permissions";
+import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 export default function HomePage() {
   const router = useRouter();
@@ -142,7 +143,7 @@ export default function HomePage() {
     };
   }, [employee, fetchData]);
 
-  if (!employee) return null;
+  if (!employee) return <HomeSkeleton />;
 
   const hour = currentTime.getHours();
   const greeting =
@@ -342,6 +343,29 @@ export default function HomePage() {
       </main>
 
       <BottomNav />
+    </div>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-primary/5 pb-28">
+      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-14 h-14 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-36 rounded-2xl" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+        </div>
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
     </div>
   );
 }

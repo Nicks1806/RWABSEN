@@ -13,7 +13,6 @@ import {
   X,
   Calendar as CalendarIcon,
   User as UserIcon,
-  Filter,
   CheckCircle2,
   Clock as ClockIcon,
   AlertCircle,
@@ -43,10 +42,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
 import TaskDetailModal from "@/components/TaskDetailModal";
+import { SkeletonBoard } from "@/components/Skeleton";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
-import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
-import { MessageCircle, Columns3, Send, Upload, Check, Pencil, Users, Sparkles } from "lucide-react";
+import type { BoardColumn, Board, BoardMessage, TaskLabel } from "@/lib/types";
+import { MessageCircle, Columns3, Send, Upload, Check, Pencil, Users, Sparkles, Search } from "lucide-react";
 
 // Color palette for board columns (top bar accent)
 const COL_COLORS = {
@@ -466,6 +466,7 @@ function CardOverlay({ task }: { task: Task }) {
 export default function TasksPage() {
   const router = useRouter();
   const [user, setUser] = useState<Employee | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [columns, setColumns] = useState<BoardColumn[]>(DEFAULT_COLUMNS);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -482,6 +483,9 @@ export default function TasksPage() {
   const [editBoardId, setEditBoardId] = useState<string | null>(null);
   const [editBoardRoles, setEditBoardRoles] = useState<string[]>([]);
   const [filterMine, setFilterMine] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+  const [filterLabel, setFilterLabel] = useState<TaskLabel | null>(null);
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [showForm, setShowForm] = useState<{ open: boolean; status: string; task?: Task }>({
     open: false,
     status: "brief",
@@ -580,6 +584,8 @@ export default function TasksPage() {
       setBoards(boardsData);
     } catch (err) {
       console.error("fetchData error:", err);
+    } finally {
+      setInitialLoad(false);
     }
   }, []);
 
@@ -1177,7 +1183,23 @@ export default function TasksPage() {
 
   const isMine = (t: Task) =>
     t.assignee_id === user?.id || (Array.isArray(t.assignees) && t.assignees.includes(user?.id || ""));
-  const filteredTasks = filterMine && user ? tasks.filter(isMine) : tasks;
+  const q = searchQ.trim().toLowerCase();
+  const filteredTasks = tasks.filter((t) => {
+    if (filterMine && user && !isMine(t)) return false;
+    if (filterLabel) {
+      const labels = (t.labels && t.labels.length ? t.labels : [t.color]).filter(Boolean);
+      if (!labels.includes(filterLabel)) return false;
+    }
+    if (filterOverdue) {
+      const od = t.status !== "done" && t.status !== "history" && t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date));
+      if (!od) return false;
+    }
+    if (q) {
+      const hay = `${t.title || ""} ${t.description || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   if (!user) return null;
 
@@ -1249,14 +1271,91 @@ export default function TasksPage() {
                 <p className="text-xs text-gray-500">Tap judul untuk rename • Tap card untuk edit</p>
               </div>
             </div>
-            <button
-              onClick={() => setFilterMine(!filterMine)}
-              className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
-                filterMine ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Filter size={13} /> {filterMine ? "Tugas Saya" : "Semua"}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQ}
+                  onChange={(e) => setSearchQ(e.target.value)}
+                  placeholder="Cari task..."
+                  className="pl-8 pr-8 py-2 w-48 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-white transition"
+                />
+                {searchQ && (
+                  <button
+                    onClick={() => setSearchQ("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center"
+                    title="Clear"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setFilterMine(!filterMine)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
+                  filterMine ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                title="Toggle filter Tugas Saya"
+              >
+                <UserIcon size={13} /> <span className="hidden sm:inline">{filterMine ? "Tugas Saya" : "Semua"}</span>
+              </button>
+              <button
+                onClick={() => setFilterOverdue(!filterOverdue)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
+                  filterOverdue ? "bg-red-500 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                title="Filter overdue"
+              >
+                <AlertCircle size={13} /> <span className="hidden sm:inline">Overdue</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile search + label chips */}
+          <div className="flex items-center gap-2 mb-3 md:mb-2">
+            <div className="relative flex-1 md:hidden">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Cari task..."
+                className="pl-9 pr-9 py-2 w-full bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-white"
+              />
+              {searchQ && (
+                <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+            {/* Label color chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              {(["red", "yellow", "green", "blue", "purple", "gray"] as TaskLabel[]).map((lbl) => {
+                const bgMap: Record<TaskLabel, string> = {
+                  red: "bg-rose-500", yellow: "bg-amber-400", green: "bg-emerald-500",
+                  blue: "bg-blue-500", purple: "bg-purple-500", gray: "bg-gray-400",
+                };
+                const active = filterLabel === lbl;
+                return (
+                  <button
+                    key={lbl}
+                    onClick={() => setFilterLabel(active ? null : lbl)}
+                    className={`shrink-0 w-6 h-6 rounded-full ${bgMap[lbl]} transition-all ${active ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-60 hover:opacity-100"}`}
+                    title={`Filter label ${lbl}`}
+                  />
+                );
+              })}
+              {(filterLabel || searchQ || filterOverdue || filterMine) && (
+                <button
+                  onClick={() => { setFilterLabel(null); setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
+                  className="shrink-0 text-[11px] text-gray-500 hover:text-primary font-semibold px-2 py-1 rounded-md hover:bg-gray-100"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={`${isMobile ? "hidden" : "grid"} grid-cols-3 gap-2`}>
@@ -1480,7 +1579,12 @@ export default function TasksPage() {
       )}
 
       {/* ====== DESKTOP: Kanban (drag & horizontal scroll only for managers) ====== */}
-      {!isMobile && (() => {
+      {!isMobile && initialLoad && (
+        <main className="flex-1 overflow-hidden">
+          <SkeletonBoard />
+        </main>
+      )}
+      {!isMobile && !initialLoad && (() => {
         const canDrag = canManageBoards(user);
         const boardInner = (
         <main className="flex-1 overflow-hidden relative">

@@ -1253,7 +1253,7 @@ export default function TasksPage() {
                     />
                   ) : (
                     <h1
-                      className="font-bold text-lg text-gray-900 cursor-pointer hover:text-primary transition"
+                      className="group font-extrabold text-lg md:text-xl text-gray-900 cursor-pointer hover:text-primary transition inline-flex items-center gap-1.5 tracking-tight"
                       onClick={() => {
                         const currentName = activeBoard ? activeBoard.name : (localStorage.getItem("default_board_name") || "Task Board");
                         setBoardNameDraft(currentName);
@@ -1261,14 +1261,18 @@ export default function TasksPage() {
                       }}
                       title="Klik untuk rename"
                     >
-                      {activeBoard ? activeBoard.name : (typeof window !== "undefined" ? localStorage.getItem("default_board_name") || "Task Board" : "Task Board")}
+                      <span>{activeBoard ? activeBoard.name : (typeof window !== "undefined" ? localStorage.getItem("default_board_name") || "Task Board" : "Task Board")}</span>
+                      <Pencil size={11} className="opacity-0 group-hover:opacity-60 transition" />
                     </h1>
                   )}
-                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                  <span className="text-[10px] bg-gradient-to-br from-primary to-primary-dark text-white px-2 py-0.5 rounded-full font-bold shadow-sm tabular-nums">
                     {tasks.length}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">Tap judul untuk rename • Tap card untuk edit</p>
+                <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
+                  <Sparkles size={10} className="text-amber-400" />
+                  <span>Klik judul / card untuk edit</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1331,26 +1335,42 @@ export default function TasksPage() {
               )}
             </div>
             {/* Label color chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-              {(["red", "yellow", "green", "blue", "purple", "gray"] as TaskLabel[]).map((lbl) => {
-                const bgMap: Record<TaskLabel, string> = {
-                  red: "bg-rose-500", yellow: "bg-amber-400", green: "bg-emerald-500",
-                  blue: "bg-blue-500", purple: "bg-purple-500", gray: "bg-gray-400",
-                };
-                const active = filterLabel === lbl;
-                return (
-                  <button
-                    key={lbl}
-                    onClick={() => setFilterLabel(active ? null : lbl)}
-                    className={`shrink-0 w-6 h-6 rounded-full ${bgMap[lbl]} transition-all ${active ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-60 hover:opacity-100"}`}
-                    title={`Filter label ${lbl}`}
-                  />
-                );
-              })}
+            <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-gray-200/70 rounded-full px-2.5 py-1.5 shadow-sm">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 pl-1 pr-0.5 select-none">Label</span>
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                {(["red", "yellow", "green", "blue", "purple", "gray"] as TaskLabel[]).map((lbl) => {
+                  const bgMap: Record<TaskLabel, string> = {
+                    red: "bg-rose-500", yellow: "bg-amber-400", green: "bg-emerald-500",
+                    blue: "bg-blue-500", purple: "bg-purple-500", gray: "bg-gray-400",
+                  };
+                  const ringMap: Record<TaskLabel, string> = {
+                    red: "ring-rose-500/30", yellow: "ring-amber-400/30", green: "ring-emerald-500/30",
+                    blue: "ring-blue-500/30", purple: "ring-purple-500/30", gray: "ring-gray-400/30",
+                  };
+                  const active = filterLabel === lbl;
+                  return (
+                    <button
+                      key={lbl}
+                      onClick={() => setFilterLabel(active ? null : lbl)}
+                      className={`shrink-0 relative w-5 h-5 rounded-full ${bgMap[lbl]} transition-all ${
+                        active
+                          ? `ring-4 ${ringMap[lbl]} scale-125 shadow-md`
+                          : "opacity-50 hover:opacity-100 hover:scale-110"
+                      }`}
+                      title={`Filter label ${lbl}`}
+                    >
+                      {active && (
+                        <Check size={11} strokeWidth={3} className="absolute inset-0 m-auto text-white drop-shadow" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
               {(filterLabel || searchQ || filterOverdue || filterMine) && (
                 <button
                   onClick={() => { setFilterLabel(null); setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
-                  className="shrink-0 text-[11px] text-gray-500 hover:text-primary font-semibold px-2 py-1 rounded-md hover:bg-gray-100"
+                  className="shrink-0 text-[10px] text-gray-500 hover:text-white hover:bg-primary font-bold px-2 py-1 rounded-full transition uppercase tracking-wider ml-1 border border-gray-200"
+                  title="Hapus semua filter"
                 >
                   Reset
                 </button>

@@ -20,6 +20,10 @@ import {
   Image as ImageIcon,
   Paperclip,
   Trash2,
+  Inbox,
+  Coffee,
+  Archive,
+  Clock,
 } from "lucide-react";
 import {
   DndContext,
@@ -63,6 +67,40 @@ const COL_COLORS = {
 type ColColor = keyof typeof COL_COLORS;
 const COL_COLOR_KEYS: ColColor[] = ["rose", "amber", "emerald", "blue", "purple", "slate", "pink", "indigo", "teal"];
 
+// Subtle column background gradients (from-<color>-50 to white)
+const COL_BG: Record<ColColor, string> = {
+  rose: "bg-gradient-to-b from-rose-50 to-white border-rose-200/40",
+  amber: "bg-gradient-to-b from-amber-50 to-white border-amber-200/40",
+  emerald: "bg-gradient-to-b from-emerald-50 to-white border-emerald-200/40",
+  blue: "bg-gradient-to-b from-blue-50 to-white border-blue-200/40",
+  purple: "bg-gradient-to-b from-purple-50 to-white border-purple-200/40",
+  slate: "bg-gradient-to-b from-slate-50 to-white border-slate-200/40",
+  pink: "bg-gradient-to-b from-pink-50 to-white border-pink-200/40",
+  indigo: "bg-gradient-to-b from-indigo-50 to-white border-indigo-200/40",
+  teal: "bg-gradient-to-b from-teal-50 to-white border-teal-200/40",
+};
+const COL_HEADER_BORDER: Record<ColColor, string> = {
+  rose: "border-rose-100/60",
+  amber: "border-amber-100/60",
+  emerald: "border-emerald-100/60",
+  blue: "border-blue-100/60",
+  purple: "border-purple-100/60",
+  slate: "border-slate-100/60",
+  pink: "border-pink-100/60",
+  indigo: "border-indigo-100/60",
+  teal: "border-teal-100/60",
+};
+
+// Map column key → icon + personalized empty state copy
+function getColumnMeta(key: string): { icon: "Inbox" | "Clock" | "CheckCircle2" | "Archive" | "Columns3"; emptyTitle: string; emptySub: string; emptyIcon: "Inbox" | "Coffee" | "CheckCircle2" | "Archive" } {
+  const k = key.toLowerCase();
+  if (k === "brief") return { icon: "Inbox", emptyTitle: "Brief kosong", emptySub: "Tambah task baru untuk dimulai", emptyIcon: "Inbox" };
+  if (k === "today") return { icon: "Clock", emptyTitle: "Santai dulu ✨", emptySub: "Tidak ada task hari ini", emptyIcon: "Coffee" };
+  if (k === "done") return { icon: "CheckCircle2", emptyTitle: "Belum ada yang selesai", emptySub: "Selesaikan task untuk mulai streak", emptyIcon: "CheckCircle2" };
+  if (k === "history") return { icon: "Archive", emptyTitle: "Arsip kosong", emptySub: "Task archived muncul di sini", emptyIcon: "Archive" };
+  return { icon: "Columns3", emptyTitle: "Kolom kosong", emptySub: "Tambah task pertama di sini", emptyIcon: "Inbox" };
+}
+
 const DEFAULT_COLUMNS: BoardColumn[] = [
   { id: "default-brief", key: "brief", label: "Brief", description: "Belum dikerjakan", color: "rose", position: 0, is_default: true },
   { id: "default-today", key: "today", label: "Today", description: "Hari ini", color: "amber", position: 1, is_default: true },
@@ -70,13 +108,13 @@ const DEFAULT_COLUMNS: BoardColumn[] = [
   { id: "default-history", key: "history", label: "History", description: "Arsip", color: "slate", position: 3, is_default: true },
 ];
 
-const CARD_COLORS: { key: Task["color"]; dot: string; border: string }[] = [
-  { key: "red", dot: "bg-rose-500", border: "border-l-rose-500" },
-  { key: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
-  { key: "green", dot: "bg-emerald-500", border: "border-l-emerald-500" },
-  { key: "blue", dot: "bg-blue-500", border: "border-l-blue-500" },
-  { key: "purple", dot: "bg-purple-500", border: "border-l-purple-500" },
-  { key: "gray", dot: "bg-gray-400", border: "border-l-gray-400" },
+const CARD_COLORS: { key: Task["color"]; dot: string; border: string; pillBg: string; pillText: string }[] = [
+  { key: "red", dot: "bg-rose-500", border: "border-l-rose-500", pillBg: "bg-rose-100", pillText: "text-rose-700" },
+  { key: "yellow", dot: "bg-amber-400", border: "border-l-amber-400", pillBg: "bg-amber-100", pillText: "text-amber-700" },
+  { key: "green", dot: "bg-emerald-500", border: "border-l-emerald-500", pillBg: "bg-emerald-100", pillText: "text-emerald-700" },
+  { key: "blue", dot: "bg-blue-500", border: "border-l-blue-500", pillBg: "bg-blue-100", pillText: "text-blue-700" },
+  { key: "purple", dot: "bg-purple-500", border: "border-l-purple-500", pillBg: "bg-purple-100", pillText: "text-purple-700" },
+  { key: "gray", dot: "bg-gray-400", border: "border-l-gray-400", pillBg: "bg-gray-100", pillText: "text-gray-700" },
 ];
 
 const BOARD_COLORS = ["bg-primary", "bg-blue-600", "bg-emerald-600", "bg-amber-500", "bg-purple-600", "bg-pink-600", "bg-indigo-600", "bg-teal-600", "bg-slate-700"];
@@ -117,7 +155,7 @@ function TaskCard({ task, onClick, onRename }: { task: Task; onClick: () => void
     <div
       ref={setNodeRef}
       style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 ${cardColor.border} transition-shadow hover:shadow-md hover:border-gray-300 overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl" : ""}`}
+      className={`group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/20 transition-all overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl ring-2 ring-primary/40" : ""}`}
     >
       {/* Drag handle area (top + middle) */}
       <div
@@ -136,19 +174,25 @@ function TaskCard({ task, onClick, onRename }: { task: Task; onClick: () => void
             draggable={false}
           />
         )}
-        {/* Multi-label color chips */}
+        {/* Multi-label pills */}
         {labels.length > 0 && (
           <div className="px-3.5 pt-2.5 pb-1 flex gap-1 flex-wrap">
-            {labels.map((l) => {
+            {labels.slice(0, 3).map((l) => {
               const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
               return (
                 <span
                   key={l}
-                  className={`h-1.5 w-10 rounded-full ${lc.dot}`}
+                  className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider ${lc.pillBg || "bg-gray-100"} ${lc.pillText || "text-gray-700"} px-1.5 py-0.5 rounded`}
                   title={l}
-                />
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${lc.dot}`} />
+                  {l}
+                </span>
               );
             })}
+            {labels.length > 3 && (
+              <span className="text-[9px] text-gray-400 font-bold px-1 py-0.5">+{labels.length - 3}</span>
+            )}
           </div>
         )}
         <div className="px-3.5 pt-2 pb-2">
@@ -1212,7 +1256,7 @@ export default function TasksPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex flex-col transition-[margin] duration-300 ease-out"
+      className="min-h-screen bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20 flex flex-col transition-[margin] duration-300 ease-out"
       style={{ marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
     >
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-20 shadow-sm">
@@ -1305,6 +1349,15 @@ export default function TasksPage() {
               >
                 <AlertCircle size={13} /> <span className="hidden sm:inline">Overdue</span>
               </button>
+              {canManageBoards(user) && !isMobile && (
+                <button
+                  onClick={() => setShowAddCol(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-2 bg-white border border-gray-200 text-gray-600 hover:text-primary hover:border-primary/50 hover:shadow-sm rounded-lg font-semibold transition"
+                  title="Tambah kolom"
+                >
+                  <Plus size={13} /> <span className="hidden sm:inline">Kolom</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1336,16 +1389,33 @@ export default function TasksPage() {
             )}
           </div>
 
-          <div className={`${isMobile ? "hidden" : "grid"} grid-cols-3 gap-2`}>
-            <StatPill icon={<UserIcon size={12} />} label="Tugas Saya" value={myCount} color="primary" />
-            <StatPill icon={<ClockIcon size={12} />} label="Today" value={todayTasksCount} color="amber" />
-            <StatPill
-              icon={<AlertCircle size={12} />}
-              label="Overdue"
-              value={overdueCount}
-              color={overdueCount > 0 ? "red" : "gray"}
-            />
-          </div>
+          {!isMobile && (
+            <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <UserIcon size={11} />
+                </span>
+                <span className="text-[11px] text-gray-500 font-medium">Saya</span>
+                <span className="text-xs font-bold text-primary tabular-nums">{myCount}</span>
+              </div>
+              <span className="w-px h-3.5 bg-gray-200" />
+              <div className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <ClockIcon size={11} />
+                </span>
+                <span className="text-[11px] text-gray-500 font-medium">Today</span>
+                <span className="text-xs font-bold text-amber-700 tabular-nums">{todayTasksCount}</span>
+              </div>
+              <span className="w-px h-3.5 bg-gray-200" />
+              <div className="flex items-center gap-1.5">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center ${overdueCount > 0 ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-400"}`}>
+                  <AlertCircle size={11} />
+                </span>
+                <span className="text-[11px] text-gray-500 font-medium">Overdue</span>
+                <span className={`text-xs font-bold tabular-nums ${overdueCount > 0 ? "text-red-700" : "text-gray-500"}`}>{overdueCount}</span>
+              </div>
+            </div>
+          )}
 
           {/* Mobile: Column Tab Bar */}
           {isMobile && (
@@ -1579,16 +1649,28 @@ export default function TasksPage() {
                 .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
               const isOverThis = overColKey === col.key && activeId !== null;
               const topBarColor = COL_COLORS[col.color as ColColor] || "bg-gray-400";
+              const colBg = COL_BG[col.color as ColColor] || "bg-white border-gray-200/70";
+              const colHeaderBorder = COL_HEADER_BORDER[col.color as ColColor] || "border-gray-100";
+              const colMeta = getColumnMeta(col.key);
+              const ColIcon =
+                colMeta.icon === "Inbox" ? Inbox :
+                colMeta.icon === "Clock" ? Clock :
+                colMeta.icon === "CheckCircle2" ? CheckCircle2 :
+                colMeta.icon === "Archive" ? Archive :
+                Columns3;
+              const EmptyIcon =
+                colMeta.emptyIcon === "Inbox" ? Inbox :
+                colMeta.emptyIcon === "Coffee" ? Coffee :
+                colMeta.emptyIcon === "CheckCircle2" ? CheckCircle2 :
+                Archive;
               return (
                 <div
                   key={col.id}
-                  className={`${canDrag ? "shrink-0 w-72 md:w-80 snap-start" : "w-full"} bg-white/90 backdrop-blur-sm rounded-2xl flex flex-col max-h-[calc(100vh-220px)] overflow-hidden border transition-all duration-200 ${
-                    isOverThis ? "border-primary ring-4 ring-primary/20 scale-[1.01] shadow-xl" : "border-gray-200/70 shadow-sm hover:shadow-md"
+                  className={`${canDrag ? "shrink-0 w-72 md:w-80 snap-start" : "w-full"} ${colBg} rounded-2xl flex flex-col max-h-[calc(100vh-220px)] overflow-hidden border transition-all duration-200 ${
+                    isOverThis ? "!border-primary ring-4 ring-primary/20 scale-[1.01] shadow-xl" : "shadow-sm hover:shadow-md"
                   }`}
                 >
-                  {/* Trello-style colored top bar */}
-                  <div className={`h-1 ${topBarColor}`} />
-                  <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 sticky top-0 z-10 bg-white/90 backdrop-blur-md group">
+                  <div className={`px-4 py-3 flex items-center justify-between border-b ${colHeaderBorder} sticky top-0 z-10 bg-white/80 backdrop-blur-md group`}>
                     <div className="flex-1 min-w-0">
                       {editingColId === col.id ? (
                         <input
@@ -1609,6 +1691,9 @@ export default function TasksPage() {
                           className="flex items-center gap-2 hover:bg-gray-100/60 -mx-1 px-1 py-0.5 rounded-md transition w-full text-left"
                           title="Klik untuk edit nama"
                         >
+                          <span className={`w-6 h-6 rounded-md ${topBarColor} text-white flex items-center justify-center shrink-0`}>
+                            <ColIcon size={13} />
+                          </span>
                           <h3 className="font-bold text-[15px] text-gray-900 truncate tracking-tight">{col.label}</h3>
                           <span className={`text-[10px] text-white px-2 py-0.5 rounded-full font-bold min-w-[22px] text-center shadow-sm ${topBarColor}`}>
                             {colTasks.length}
@@ -1616,7 +1701,7 @@ export default function TasksPage() {
                         </button>
                       )}
                       {col.description && editingColId !== col.id && (
-                        <p className="text-[10px] text-gray-500 leading-tight mt-0.5">{col.description}</p>
+                        <p className="text-[10px] text-gray-500 leading-tight mt-0.5 ml-8">{col.description}</p>
                       )}
                     </div>
                     {!col.is_default && editingColId !== col.id && (
@@ -1635,11 +1720,11 @@ export default function TasksPage() {
                       <SortableContext items={colTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                         {colTasks.length === 0 && (
                           <div className="text-center py-10 px-4 pointer-events-none">
-                            <div className={`relative w-14 h-14 ${topBarColor} opacity-15 rounded-full mx-auto mb-3 flex items-center justify-center`}>
-                              <Plus size={22} className="text-gray-600 opacity-60" />
+                            <div className={`relative w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-3 flex items-center justify-center`}>
+                              <EmptyIcon size={20} className="text-white opacity-90" />
                             </div>
-                            <p className="text-xs text-gray-500 font-semibold">Belum ada task</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Drag card atau tap + untuk menambah</p>
+                            <p className="text-xs text-gray-700 font-bold">{colMeta.emptyTitle}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{colMeta.emptySub}</p>
                           </div>
                         )}
                         {colTasks.map((task) => (
@@ -1673,11 +1758,10 @@ export default function TasksPage() {
               );
             })}
 
-            {/* Add another list (Trello-style) — managers only */}
-            {canDrag && (
-            <div className="shrink-0 w-72 md:w-80 snap-start">
-              {showAddCol ? (
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-primary/30 shadow-md p-3 space-y-2">
+            {/* Inline "Add column" form — only when user triggered from header */}
+            {canDrag && showAddCol && (
+              <div className="shrink-0 w-72 md:w-80 snap-start">
+                <div className="bg-white rounded-2xl border-2 border-primary/30 shadow-md p-3 space-y-2 animate-scale-in">
                   <input
                     type="text"
                     value={newColLabel}
@@ -1727,18 +1811,7 @@ export default function TasksPage() {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowAddCol(true)}
-                  className="group w-full py-5 rounded-2xl text-sm text-gray-500 hover:text-primary bg-white/50 hover:bg-white backdrop-blur-sm border-2 border-dashed border-gray-300 hover:border-primary/60 transition-all font-semibold inline-flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                >
-                  <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-primary/10 flex items-center justify-center transition">
-                    <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-                  </div>
-                  <span>Tambah Kolom Baru</span>
-                </button>
-              )}
-            </div>
+              </div>
             )}
           </div>
         </main>
@@ -2457,57 +2530,3 @@ export default function TasksPage() {
   );
 }
 
-function StatPill({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  color: "primary" | "amber" | "red" | "gray";
-}) {
-  const colorMap = {
-    primary: {
-      wrap: "bg-gradient-to-br from-primary/10 via-primary/5 to-white border-primary/25 hover:border-primary/40 hover:shadow-primary/10",
-      chip: "bg-primary text-white shadow-sm shadow-primary/30",
-      text: "text-primary",
-      label: "text-primary/70",
-    },
-    amber: {
-      wrap: "bg-gradient-to-br from-amber-50 via-amber-50/50 to-white border-amber-200 hover:border-amber-300 hover:shadow-amber-100",
-      chip: "bg-amber-500 text-white shadow-sm shadow-amber-300/50",
-      text: "text-amber-700",
-      label: "text-amber-700/70",
-    },
-    red: {
-      wrap: "bg-gradient-to-br from-red-50 via-red-50/50 to-white border-red-200 hover:border-red-300 hover:shadow-red-100",
-      chip: "bg-red-500 text-white shadow-sm shadow-red-300/50",
-      text: "text-red-700",
-      label: "text-red-700/70",
-    },
-    gray: {
-      wrap: "bg-gradient-to-br from-gray-50 via-gray-50/50 to-white border-gray-200 hover:border-gray-300 hover:shadow-gray-100",
-      chip: "bg-gray-600 text-white shadow-sm shadow-gray-300/50",
-      text: "text-gray-800",
-      label: "text-gray-500",
-    },
-  };
-  const c = colorMap[color];
-  return (
-    <div className={`group relative rounded-xl border px-3 py-2 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden ${c.wrap}`}>
-      <div className="flex items-center gap-2.5 relative z-10">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${c.chip}`}>
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-          <p className={`text-[10px] font-bold uppercase tracking-[0.12em] ${c.label} leading-tight truncate`}>
-            {label}
-          </p>
-          <p className={`text-2xl font-extrabold leading-none tabular-nums ${c.text}`}>{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}

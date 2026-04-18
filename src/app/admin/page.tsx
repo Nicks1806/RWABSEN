@@ -105,6 +105,8 @@ export default function AdminPage() {
   // Leaves (Izin/Cuti/Sakit)
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [leaveFilter, setLeaveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [selectedLeaveIds, setSelectedLeaveIds] = useState<Set<string>>(new Set());
+  const [selectedReimbIds, setSelectedReimbIds] = useState<Set<string>>(new Set());
   const [leavesSubTab, setLeavesSubTab] = useState<"izin" | "reimburse">("izin");
   const [reimbs, setReimbs] = useState<Reimbursement[]>([]);
 
@@ -426,6 +428,29 @@ export default function AdminPage() {
     } catch (err) {
       alert(`Error: ${err}`);
     }
+  }
+
+  async function bulkReviewLeaves(ids: string[], status: "approved" | "rejected") {
+    if (ids.length === 0) return;
+    const label = status === "approved" ? "menyetujui" : "menolak";
+    if (!confirm(`Yakin ${label} ${ids.length} pengajuan sekaligus?`)) return;
+    for (const id of ids) {
+      await reviewLeave(id, status);
+    }
+    setSelectedLeaveIds(new Set());
+  }
+
+  async function bulkReviewReimbs(ids: string[], status: "approved" | "rejected") {
+    if (ids.length === 0) return;
+    const label = status === "approved" ? "menyetujui" : "menolak";
+    if (!confirm(`Yakin ${label} ${ids.length} reimbursement sekaligus?`)) return;
+    const reviewerId = admin?.id || null;
+    await supabase
+      .from("reimbursements")
+      .update({ status, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
+      .in("id", ids);
+    setSelectedReimbIds(new Set());
+    fetchData();
   }
 
   async function reviewLeave(id: string, status: "approved" | "rejected", notes: string = "") {
@@ -870,7 +895,7 @@ export default function AdminPage() {
 
                 {/* Top Performer Ranking */}
                 {(topRajin.length > 0 || topTelat.length > 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 animate-fade-in">
                     {/* Top Rajin */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                       <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-green-50 flex items-center gap-2">
@@ -1476,6 +1501,40 @@ export default function AdminPage() {
                   ))}
                 </div>
 
+                {/* Bulk action bar for pending leaves */}
+                {leaveFilter === "pending" && leaves.filter((l) => l.status === "pending").length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2 flex-wrap animate-fade-in">
+                    <button
+                      onClick={() => {
+                        const pendingIds = leaves.filter((l) => l.status === "pending").map((l) => l.id);
+                        setSelectedLeaveIds(new Set(pendingIds.length === selectedLeaveIds.size ? [] : pendingIds));
+                      }}
+                      className="text-xs font-semibold text-primary hover:underline px-2 py-1"
+                    >
+                      {selectedLeaveIds.size === leaves.filter((l) => l.status === "pending").length ? "Batal pilih semua" : "Pilih semua"}
+                    </button>
+                    {selectedLeaveIds.size > 0 && (
+                      <>
+                        <span className="text-xs text-gray-500">{selectedLeaveIds.size} dipilih</span>
+                        <div className="ml-auto flex gap-2">
+                          <button
+                            onClick={() => bulkReviewLeaves(Array.from(selectedLeaveIds), "approved")}
+                            className="px-3 py-1.5 bg-gradient-to-br from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                          >
+                            <CheckCircle size={13} /> Setujui semua
+                          </button>
+                          <button
+                            onClick={() => bulkReviewLeaves(Array.from(selectedLeaveIds), "rejected")}
+                            className="px-3 py-1.5 bg-gradient-to-br from-rose-500 to-red-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                          >
+                            <X size={13} /> Tolak semua
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Leave List */}
                 <div className="space-y-3">
                   {leaves
@@ -1508,9 +1567,23 @@ export default function AdminPage() {
                       }[leave.status];
 
                       return (
-                        <div key={leave.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                        <div key={leave.id} className={`bg-white rounded-2xl p-4 shadow-sm transition-all animate-stagger ${selectedLeaveIds.has(leave.id) ? "ring-2 ring-primary ring-offset-1" : ""}`}>
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-start gap-3 min-w-0">
+                              {leave.status === "pending" && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedLeaveIds.has(leave.id)}
+                                  onChange={(e) => {
+                                    const next = new Set(selectedLeaveIds);
+                                    if (e.target.checked) next.add(leave.id); else next.delete(leave.id);
+                                    setSelectedLeaveIds(next);
+                                  }}
+                                  className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label="Pilih untuk bulk action"
+                                />
+                              )}
                               <Avatar name={emp?.name || "?"} size="md" />
                               <div className="min-w-0">
                                 <p className="font-semibold">{emp?.name || "-"}</p>
@@ -1600,6 +1673,40 @@ export default function AdminPage() {
                       ))}
                     </div>
 
+                    {/* Bulk action bar for pending reimbursements */}
+                    {leaveFilter === "pending" && reimbs.filter((r) => r.status === "pending").length > 0 && (
+                      <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2 flex-wrap animate-fade-in">
+                        <button
+                          onClick={() => {
+                            const pendingIds = reimbs.filter((r) => r.status === "pending").map((r) => r.id);
+                            setSelectedReimbIds(new Set(pendingIds.length === selectedReimbIds.size ? [] : pendingIds));
+                          }}
+                          className="text-xs font-semibold text-primary hover:underline px-2 py-1"
+                        >
+                          {selectedReimbIds.size === reimbs.filter((r) => r.status === "pending").length ? "Batal pilih semua" : "Pilih semua"}
+                        </button>
+                        {selectedReimbIds.size > 0 && (
+                          <>
+                            <span className="text-xs text-gray-500">{selectedReimbIds.size} dipilih</span>
+                            <div className="ml-auto flex gap-2">
+                              <button
+                                onClick={() => bulkReviewReimbs(Array.from(selectedReimbIds), "approved")}
+                                className="px-3 py-1.5 bg-gradient-to-br from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                              >
+                                <CheckCircle size={13} /> Setujui semua
+                              </button>
+                              <button
+                                onClick={() => bulkReviewReimbs(Array.from(selectedReimbIds), "rejected")}
+                                className="px-3 py-1.5 bg-gradient-to-br from-rose-500 to-red-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                              >
+                                <X size={13} /> Tolak semua
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     <div className="space-y-3">
                       {reimbs
                         .filter((r) => leaveFilter === "all" || r.status === leaveFilter)
@@ -1628,9 +1735,23 @@ export default function AdminPage() {
                           }[reimb.category] || "📋";
 
                           return (
-                            <div key={reimb.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                            <div key={reimb.id} className={`bg-white rounded-2xl p-4 shadow-sm transition-all animate-stagger ${selectedReimbIds.has(reimb.id) ? "ring-2 ring-primary ring-offset-1" : ""}`}>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-3 min-w-0 flex-1">
+                                  {reimb.status === "pending" && (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedReimbIds.has(reimb.id)}
+                                      onChange={(e) => {
+                                        const next = new Set(selectedReimbIds);
+                                        if (e.target.checked) next.add(reimb.id); else next.delete(reimb.id);
+                                        setSelectedReimbIds(next);
+                                      }}
+                                      className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      aria-label="Pilih untuk bulk action"
+                                    />
+                                  )}
                                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
                                     {catEmoji}
                                   </div>

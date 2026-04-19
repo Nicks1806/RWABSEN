@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
@@ -70,6 +70,12 @@ export default function AdminPage() {
   const router = useRouter();
   const [admin, setAdmin] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [isTabPending, startTabTransition] = useTransition();
+  const switchTab = useCallback((tab: Tab) => {
+    // Non-blocking tab switch — UI updates immediately,
+    // heavy content renders in background without blocking input
+    startTabTransition(() => setActiveTab(tab));
+  }, []);
   const [month, setMonth] = useState(format(new Date(), "yyyy-MM"));
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<Attendance[]>([]);
@@ -279,6 +285,16 @@ export default function AdminPage() {
     }
     return map;
   }, [records]);
+
+  // Effective work hours per employee (memoized so we don't recompute each render)
+  const effHoursMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getEffectiveWorkHours>>();
+    if (!settings) return map;
+    for (const emp of employees) {
+      map.set(emp.id, getEffectiveWorkHours(emp, settings));
+    }
+    return map;
+  }, [employees, settings]);
 
   // Per-employee monthly hours (memoized map for O(1) lookup instead of O(n) per call)
   const monthlyHoursMap = useMemo(() => {
@@ -779,12 +795,12 @@ export default function AdminPage() {
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => switchTab(tab.key)}
               className={`shrink-0 flex items-center gap-1 md:gap-1.5 px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 transition relative whitespace-nowrap ${
                 activeTab === tab.key
                   ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              } ${isTabPending && activeTab === tab.key ? "opacity-60" : ""}`}
             >
               {tab.icon} {tab.label}
               {"badge" in tab && tab.badge && tab.badge > 0 ? (
@@ -1925,7 +1941,7 @@ export default function AdminPage() {
                           const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
                           const hasCustomHours = !!emp.work_start && !!emp.work_end;
                           const isDefault = !hasSchedule && !hasCustomHours;
-                          const eff = getEffectiveWorkHours(emp, settings);
+                          const eff = effHoursMap.get(emp.id) || getEffectiveWorkHours(emp, settings);
                           return (
                           <tr key={emp.id} className="hover:bg-gray-50 transition">
                             <td className="px-4 py-3">
@@ -2061,7 +2077,7 @@ export default function AdminPage() {
                       const hasSchedule = !!emp.schedule && Object.keys(emp.schedule).length > 0;
                       const hasCustomHours = !!emp.work_start && !!emp.work_end;
                       const isDefault = !hasSchedule && !hasCustomHours;
-                      const eff = getEffectiveWorkHours(emp, settings);
+                      const eff = effHoursMap.get(emp.id) || getEffectiveWorkHours(emp, settings);
                       return (
                         <div key={emp.id} className="p-4">
                           <div className="flex items-center justify-between mb-2 gap-2">

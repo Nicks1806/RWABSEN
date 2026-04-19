@@ -44,7 +44,8 @@ export default function Avatar({ name, photoUrl, size = "md", className = "" }: 
       <div
         className={`${sizeMap[size]} rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm ${className}`}
       >
-        <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoUrl} alt={name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
       </div>
     );
   }

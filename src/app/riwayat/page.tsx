@@ -78,7 +78,14 @@ export default function RiwayatPage() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-500 hover:text-primary">
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) router.back();
+                else router.push("/home");
+              }}
+              className="text-gray-500 hover:text-primary"
+              aria-label="Kembali"
+            >
               <ArrowLeft size={20} />
             </button>
             <h1 className="font-bold text-gray-800">Riwayat Absensi</h1>

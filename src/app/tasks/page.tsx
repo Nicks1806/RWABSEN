@@ -1264,8 +1264,18 @@ export default function TasksPage() {
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
-                onClick={() => router.back()}
-                className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition"
+                onClick={() => {
+                  // Fallback to /home when there's no history (PWA launched directly,
+                  // push notification, or first-visit). router.back() silently does nothing
+                  // when history is empty.
+                  if (typeof window !== "undefined" && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/home");
+                  }
+                }}
+                className="w-9 h-9 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-600 flex items-center justify-center transition"
+                aria-label="Kembali"
               >
                 <ArrowLeft size={18} />
               </button>

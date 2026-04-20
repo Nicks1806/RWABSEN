@@ -23,7 +23,6 @@ import {
   Inbox,
   Coffee,
   Archive,
-  Clock,
 } from "lucide-react";
 import {
   DndContext,
@@ -1664,7 +1663,7 @@ export default function TasksPage() {
               const colMeta = getColumnMeta(col.key);
               const ColIcon =
                 colMeta.icon === "Inbox" ? Inbox :
-                colMeta.icon === "Clock" ? Clock :
+                colMeta.icon === "Clock" ? ClockIcon :
                 colMeta.icon === "CheckCircle2" ? CheckCircle2 :
                 colMeta.icon === "Archive" ? Archive :
                 Columns3;

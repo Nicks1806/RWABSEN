@@ -311,7 +311,12 @@ export default function AbsenPage() {
     try {
       // Upload photo to Supabase Storage
       const fileName = `${employee.id}/${Date.now()}.jpg`;
-      const base64 = capturedPhoto.split(",")[1];
+      const base64 = capturedPhoto.split(",")[1] || capturedPhoto;
+      if (!base64) {
+        alert("Foto tidak valid. Coba ambil ulang.");
+        setLoading(false);
+        return;
+      }
       const byteCharacters = atob(base64);
       const byteArray = new Uint8Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -338,10 +343,12 @@ export default function AbsenPage() {
 
       let status = "present";
       if (mode === "clock_in") {
-        const [h, m] = workStartStr.split(":").map(Number);
-        const workStart = new Date();
-        workStart.setHours(h, m, 0, 0);
-        if (new Date() > workStart) status = "late";
+        const [h, m] = (workStartStr || "09:00").split(":").map(Number);
+        if (Number.isFinite(h) && Number.isFinite(m)) {
+          const workStart = new Date();
+          workStart.setHours(h, m, 0, 0);
+          if (new Date() > workStart) status = "late";
+        }
       }
 
       // Convert NaN coords to null (when submitted without GPS)
@@ -363,9 +370,13 @@ export default function AbsenPage() {
         setMessage({ type: "success", text: "Clock In berhasil!" });
       } else {
         // Determine early leave
-        const [h, m] = workEndStr.split(":").map(Number);
+        const [h, m] = (workEndStr || "17:00").split(":").map(Number);
         const workEnd = new Date();
-        workEnd.setHours(h, m, 0, 0);
+        if (Number.isFinite(h) && Number.isFinite(m)) {
+          workEnd.setHours(h, m, 0, 0);
+        } else {
+          workEnd.setHours(17, 0, 0, 0);
+        }
         if (new Date() < workEnd && todayRecord?.status !== "late") {
           status = "early_leave";
         } else if (todayRecord?.status === "late") {

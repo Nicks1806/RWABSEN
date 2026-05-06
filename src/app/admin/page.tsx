@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Download,
+  Loader2,
   Settings as SettingsIcon,
   MapPin,
   Image as ImageIcon,
@@ -542,6 +543,51 @@ export default function AdminPage() {
   async function exportPDF() {
     const { exportMonthlyPDF } = await import("@/lib/pdfExport");
     exportMonthlyPDF({ month, employees, records, settings });
+  }
+
+  // Per-employee monthly report (attendance + leaves + reimbursements)
+  const [reportLoadingId, setReportLoadingId] = useState<string | null>(null);
+  async function exportEmployeeReport(emp: Employee) {
+    setReportLoadingId(emp.id);
+    try {
+      // Filter month range for queries
+      const monthStart = `${month}-01`;
+      const monthEnd = format(endOfMonth(new Date(monthStart)), "yyyy-MM-dd");
+
+      // Fetch leaves & reimbursements specific to employee + month (server-side)
+      const [leavesRes, reimbsRes] = await Promise.all([
+        supabase
+          .from("leaves")
+          .select("*")
+          .eq("employee_id", emp.id)
+          .or(`start_date.lte.${monthEnd},end_date.gte.${monthStart}`)
+          .order("start_date", { ascending: false }),
+        supabase
+          .from("reimbursements")
+          .select("*")
+          .eq("employee_id", emp.id)
+          .gte("transaction_date", monthStart)
+          .lte("transaction_date", monthEnd)
+          .order("transaction_date", { ascending: false }),
+      ]);
+
+      const empRecords = records.filter((r) => r.employee_id === emp.id);
+
+      const { exportEmployeeMonthlyReport } = await import("@/lib/pdfExport");
+      exportEmployeeMonthlyReport({
+        month,
+        employee: emp,
+        records: empRecords,
+        leaves: leavesRes.data || [],
+        reimbursements: reimbsRes.data || [],
+        settings,
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Gagal generate laporan PDF");
+    } finally {
+      setReportLoadingId(null);
+    }
   }
 
   // Delete attendance record
@@ -2003,6 +2049,14 @@ export default function AdminPage() {
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-center gap-1">
                                 <button
+                                  onClick={() => exportEmployeeReport(emp)}
+                                  disabled={reportLoadingId === emp.id}
+                                  className="group w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center disabled:opacity-50"
+                                  title={`Download laporan bulanan ${format(new Date(month + "-01"), "MMMM yyyy", { locale: idLocale })}`}
+                                >
+                                  {reportLoadingId === emp.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                </button>
+                                <button
                                   onClick={() => {
                                     setResetPinEmp(emp);
                                     setNewPin("");
@@ -2119,6 +2173,14 @@ export default function AdminPage() {
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button
+                              onClick={() => exportEmployeeReport(emp)}
+                              disabled={reportLoadingId === emp.id}
+                              className="text-xs px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center gap-1 disabled:opacity-50 col-span-2"
+                            >
+                              {reportLoadingId === emp.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                              Download Laporan {format(new Date(month + "-01"), "MMM yyyy", { locale: idLocale })}
+                            </button>
                             <button
                               onClick={() => {
                                 setResetPinEmp(emp);

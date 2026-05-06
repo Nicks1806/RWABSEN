@@ -405,11 +405,11 @@ export default function AbsenPage() {
       setCapturedPhoto(null);
       setNotes("");
       fetchTodayRecord(employee.id);
-      // Stop camera + redirect to home after success
+      // Stop camera + redirect to home after success (short delay for toast visibility)
       stopCamera();
       setTimeout(() => {
-        router.push("/home");
-      }, 900);
+        router.replace("/home");
+      }, 400);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan";
       setMessage({ type: "error", text: errorMessage });
@@ -829,13 +829,27 @@ export default function AbsenPage() {
                     muted
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
-                  {/* Dashed silhouette outline guide */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center pb-20">
-                    <svg viewBox="0 0 200 240" className="h-[68%] w-auto opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Dashed silhouette outline guide — head + neck + shoulders */}
+                  <div className="absolute inset-0 pointer-events-none flex items-start justify-center pt-10 pb-24">
+                    <svg viewBox="0 0 220 280" className="h-full w-auto opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                       <path
-                        d="M100 30 C 70 30, 55 55, 55 85 C 55 110, 70 130, 85 138 C 70 145, 50 155, 35 175 C 20 195, 15 220, 15 240 L 185 240 C 185 220, 180 195, 165 175 C 150 155, 130 145, 115 138 C 130 130, 145 110, 145 85 C 145 55, 130 30, 100 30 Z"
+                        d="M110 18
+                           C 78 18, 60 44, 60 78
+                           C 60 102, 70 122, 86 132
+                           L 86 148
+                           C 86 156, 78 162, 64 168
+                           C 38 178, 18 202, 12 232
+                           C 8 252, 8 270, 8 280
+                           L 212 280
+                           C 212 270, 212 252, 208 232
+                           C 202 202, 182 178, 156 168
+                           C 142 162, 134 156, 134 148
+                           L 134 132
+                           C 150 122, 160 102, 160 78
+                           C 160 44, 142 18, 110 18 Z"
                         stroke="white"
                         strokeWidth="2.5"
+                        strokeLinejoin="round"
                         className="silhouette-dash"
                       />
                     </svg>

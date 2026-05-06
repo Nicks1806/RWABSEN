@@ -886,7 +886,11 @@ export default function TasksPage() {
       // Move tasks to first column
       const firstCol = columns[0];
       if (firstCol && firstCol.key !== col.key) {
-        await supabase.from("tasks").update({ status: firstCol.key }).eq("status", col.key);
+        // Scope by board to avoid affecting tasks on other boards
+        let q = supabase.from("tasks").update({ status: firstCol.key }).eq("status", col.key);
+        if (activeBoard?.id) q = q.eq("board_id", activeBoard.id);
+        else q = q.is("board_id", null);
+        await q;
       }
     } else {
       if (!confirm(`Hapus kolom "${col.label}"?`)) return;

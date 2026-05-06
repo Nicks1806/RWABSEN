@@ -261,7 +261,15 @@ export default function AbsenPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    let dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    // Guard: re-encode at lower quality if file too large (>500KB)
+    if (dataUrl.length > 700_000) {
+      dataUrl = canvas.toDataURL("image/jpeg", 0.5);
+    }
+    if (dataUrl.length > 1_500_000) {
+      setMessage({ type: "error", text: "Foto terlalu besar. Coba ulang dengan pencahayaan lebih baik." });
+      return;
+    }
     setCapturedPhoto(dataUrl);
     stopCamera();
   }
@@ -1008,7 +1016,7 @@ export default function AbsenPage() {
             {capturedPhoto && location && (
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || transitioning}
                 className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50"
               >
                 {loading

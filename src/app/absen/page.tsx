@@ -405,6 +405,11 @@ export default function AbsenPage() {
       setCapturedPhoto(null);
       setNotes("");
       fetchTodayRecord(employee.id);
+      // Stop camera + redirect to home after success
+      stopCamera();
+      setTimeout(() => {
+        router.push("/home");
+      }, 900);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan";
       setMessage({ type: "error", text: errorMessage });
@@ -815,8 +820,8 @@ export default function AbsenPage() {
             )}
 
             {cameraActive && (
-              <div className="space-y-3">
-                <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/5] shadow-md">
+              <div>
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-[3/4] shadow-md">
                   <video
                     ref={videoRef}
                     autoPlay
@@ -825,8 +830,8 @@ export default function AbsenPage() {
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
                   {/* Dashed silhouette outline guide */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <svg viewBox="0 0 200 240" className="h-[78%] w-auto opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center pb-20">
+                    <svg viewBox="0 0 200 240" className="h-[68%] w-auto opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M100 30 C 70 30, 55 55, 55 85 C 55 110, 70 130, 85 138 C 70 145, 50 155, 35 175 C 20 195, 15 220, 15 240 L 185 240 C 185 220, 180 195, 165 175 C 150 155, 130 145, 115 138 C 130 130, 145 110, 145 85 C 145 55, 130 30, 100 30 Z"
                         stroke="white"
@@ -840,19 +845,21 @@ export default function AbsenPage() {
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                     REC
                   </div>
-                  {/* Hint pill at bottom */}
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap">
+                  {/* Hint pill above button */}
+                  <div className="absolute bottom-20 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap">
                     <UserIcon size={12} />
                     Posisikan wajah dalam outline
                   </div>
+                  {/* Capture button — floating bottom sheet style (overlay on camera) */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent">
+                    <button
+                      onClick={capturePhoto}
+                      className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <Camera size={16} /> Ambil Foto
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={capturePhoto}
-                  className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all inline-flex items-center justify-center gap-2 active:scale-95"
-                  style={{ paddingBottom: "max(0.875rem, env(safe-area-inset-bottom, 0px))" }}
-                >
-                  <Camera size={16} /> Ambil Foto
-                </button>
               </div>
             )}
 

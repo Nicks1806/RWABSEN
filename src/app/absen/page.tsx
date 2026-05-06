@@ -45,6 +45,7 @@ export default function AbsenPage() {
   const [isOutsideRadius, setIsOutsideRadius] = useState(false);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mode, setMode] = useState<"clock_in" | "clock_out">("clock_in");
@@ -405,11 +406,14 @@ export default function AbsenPage() {
       setCapturedPhoto(null);
       setNotes("");
       fetchTodayRecord(employee.id);
-      // Stop camera + redirect to home after success (short delay for toast visibility)
+      // Stop camera + smooth transition to home
       stopCamera();
+      setTransitioning(true);
+      // Prefetch home so navigation is instant
+      router.prefetch("/home");
       setTimeout(() => {
         router.replace("/home");
-      }, 400);
+      }, 700);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan";
       setMessage({ type: "error", text: errorMessage });
@@ -829,26 +833,26 @@ export default function AbsenPage() {
                     muted
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
-                  {/* Dashed silhouette outline guide — head + neck + shoulders */}
-                  <div className="absolute inset-0 pointer-events-none flex items-start justify-center pt-10 pb-24">
-                    <svg viewBox="0 0 220 280" className="h-full w-auto opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                  {/* Dashed silhouette outline — head + shoulders, fills frame */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <svg viewBox="0 0 400 600" className="w-full h-full opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
                       <path
-                        d="M110 18
-                           C 78 18, 60 44, 60 78
-                           C 60 102, 70 122, 86 132
-                           L 86 148
-                           C 86 156, 78 162, 64 168
-                           C 38 178, 18 202, 12 232
-                           C 8 252, 8 270, 8 280
-                           L 212 280
-                           C 212 270, 212 252, 208 232
-                           C 202 202, 182 178, 156 168
-                           C 142 162, 134 156, 134 148
-                           L 134 132
-                           C 150 122, 160 102, 160 78
-                           C 160 44, 142 18, 110 18 Z"
+                        d="M200 60
+                           C 138 60, 100 110, 100 175
+                           C 100 220, 118 258, 142 280
+                           C 150 290, 156 300, 156 312
+                           C 156 326, 150 336, 130 346
+                           C 80 366, 38 410, 22 470
+                           C 12 510, 8 555, 8 600
+                           L 392 600
+                           C 392 555, 388 510, 378 470
+                           C 362 410, 320 366, 270 346
+                           C 250 336, 244 326, 244 312
+                           C 244 300, 250 290, 258 280
+                           C 282 258, 300 220, 300 175
+                           C 300 110, 262 60, 200 60 Z"
                         stroke="white"
-                        strokeWidth="2.5"
+                        strokeWidth="3.5"
                         strokeLinejoin="round"
                         className="silhouette-dash"
                       />
@@ -1279,6 +1283,24 @@ export default function AbsenPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Smooth transition overlay after successful clock in/out */}
+      {transitioning && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto animate-fade-in"
+          style={{
+            background: "linear-gradient(135deg, #8B1A1A 0%, #5A1010 100%)",
+          }}
+        >
+          <div className="text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center animate-scale-in">
+              <CheckCircle size={44} className="text-white" />
+            </div>
+            <p className="text-white font-bold text-xl tracking-tight">Berhasil!</p>
+            <p className="text-white/70 text-sm mt-1">Mengarahkan ke beranda...</p>
           </div>
         </div>
       )}

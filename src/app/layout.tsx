@@ -8,6 +8,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover", // iOS: enables safe-area-inset-* env() vars
 };
 
 const geistSans = Geist({

@@ -62,6 +62,29 @@ body {
   animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* iOS/Android safe-area utilities for camera full-bleed */
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-bottom-plus { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
+
+/* Animated dashed silhouette outline */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -32; }
+}
+.silhouette-dash {
+  stroke-dasharray: 8 6;
+  animation: dash-flow 3s linear infinite;
+}
+
+/* Bottom sheet slide-up from bottom */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-sheet-up {
+  animation: sheet-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Staggered list items */
 @keyframes stagger-up {
   from { opacity: 0; transform: translateY(8px); }

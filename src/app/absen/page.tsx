@@ -21,6 +21,8 @@ import {
   X,
   FileText,
   QrCode as QrCodeIcon,
+  User as UserIcon,
+  RefreshCw,
 } from "lucide-react";
 import jsQR from "jsqr";
 import { hasFace } from "@/lib/faceDetection";
@@ -737,9 +739,21 @@ export default function AbsenPage() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-700">
-              {mode === "clock_in" ? "Clock In" : "Clock Out"}
-            </h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold text-gray-700">
+                {mode === "clock_in" ? "Clock In" : "Clock Out"}
+              </h3>
+              {settings && (() => {
+                const eff = getEffectiveWorkHours(employee, settings);
+                if (eff.off || !eff.start || !eff.end) return null;
+                return (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/8 px-2.5 py-1 rounded-full">
+                    <Clock size={10} />
+                    {eff.start} – {eff.end}
+                  </span>
+                );
+              })()}
+            </div>
 
             {/* QR Scanner or Camera */}
             {scanningQR && (
@@ -788,10 +802,13 @@ export default function AbsenPage() {
                 {(!settings?.qr_required || qrVerified) && (
                   <button
                     onClick={startCamera}
-                    className="w-full py-12 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center gap-2 text-gray-500 hover:border-primary hover:text-primary transition"
+                    className="group w-full py-10 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center gap-2.5 text-gray-500 hover:border-primary/60 hover:text-primary hover:bg-primary/5 transition active:scale-[0.99]"
                   >
-                    <Camera size={32} />
-                    <span>Ambil Foto Selfie</span>
+                    <div className="w-14 h-14 rounded-full bg-gray-100 group-hover:bg-primary/10 flex items-center justify-center transition">
+                      <Camera size={26} className="group-hover:scale-110 transition-transform" />
+                    </div>
+                    <span className="font-semibold text-sm">Ambil Foto Selfie</span>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400 group-hover:text-primary/60">Pastikan wajah terlihat jelas</span>
                   </button>
                 )}
               </div>
@@ -799,37 +816,70 @@ export default function AbsenPage() {
 
             {cameraActive && (
               <div className="space-y-3">
-                <div className="relative rounded-xl overflow-hidden bg-black">
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/5] shadow-md">
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-full camera-mirror"
+                    className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
+                  {/* Dashed silhouette outline guide */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <svg viewBox="0 0 200 240" className="h-[78%] w-auto opacity-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M100 30 C 70 30, 55 55, 55 85 C 55 110, 70 130, 85 138 C 70 145, 50 155, 35 175 C 20 195, 15 220, 15 240 L 185 240 C 185 220, 180 195, 165 175 C 150 155, 130 145, 115 138 C 130 130, 145 110, 145 85 C 145 55, 130 30, 100 30 Z"
+                        stroke="white"
+                        strokeWidth="2.5"
+                        className="silhouette-dash"
+                      />
+                    </svg>
+                  </div>
+                  {/* REC indicator */}
+                  <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-red-600 text-white text-[9px] font-extrabold tracking-widest px-2 py-0.5 rounded">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    REC
+                  </div>
+                  {/* Hint pill at bottom */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap">
+                    <UserIcon size={12} />
+                    Posisikan wajah dalam outline
+                  </div>
                 </div>
                 <button
                   onClick={capturePhoto}
-                  className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition"
+                  className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                  style={{ paddingBottom: "max(0.875rem, env(safe-area-inset-bottom, 0px))" }}
                 >
-                  Ambil Foto
+                  <Camera size={16} /> Ambil Foto
                 </button>
               </div>
             )}
 
             {capturedPhoto && (
               <div className="space-y-3">
-                <img
-                  src={capturedPhoto}
-                  alt="Foto"
-                  className="w-full rounded-xl"
-                />
-                <button
-                  onClick={retakePhoto}
-                  className="text-sm text-primary underline"
-                >
-                  Ulangi Foto
-                </button>
+                <div className="relative rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={capturedPhoto}
+                    alt="Foto"
+                    className="w-full"
+                  />
+                  {/* Verified badge top-right */}
+                  <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-lg">
+                    <CheckCircle size={12} />
+                    <span className="text-[10px] font-extrabold tracking-wider uppercase">Foto siap</span>
+                  </div>
+                  {/* Retake floating button */}
+                  <button
+                    onClick={retakePhoto}
+                    className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg backdrop-blur-sm hover:bg-white transition active:scale-95"
+                    title="Ulangi foto"
+                    aria-label="Ulangi foto"
+                  >
+                    <RefreshCw size={16} />
+                  </button>
+                </div>
               </div>
             )}
 

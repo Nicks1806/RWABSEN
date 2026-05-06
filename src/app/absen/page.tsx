@@ -841,27 +841,28 @@ export default function AbsenPage() {
                     muted
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
-                  {/* Dashed silhouette outline — head + shoulders, fills frame */}
+                  {/* Dashed silhouette outline — head + neck-notch + shoulders (passport-photo style) */}
                   <div className="absolute inset-0 pointer-events-none">
                     <svg viewBox="0 0 400 600" className="w-full h-full opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
                       <path
-                        d="M200 60
-                           C 138 60, 100 110, 100 175
-                           C 100 220, 118 258, 142 280
-                           C 150 290, 156 300, 156 312
-                           C 156 326, 150 336, 130 346
-                           C 80 366, 38 410, 22 470
-                           C 12 510, 8 555, 8 600
-                           L 392 600
-                           C 392 555, 388 510, 378 470
-                           C 362 410, 320 366, 270 346
-                           C 250 336, 244 326, 244 312
-                           C 244 300, 250 290, 258 280
-                           C 282 258, 300 220, 300 175
-                           C 300 110, 262 60, 200 60 Z"
+                        d="M200 50
+                           C 142 50, 105 100, 105 168
+                           C 105 215, 124 250, 152 270
+                           L 152 295
+                           C 138 305, 95 320, 55 350
+                           C 32 380, 18 425, 12 470
+                           L 12 600
+                           L 388 600
+                           L 388 470
+                           C 382 425, 368 380, 345 350
+                           C 305 320, 262 305, 248 295
+                           L 248 270
+                           C 276 250, 295 215, 295 168
+                           C 295 100, 258 50, 200 50 Z"
                         stroke="white"
                         strokeWidth="3.5"
                         strokeLinejoin="round"
+                        strokeLinecap="round"
                         className="silhouette-dash"
                       />
                     </svg>

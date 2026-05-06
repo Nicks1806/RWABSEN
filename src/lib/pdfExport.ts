@@ -9,6 +9,38 @@ function minutesBetween(a: string, b: string): number {
   return (new Date(b).getTime() - new Date(a).getTime()) / 60000;
 }
 
+/**
+ * Sanitize text for jsPDF — default fonts (Helvetica/Times/Courier) only support
+ * Latin-1 chars. Emoji + extended Unicode get rendered as garbage like "Ø=Þ".
+ * Strip emoji + pictographs + ZWJ + variation selectors. Keep accented Latin.
+ */
+function pdfSafe(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    // Emoji blocks (Misc Symbols, Dingbats, Pictographs, Symbols & Pictographs Ext)
+    .replace(/[☀-➿]/g, "")
+    .replace(/[\u{1F300}-\u{1F6FF}]/gu, "")
+    .replace(/[\u{1F700}-\u{1F77F}]/gu, "")
+    .replace(/[\u{1F780}-\u{1F7FF}]/gu, "")
+    .replace(/[\u{1F800}-\u{1F8FF}]/gu, "")
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")
+    .replace(/[\u{1F000}-\u{1F02F}]/gu, "")
+    .replace(/[\u{1F0A0}-\u{1F0FF}]/gu, "")
+    .replace(/[\u{1F100}-\u{1F1FF}]/gu, "") // regional indicators (flags)
+    // Variation selectors + ZWJ + keycap
+    .replace(/[︀-️]/g, "")
+    .replace(/‍/g, "")
+    .replace(/⃣/g, "")
+    // Strip remaining surrogate pairs that didn't match above
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "")
+    // Collapse multiple spaces left from removals
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function formatDuration(mins: number): string {
   const h = Math.floor(mins / 60);
   const m = Math.round(mins % 60);
@@ -104,13 +136,13 @@ export function exportMonthlyPDF(params: {
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(139, 26, 26);
-    pdf.text(emp.name, 14, y);
+    pdf.text(pdfSafe(emp.name) || "-", 14, y);
     const eff = getEffectiveWorkHours(emp, settings);
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(100);
     pdf.setFontSize(9);
     pdf.text(
-      `Jam Kerja: ${eff.start.slice(0, 5)} - ${eff.end.slice(0, 5)}${emp.position ? ` | ${emp.position}` : ""}`,
+      `Jam Kerja: ${eff.start.slice(0, 5)} - ${eff.end.slice(0, 5)}${emp.position ? ` | ${pdfSafe(emp.position)}` : ""}`,
       14,
       y + 5
     );
@@ -135,7 +167,7 @@ export function exportMonthlyPDF(params: {
           r.clock_out ? format(new Date(r.clock_out), "HH:mm") : "-",
           statusLabel,
           durMin > 0 ? formatDuration(durMin) : "-",
-          r.notes || "-",
+          pdfSafe(r.notes) || "-",
         ];
       }),
       headStyles: { fillColor: [80, 80, 80], textColor: 255, fontSize: 8 },
@@ -205,20 +237,20 @@ export function exportEmployeeMonthlyReport(params: {
   pdf.setFontSize(15);
   pdf.setFont("helvetica", "bold");
   pdf.setTextColor(...PRIMARY);
-  pdf.text(employee.name, 14, 54);
+  pdf.text(pdfSafe(employee.name) || "-", 14, 54);
   pdf.setFontSize(9);
   pdf.setFont("helvetica", "normal");
   pdf.setTextColor(80, 80, 80);
-  if (employee.position) pdf.text(employee.position, 14, 60);
+  if (employee.position) pdf.text(pdfSafe(employee.position), 14, 60);
 
   // Right-side employee details
   let yRight = 46;
   const rightX = 130;
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
-  if (employee.email) { pdf.text(`Email: ${employee.email}`, rightX, yRight); yRight += 4; }
-  if (employee.phone) { pdf.text(`HP: ${employee.phone}`, rightX, yRight); yRight += 4; }
-  if (employee.bank_account) { pdf.text(`Rekening: ${employee.bank_account}`, rightX, yRight); yRight += 4; }
+  if (employee.email) { pdf.text(`Email: ${pdfSafe(employee.email)}`, rightX, yRight); yRight += 4; }
+  if (employee.phone) { pdf.text(`HP: ${pdfSafe(employee.phone)}`, rightX, yRight); yRight += 4; }
+  if (employee.bank_account) { pdf.text(`Rekening: ${pdfSafe(employee.bank_account)}`, rightX, yRight); yRight += 4; }
   if (settings) {
     const eff = getEffectiveWorkHours(employee, settings);
     if (eff.start && eff.end) { pdf.text(`Jam kerja: ${eff.start} - ${eff.end}`, rightX, yRight); }
@@ -291,7 +323,7 @@ export function exportEmployeeMonthlyReport(params: {
         r.clock_out ? format(new Date(r.clock_out), "HH:mm") : "-",
         dur,
         status,
-        r.notes || "-",
+        pdfSafe(r.notes) || "-",
       ];
     });
 
@@ -345,7 +377,7 @@ export function exportEmployeeMonthlyReport(params: {
           ? format(new Date(l.start_date), "dd MMM yyyy", { locale: idLocale })
           : `${format(new Date(l.start_date), "dd MMM", { locale: idLocale })} - ${format(new Date(l.end_date), "dd MMM yyyy", { locale: idLocale })}`;
         const statusLabel = { pending: "Menunggu", approved: "Disetujui", rejected: "Ditolak" }[l.status] || l.status;
-        return [period, l.leave_type.toUpperCase(), statusLabel, l.reason];
+        return [period, l.leave_type.toUpperCase(), statusLabel, pdfSafe(l.reason) || "-"];
       }),
       theme: "grid",
       headStyles: { fillColor: PRIMARY, textColor: 255, fontStyle: "bold", fontSize: 8 },
@@ -394,7 +426,7 @@ export function exportEmployeeMonthlyReport(params: {
           r.category,
           `Rp ${r.amount.toLocaleString("id-ID")}`,
           statusLabel,
-          r.description || "-",
+          pdfSafe(r.description) || "-",
         ];
       }),
       theme: "grid",
@@ -438,7 +470,7 @@ export function exportEmployeeMonthlyReport(params: {
     pdf.setFontSize(7);
     pdf.setTextColor(150, 150, 150);
     pdf.text(
-      `RedWine Shoes & Bags · Laporan ${employee.name} · ${monthLabel} · Halaman ${i}/${pageCount}`,
+      `RedWine Shoes & Bags - Laporan ${pdfSafe(employee.name)} - ${monthLabel} - Halaman ${i}/${pageCount}`,
       105,
       290,
       { align: "center" }

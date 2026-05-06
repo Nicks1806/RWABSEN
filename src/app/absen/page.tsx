@@ -841,24 +841,22 @@ export default function AbsenPage() {
                     muted
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
-                  {/* Dashed silhouette outline — head + neck-notch + shoulders (passport-photo style) */}
+                  {/* Dashed silhouette outline — wide-shoulder torso, vertical body sides */}
                   <div className="absolute inset-0 pointer-events-none">
                     <svg viewBox="0 0 400 600" className="w-full h-full opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
                       <path
-                        d="M200 50
-                           C 142 50, 105 100, 105 168
-                           C 105 215, 124 250, 152 270
-                           L 152 295
-                           C 138 305, 95 320, 55 350
-                           C 32 380, 18 425, 12 470
-                           L 12 600
-                           L 388 600
-                           L 388 470
-                           C 382 425, 368 380, 345 350
-                           C 305 320, 262 305, 248 295
-                           L 248 270
-                           C 276 250, 295 215, 295 168
-                           C 295 100, 258 50, 200 50 Z"
+                        d="M200 60
+                           C 140 60, 105 115, 105 180
+                           C 105 225, 124 258, 148 274
+                           L 148 296
+                           C 130 306, 70 320, 30 360
+                           L 30 600
+                           L 370 600
+                           L 370 360
+                           C 330 320, 270 306, 252 296
+                           L 252 274
+                           C 276 258, 295 225, 295 180
+                           C 295 115, 260 60, 200 60 Z"
                         stroke="white"
                         strokeWidth="3.5"
                         strokeLinejoin="round"
@@ -866,11 +864,6 @@ export default function AbsenPage() {
                         className="silhouette-dash"
                       />
                     </svg>
-                  </div>
-                  {/* REC indicator */}
-                  <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-red-600 text-white text-[9px] font-extrabold tracking-widest px-2 py-0.5 rounded">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    REC
                   </div>
                   {/* Hint pill above button */}
                   <div className="absolute bottom-20 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap">

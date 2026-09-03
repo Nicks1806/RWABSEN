@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Task Board — Polish Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root { --primary: #8B1A1A; --primary-dark: #5A1010; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #fffbeb 100%); }
+  .bg-primary { background-color: var(--primary); }
+  .text-primary { color: var(--primary); }
+  .border-primary { border-color: var(--primary); }
+  .ring-primary { --tw-ring-color: var(--primary); }
+  .hover\:bg-primary-dark:hover { background-color: var(--primary-dark); }
+  .section-label { font-size: 10px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: #8a8a8a; }
+  .code-badge { display: inline-block; background: #fef2f2; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; }
+  .mockup-frame { background: white; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.04); }
+  .mockup-chrome { background: #fafaf7; border-bottom: 1px solid #e5e7eb; padding: 8px 12px; display: flex; gap: 6px; align-items: center; }
+  .mockup-chrome span { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #eab308; }
+  .dot-green { background: #22c55e; }
+</style>
+</head>
+<body class="text-gray-800">
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="text-center mb-10">
+    <p class="section-label mb-2">Task Board · Visual Polish Preview</p>
+    <h1 class="text-3xl font-extrabold text-gray-900">Before → After Comparison</h1>
+    <p class="text-sm text-gray-500 mt-2">Semua pakai design system existing (wine red primary, Tailwind). Tidak ada rebuild.</p>
+  </div>
+
+  <!-- ============== 1. Compact Stat Row ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">01</p>
+        <h2 class="text-xl font-bold text-gray-900">Compact Stat Row</h2>
+      </div>
+      <span class="code-badge">-80px vertical space</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- BEFORE -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sekarang</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4">
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-xl border border-primary/25 bg-gradient-to-br from-rose-50 via-rose-50/50 to-white px-3 py-2 shadow-sm">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm"><i data-lucide="user" class="w-3 h-3"></i></div>
+                  <div class="flex-1 flex items-center justify-between">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-primary/70">Tugas Saya</p>
+                    <p class="text-2xl font-extrabold text-primary">2</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-amber-50/50 to-white px-3 py-2 shadow-sm">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-sm"><i data-lucide="clock" class="w-3 h-3"></i></div>
+                  <div class="flex-1 flex items-center justify-between">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700/70">Today</p>
+                    <p class="text-2xl font-extrabold text-amber-700">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 via-red-50/50 to-white px-3 py-2 shadow-sm">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center shadow-sm"><i data-lucide="alert-circle" class="w-3 h-3"></i></div>
+                  <div class="flex-1 flex items-center justify-between">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-red-700/70">Overdue</p>
+                    <p class="text-2xl font-extrabold text-red-700">1</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Usul</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4">
+            <div class="inline-flex items-center gap-4 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center"><i data-lucide="user" class="w-3 h-3"></i></div>
+                <span class="text-xs text-gray-500 font-medium">Tugas Saya</span>
+                <span class="text-sm font-bold text-primary tabular-nums">2</span>
+              </div>
+              <span class="w-px h-4 bg-gray-200"></span>
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center"><i data-lucide="clock" class="w-3 h-3"></i></div>
+                <span class="text-xs text-gray-500 font-medium">Today</span>
+                <span class="text-sm font-bold text-amber-700 tabular-nums">0</span>
+              </div>
+              <span class="w-px h-4 bg-gray-200"></span>
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="alert-circle" class="w-3 h-3"></i></div>
+                <span class="text-xs text-gray-500 font-medium">Overdue</span>
+                <span class="text-sm font-bold text-red-700 tabular-nums">1</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3">Inline pill · single row · lebih banyak ruang untuk board</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== 2. Column Identity ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">02</p>
+        <h2 class="text-xl font-bold text-gray-900">Column Visual Identity</h2>
+      </div>
+      <span class="code-badge">icon + subtle tint</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- BEFORE -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sekarang</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-white/90 rounded-2xl shadow-sm border border-gray-200/70 overflow-hidden">
+                <div class="h-1 bg-rose-500"></div>
+                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 class="font-bold text-[15px] text-gray-900">Brief</h3>
+                  <span class="text-[10px] text-white px-2 py-0.5 rounded-full font-bold bg-rose-500">2</span>
+                </div>
+                <div class="p-3 text-xs text-gray-400">Belum dikerjakan</div>
+              </div>
+              <div class="bg-white/90 rounded-2xl shadow-sm border border-gray-200/70 overflow-hidden">
+                <div class="h-1 bg-amber-400"></div>
+                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 class="font-bold text-[15px] text-gray-900">Today</h3>
+                  <span class="text-[10px] text-white px-2 py-0.5 rounded-full font-bold bg-amber-400">0</span>
+                </div>
+                <div class="p-3 text-xs text-gray-400">Hari ini</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Usul</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-gradient-to-b from-rose-50 to-white rounded-2xl shadow-sm border border-rose-200/40 overflow-hidden">
+                <div class="px-4 py-3 border-b border-rose-100/60 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg bg-rose-500 text-white flex items-center justify-center"><i data-lucide="inbox" class="w-3 h-3"></i></div>
+                    <h3 class="font-bold text-[15px] text-gray-900">Brief</h3>
+                  </div>
+                  <span class="text-[10px] text-white px-2 py-0.5 rounded-full font-bold bg-rose-500 shadow-sm">2</span>
+                </div>
+                <div class="p-3 text-xs text-rose-700/60 font-medium">Belum dikerjakan</div>
+              </div>
+              <div class="bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200/40 overflow-hidden">
+                <div class="px-4 py-3 border-b border-amber-100/60 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg bg-amber-400 text-white flex items-center justify-center"><i data-lucide="clock" class="w-3 h-3"></i></div>
+                    <h3 class="font-bold text-[15px] text-gray-900">Today</h3>
+                  </div>
+                  <span class="text-[10px] text-white px-2 py-0.5 rounded-full font-bold bg-amber-400 shadow-sm">0</span>
+                </div>
+                <div class="p-3 text-xs text-amber-700/60 font-medium">Hari ini</div>
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3">Icon di samping judul · subtle tint gradient · background bordeaux-warm</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== 3. Task Card Richer ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">03</p>
+        <h2 class="text-xl font-bold text-gray-900">Task Card Richer</h2>
+      </div>
+      <span class="code-badge">label chip · hover lift</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- BEFORE -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sekarang</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 space-y-3">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="h-1 bg-rose-500 w-1/4 rounded-br"></div>
+              <div class="p-3">
+                <p class="font-bold text-sm text-gray-900 leading-snug mb-2">CEK UPCOMING TASK — REKAP SUPP</p>
+                <div class="flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-bold"><i data-lucide="check-square" class="w-3 h-3"></i> 1/1</span>
+                  <span class="inline-flex items-center gap-1 text-[10px] text-red-700 bg-red-100 px-1.5 py-0.5 rounded font-bold"><i data-lucide="calendar" class="w-3 h-3"></i> Apr 17</span>
+                </div>
+                <div class="flex justify-end mt-2">
+                  <div class="w-6 h-6 rounded-full bg-gray-200 border-2 border-white"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Usul</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20 space-y-3">
+            <div class="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 hover:border-rose-200 transition-all p-3.5 cursor-pointer">
+              <!-- Label chips instead of strip -->
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Priority
+                </span>
+                <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Sales
+                </span>
+              </div>
+              <p class="font-bold text-sm text-gray-900 leading-snug mb-2.5">CEK UPCOMING TASK — REKAP SUPP</p>
+              <!-- Meta row konsisten -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 text-[11px] text-gray-500">
+                  <span class="inline-flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3 text-emerald-600"></i> 1/1</span>
+                  <span class="inline-flex items-center gap-1 text-red-600 font-semibold"><i data-lucide="calendar" class="w-3 h-3"></i> Apr 17</span>
+                  <span class="inline-flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i> 2</span>
+                  <span class="inline-flex items-center gap-1"><i data-lucide="paperclip" class="w-3 h-3"></i> 1</span>
+                </div>
+                <div class="flex -space-x-1.5">
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary-dark border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">AN</div>
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">BU</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card with cover image -->
+            <div class="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer overflow-hidden">
+              <div class="h-20 bg-gradient-to-br from-amber-200 via-rose-200 to-primary/40 relative">
+                <div class="absolute top-2 right-2 flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-white bg-black/30 backdrop-blur px-1.5 py-0.5 rounded">Cover</span>
+                </div>
+              </div>
+              <div class="p-3.5">
+                <div class="flex items-center gap-1.5 mb-2">
+                  <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Done
+                  </span>
+                </div>
+                <p class="font-bold text-sm text-gray-900 leading-snug">Launch campaign Merlot</p>
+                <div class="flex items-center justify-between mt-2.5">
+                  <div class="flex items-center gap-3 text-[11px] text-gray-500">
+                    <span class="inline-flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3 text-emerald-600"></i> 4/4</span>
+                    <span class="inline-flex items-center gap-1"><i data-lucide="image" class="w-3 h-3"></i> 3</span>
+                  </div>
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">DI</div>
+                </div>
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400">Label pills multi · meta konsisten · cover image · hover lift 2px</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== 4. Empty State per-Column ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">04</p>
+        <h2 class="text-xl font-bold text-gray-900">Empty State — Personalized per Column</h2>
+      </div>
+      <span class="code-badge">warm copy</span>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-gradient-to-b from-rose-50 to-white rounded-2xl border border-rose-200/40 p-5 text-center">
+        <div class="w-12 h-12 rounded-full bg-rose-100 mx-auto mb-3 flex items-center justify-center text-rose-400"><i data-lucide="inbox" class="w-5 h-5"></i></div>
+        <p class="text-sm font-bold text-gray-800">Brief kosong</p>
+        <p class="text-[11px] text-gray-500 mt-1">Tambah task baru<br>untuk dimulai.</p>
+      </div>
+      <div class="bg-gradient-to-b from-amber-50 to-white rounded-2xl border border-amber-200/40 p-5 text-center">
+        <div class="w-12 h-12 rounded-full bg-amber-100 mx-auto mb-3 flex items-center justify-center text-amber-500"><i data-lucide="coffee" class="w-5 h-5"></i></div>
+        <p class="text-sm font-bold text-gray-800">Tidak ada task hari ini</p>
+        <p class="text-[11px] text-gray-500 mt-1">Santai dulu ✨</p>
+      </div>
+      <div class="bg-gradient-to-b from-emerald-50 to-white rounded-2xl border border-emerald-200/40 p-5 text-center">
+        <div class="w-12 h-12 rounded-full bg-emerald-100 mx-auto mb-3 flex items-center justify-center text-emerald-500"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+        <p class="text-sm font-bold text-gray-800">Belum ada yang selesai</p>
+        <p class="text-[11px] text-gray-500 mt-1">Selesaikan task<br>untuk mulai streak.</p>
+      </div>
+      <div class="bg-gradient-to-b from-slate-50 to-white rounded-2xl border border-slate-200/40 p-5 text-center">
+        <div class="w-12 h-12 rounded-full bg-slate-100 mx-auto mb-3 flex items-center justify-center text-slate-400"><i data-lucide="archive" class="w-5 h-5"></i></div>
+        <p class="text-sm font-bold text-gray-800">Arsip kosong</p>
+        <p class="text-[11px] text-gray-500 mt-1">Task yang di-archive<br>muncul di sini.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== 5. Tambah Kolom Slim ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">05</p>
+        <h2 class="text-xl font-bold text-gray-900">"+ Kolom" Slim Button</h2>
+      </div>
+      <span class="code-badge">-320px wasted width</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- BEFORE -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sekarang · 320px dashed placeholder</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 flex gap-3">
+            <div class="w-32 h-28 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-xs text-gray-400">History</div>
+            <button class="w-40 rounded-2xl bg-white/40 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 p-4 text-sm text-gray-500">
+              <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></div>
+              <span>Tambah Kolom Baru</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Usul · tombol kecil di kanan atas</p>
+        <div class="mockup-frame">
+          <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="p-4 bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20">
+            <!-- Header row with + Kolom button -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] text-gray-400 font-semibold">5 kolom · 12 task</span>
+              <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:text-primary hover:border-primary/50 hover:shadow-sm transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Kolom
+              </button>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-32 h-28 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-xs text-gray-400">Brief</div>
+              <div class="w-32 h-28 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-xs text-gray-400">Today</div>
+              <div class="w-32 h-28 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center text-xs text-gray-400">Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== 6. Full Board Mockup ============== -->
+  <section class="mb-14">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="section-label">06</p>
+        <h2 class="text-xl font-bold text-gray-900">Full Board — All Improvements</h2>
+      </div>
+      <span class="code-badge">final direction</span>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="mockup-chrome"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span><span class="ml-2 text-[10px] text-gray-500 font-medium">absensiredwine.vercel.app/tasks</span></div>
+      <div class="bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20 min-h-[500px]">
+        <!-- Slim header -->
+        <header class="bg-white/80 backdrop-blur-md border-b border-gray-200/70 px-5 py-3 sticky top-0">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-3">
+              <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+              <h1 class="font-semibold text-[17px] text-gray-900 tracking-tight flex items-center gap-2">
+                Task Board
+                <span class="text-[10px] text-primary/70 font-medium border-l border-gray-200 pl-2">12 task</span>
+              </h1>
+              <!-- Inline stat pill -->
+              <div class="hidden md:inline-flex items-center gap-4 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm ml-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] text-gray-500">Saya</span>
+                  <span class="text-xs font-bold text-primary tabular-nums">2</span>
+                </div>
+                <span class="w-px h-3 bg-gray-200"></span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] text-gray-500">Today</span>
+                  <span class="text-xs font-bold text-amber-700 tabular-nums">0</span>
+                </div>
+                <span class="w-px h-3 bg-gray-200"></span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] text-gray-500">Overdue</span>
+                  <span class="text-xs font-bold text-red-700 tabular-nums">1</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input class="pl-8 pr-3 py-1.5 w-48 bg-gray-50 border border-gray-200 rounded-lg text-xs" placeholder="Cari task...">
+              </div>
+              <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium text-gray-600"><i data-lucide="user" class="w-3.5 h-3.5"></i> Semua</button>
+              <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:text-primary"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Kolom</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Board -->
+        <div class="p-4 flex gap-3 overflow-x-auto">
+          <!-- Brief column -->
+          <div class="shrink-0 w-64 bg-gradient-to-b from-rose-50 to-white rounded-2xl shadow-sm border border-rose-200/40 overflow-hidden">
+            <div class="px-3 py-2.5 border-b border-rose-100/60 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md bg-rose-500 text-white flex items-center justify-center"><i data-lucide="inbox" class="w-2.5 h-2.5"></i></div>
+                <h3 class="font-bold text-[13px] text-gray-900">Brief</h3>
+              </div>
+              <span class="text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold bg-rose-500 shadow-sm">2</span>
+            </div>
+            <div class="p-2 space-y-2">
+              <div class="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all p-3 cursor-pointer">
+                <div class="flex items-center gap-1 mb-1.5">
+                  <span class="inline-flex items-center gap-1 text-[8px] font-extrabold uppercase tracking-wider text-rose-700 bg-rose-100 px-1 py-px rounded">
+                    <span class="w-1 h-1 rounded-full bg-rose-500"></span> Priority
+                  </span>
+                </div>
+                <p class="font-bold text-[12px] text-gray-900 leading-snug mb-2">CEK UPCOMING TASK — REKAP SUPP</p>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-[10px] text-gray-500">
+                    <span class="inline-flex items-center gap-0.5"><i data-lucide="check-square" class="w-2.5 h-2.5 text-emerald-600"></i> 1/1</span>
+                    <span class="inline-flex items-center gap-0.5 text-red-600 font-semibold"><i data-lucide="calendar" class="w-2.5 h-2.5"></i> Apr 17</span>
+                  </div>
+                  <div class="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary-dark border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">A</div>
+                </div>
+              </div>
+              <div class="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all p-3 cursor-pointer">
+                <p class="font-bold text-[12px] text-gray-900 leading-snug mb-2">Cek upcoming task</p>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-[10px] text-gray-500">
+                    <span class="inline-flex items-center gap-0.5"><i data-lucide="check-square" class="w-2.5 h-2.5"></i> 0/1</span>
+                    <span class="inline-flex items-center gap-0.5"><i data-lucide="calendar" class="w-2.5 h-2.5"></i> Apr 25</span>
+                  </div>
+                  <div class="flex -space-x-1">
+                    <div class="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">B</div>
+                    <div class="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">C</div>
+                  </div>
+                </div>
+              </div>
+              <button class="w-full py-2 rounded-lg text-[11px] text-rose-600/70 hover:text-rose-700 hover:bg-rose-50 border border-dashed border-rose-200 font-semibold transition inline-flex items-center justify-center gap-1">
+                <i data-lucide="plus" class="w-3 h-3"></i> Tambah task
+              </button>
+            </div>
+          </div>
+
+          <!-- Today -->
+          <div class="shrink-0 w-64 bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200/40 overflow-hidden">
+            <div class="px-3 py-2.5 border-b border-amber-100/60 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md bg-amber-400 text-white flex items-center justify-center"><i data-lucide="clock" class="w-2.5 h-2.5"></i></div>
+                <h3 class="font-bold text-[13px] text-gray-900">Today</h3>
+              </div>
+              <span class="text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold bg-amber-400 shadow-sm">0</span>
+            </div>
+            <div class="p-5 text-center">
+              <div class="w-10 h-10 rounded-full bg-amber-100 mx-auto mb-2 flex items-center justify-center text-amber-500"><i data-lucide="coffee" class="w-4 h-4"></i></div>
+              <p class="text-[11px] font-bold text-gray-800">Santai dulu ✨</p>
+              <p class="text-[10px] text-gray-400 mt-0.5">Tidak ada task hari ini</p>
+            </div>
+          </div>
+
+          <!-- Done -->
+          <div class="shrink-0 w-64 bg-gradient-to-b from-emerald-50 to-white rounded-2xl shadow-sm border border-emerald-200/40 overflow-hidden">
+            <div class="px-3 py-2.5 border-b border-emerald-100/60 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i data-lucide="check-circle-2" class="w-2.5 h-2.5"></i></div>
+                <h3 class="font-bold text-[13px] text-gray-900">Done</h3>
+              </div>
+              <span class="text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold bg-emerald-500 shadow-sm">1</span>
+            </div>
+            <div class="p-2 space-y-2">
+              <div class="group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer overflow-hidden">
+                <div class="h-12 bg-gradient-to-br from-amber-200 via-rose-200 to-primary/40"></div>
+                <div class="p-3">
+                  <div class="flex items-center gap-1 mb-1.5">
+                    <span class="inline-flex items-center gap-1 text-[8px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1 py-px rounded">
+                      <span class="w-1 h-1 rounded-full bg-emerald-500"></span> Done
+                    </span>
+                  </div>
+                  <p class="font-bold text-[12px] text-gray-900 leading-snug">Launch campaign Merlot</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="shrink-0 w-64 bg-gradient-to-b from-slate-50 to-white rounded-2xl shadow-sm border border-slate-200/40 overflow-hidden">
+            <div class="px-3 py-2.5 border-b border-slate-100/60 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md bg-slate-500 text-white flex items-center justify-center"><i data-lucide="archive" class="w-2.5 h-2.5"></i></div>
+                <h3 class="font-bold text-[13px] text-gray-900">History</h3>
+              </div>
+              <span class="text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold bg-slate-500 shadow-sm">0</span>
+            </div>
+            <div class="p-5 text-center">
+              <div class="w-10 h-10 rounded-full bg-slate-100 mx-auto mb-2 flex items-center justify-center text-slate-400"><i data-lucide="archive" class="w-4 h-4"></i></div>
+              <p class="text-[11px] font-bold text-gray-800">Arsip kosong</p>
+              <p class="text-[10px] text-gray-400 mt-0.5">Task archived di sini</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="text-center py-10 border-t border-gray-100 mt-10">
+    <p class="text-sm text-gray-500">Semua ide pakai design system existing · Tailwind · wine red primary</p>
+    <p class="text-xs text-gray-400 mt-2">Pilih nomor (01-05) yang approved, aku implement ke codebase.</p>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

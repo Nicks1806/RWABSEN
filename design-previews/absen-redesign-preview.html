@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Absen Redesign — Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; }
+  .phone {
+    width: 380px;
+    height: 800px;
+    background: #000;
+    border-radius: 44px;
+    padding: 10px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+    position: relative;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 18px; left: 50%;
+    transform: translateX(-50%);
+    width: 100px; height: 22px;
+    background: #000;
+    border-radius: 99px;
+    z-index: 50;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+  }
+  /* Camera background — generated photo placeholder */
+  .camera-bg {
+    background: linear-gradient(135deg, #2d4a5e 0%, #4a6b85 30%, #87a3b9 70%, #b9c8d4 100%);
+    position: relative;
+  }
+  .camera-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(0,0,0,0.15) 25%, transparent 25%);
+    background-size: 60px 60px;
+    opacity: .3;
+  }
+  /* Dashed silhouette */
+  .silhouette {
+    width: 240px;
+    height: 280px;
+    margin: 0 auto;
+    position: relative;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,.4));
+  }
+  .silhouette svg { width: 100%; height: 100%; }
+  .dash-anim {
+    stroke-dasharray: 8 6;
+    animation: dash 3s linear infinite;
+  }
+  @keyframes dash { to { stroke-dashoffset: -28; } }
+  .dot-live {
+    width: 8px; height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34,197,94,.7);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 50% { opacity: .4; } }
+  .step-bar {
+    height: 3px;
+    border-radius: 99px;
+  }
+  .glass {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+  }
+  .label-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+</style>
+</head>
+<body class="min-h-screen p-8">
+<div class="max-w-7xl mx-auto">
+  <div class="text-center mb-8">
+    <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-400 mb-1">RedWine · /absen redesign preview</p>
+    <h1 class="text-2xl font-bold text-gray-900">Clock In / Out — Silhouette Camera</h1>
+    <p class="text-sm text-gray-500 mt-1">Pakai design system existing (bordeaux #8B1A1A) · Step indicator + person outline guide</p>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-8 justify-items-center">
+
+    <!-- ============== STEP 1: GPS Check ============== -->
+    <div>
+      <p class="text-center text-xs font-bold tracking-wider uppercase text-gray-500 mb-3">Step 1 — GPS Verification</p>
+      <div class="phone">
+        <div class="screen">
+          <!-- Status bar -->
+          <div class="absolute top-0 left-0 right-0 h-12 z-40 flex items-center justify-between px-6 pt-3 text-xs font-semibold">
+            <span class="text-gray-900">08.17</span>
+            <span class="text-gray-900 flex items-center gap-1">5G <span class="text-[9px] bg-gray-900 text-white px-1 rounded">73</span></span>
+          </div>
+
+          <!-- Header (bordeaux) -->
+          <div class="absolute top-0 left-0 right-0 z-30 pt-12 pb-4" style="background: linear-gradient(180deg, #8B1A1A 0%, #6a1010 100%);">
+            <div class="px-4 flex items-center justify-between">
+              <button class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              </button>
+              <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Clock In</p>
+                <h1 class="text-lg font-bold text-white">Verifikasi Lokasi</h1>
+              </div>
+              <div class="w-9"></div>
+            </div>
+            <!-- Progress bar -->
+            <div class="px-6 mt-3 flex gap-1.5">
+              <div class="step-bar flex-1 bg-white"></div>
+              <div class="step-bar flex-1 bg-white/30"></div>
+            </div>
+            <p class="text-center text-[10px] text-white/70 mt-1.5 font-semibold tracking-wider uppercase">Langkah 1 dari 2</p>
+          </div>
+
+          <!-- Schedule chip (peeking from header) -->
+          <div class="absolute top-[148px] left-4 right-4 z-20 glass rounded-2xl p-3 shadow-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center" style="background:#fce8e8;color:#8B1A1A">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+              </div>
+              <div class="flex-1">
+                <p class="label-tag text-gray-500">Jadwal Hari Ini</p>
+                <p class="font-bold text-sm text-gray-900">6 May 2026 · 09:00 – 18:00</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map area -->
+          <div class="absolute top-0 left-0 right-0 bottom-0 pt-[230px]">
+            <div class="h-full bg-gradient-to-br from-emerald-50 via-emerald-100/50 to-emerald-50 relative overflow-hidden">
+              <!-- Mock map dots -->
+              <svg class="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 380 500">
+                <line x1="0" y1="100" x2="380" y2="100" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="0" y1="200" x2="380" y2="200" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="0" y1="300" x2="380" y2="300" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="100" y1="0" x2="100" y2="500" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="200" y1="0" x2="200" y2="500" stroke="#9ca3af" stroke-width="1"/>
+                <line x1="300" y1="0" x2="300" y2="500" stroke="#9ca3af" stroke-width="1"/>
+              </svg>
+              <!-- Radius circle -->
+              <div class="absolute top-[100px] left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-emerald-500/15 border-2 border-dashed border-emerald-500 flex items-center justify-center">
+                <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg" style="background:#8B1A1A">
+                  <i data-lucide="map-pin" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <!-- Distance pill -->
+              <div class="absolute top-[330px] left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg">
+                <span class="dot-live"></span>
+                <span class="text-xs font-bold">Dalam radius · 42m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom CTA -->
+          <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-6 z-30">
+            <button class="w-full py-3.5 rounded-xl text-white font-bold text-sm uppercase tracking-wider shadow-lg" style="background:#8B1A1A">
+              Lanjut ke Foto Selfie →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== STEP 2: Selfie ============== -->
+    <div>
+      <p class="text-center text-xs font-bold tracking-wider uppercase text-primary mb-3" style="color:#8B1A1A">★ Step 2 — Selfie + Silhouette</p>
+      <div class="phone">
+        <div class="screen camera-bg">
+          <!-- Status bar -->
+          <div class="absolute top-0 left-0 right-0 h-12 z-40 flex items-center justify-between px-6 pt-3 text-xs font-semibold text-white">
+            <span>08.17 🌙</span>
+            <span class="flex items-center gap-1">5G <span class="text-[9px] bg-white text-black px-1 rounded">73</span></span>
+          </div>
+
+          <!-- Header (bordeaux) -->
+          <div class="absolute top-0 left-0 right-0 z-30 pt-12 pb-4" style="background: linear-gradient(180deg, #8B1A1A 0%, rgba(139,26,26,0.7) 100%);">
+            <div class="px-4 flex items-center justify-between">
+              <button class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              </button>
+              <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Clock In</p>
+                <h1 class="text-lg font-bold text-white">Foto Selfie</h1>
+              </div>
+              <button class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white">
+                <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="px-6 mt-3 flex gap-1.5">
+              <div class="step-bar flex-1 bg-white/40"></div>
+              <div class="step-bar flex-1 bg-white"></div>
+            </div>
+            <p class="text-center text-[10px] text-white/70 mt-1.5 font-semibold tracking-wider uppercase">Langkah 2 dari 2</p>
+          </div>
+
+          <!-- Schedule pill -->
+          <div class="absolute top-[148px] left-4 right-4 z-20 glass rounded-2xl p-2.5 shadow-lg">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#fce8e8;color:#8B1A1A">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+              </div>
+              <p class="text-xs font-bold text-gray-900 flex-1">6 May 2026 · 09:00 – 18:00</p>
+              <span class="dot-live"></span>
+            </div>
+          </div>
+
+          <!-- Silhouette overlay -->
+          <div class="absolute top-[230px] left-0 right-0 flex items-center justify-center">
+            <div class="silhouette">
+              <svg viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Head + shoulders silhouette outline -->
+                <path d="M100 30 C 70 30, 55 55, 55 85 C 55 110, 70 130, 85 138 C 70 145, 50 155, 35 175 C 20 195, 15 220, 15 240 L 185 240 C 185 220, 180 195, 165 175 C 150 155, 130 145, 115 138 C 130 130, 145 110, 145 85 C 145 55, 130 30, 100 30 Z"
+                  stroke="white"
+                  stroke-width="2.5"
+                  fill="none"
+                  class="dash-anim"
+                />
+                <!-- Inner outline -->
+                <path d="M100 40 C 75 40, 62 60, 62 85 C 62 108, 75 125, 90 132 C 75 138, 58 148, 45 165 C 32 182, 27 205, 27 220"
+                  stroke="rgba(255,255,255,0.4)"
+                  stroke-width="1.5"
+                  fill="none"
+                  stroke-dasharray="3 3"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Hint text -->
+          <div class="absolute top-[535px] left-0 right-0 text-center z-20">
+            <div class="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-[11px] font-semibold">
+              <i data-lucide="user" class="w-3 h-3"></i>
+              Posisikan wajah dalam outline
+            </div>
+          </div>
+
+          <!-- Camera controls (right) -->
+          <div class="absolute right-3 bottom-[260px] z-20 flex flex-col gap-2">
+            <button class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center">
+              <i data-lucide="zap-off" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Bottom sheet -->
+          <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-30">
+            <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mt-2 mb-3"></div>
+            <div class="px-5 pb-5 space-y-3">
+              <!-- Note input -->
+              <div class="flex items-center gap-2 border-b border-gray-100 pb-2.5">
+                <i data-lucide="align-left" class="w-4 h-4 text-gray-400"></i>
+                <input class="flex-1 text-sm outline-none placeholder:text-gray-400" placeholder="Catatan (opsional)..." />
+              </div>
+              <!-- Big primary button -->
+              <button class="w-full py-3.5 rounded-xl text-white font-bold text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2" style="background:#8B1A1A">
+                <i data-lucide="camera" class="w-4 h-4"></i>
+                Ambil Foto
+              </button>
+            </div>
+          </div>
+
+          <!-- Live indicator (top right under header) -->
+          <div class="absolute top-[200px] right-4 z-20 inline-flex items-center gap-1 bg-red-600 text-white text-[9px] font-extrabold tracking-widest px-2 py-0.5 rounded">
+            <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+            REC
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== STEP 2 — After Capture (review) ============== -->
+    <div>
+      <p class="text-center text-xs font-bold tracking-wider uppercase text-gray-500 mb-3">Step 2 — After Capture</p>
+      <div class="phone">
+        <div class="screen">
+          <!-- Status bar -->
+          <div class="absolute top-0 left-0 right-0 h-12 z-40 flex items-center justify-between px-6 pt-3 text-xs font-semibold">
+            <span class="text-gray-900">08.17</span>
+            <span class="text-gray-900 flex items-center gap-1">5G <span class="text-[9px] bg-gray-900 text-white px-1 rounded">73</span></span>
+          </div>
+
+          <!-- Header -->
+          <div class="absolute top-0 left-0 right-0 z-30 pt-12 pb-4" style="background: linear-gradient(180deg, #8B1A1A 0%, #6a1010 100%);">
+            <div class="px-4 flex items-center justify-between">
+              <button class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              </button>
+              <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Clock In</p>
+                <h1 class="text-lg font-bold text-white">Konfirmasi</h1>
+              </div>
+              <div class="w-9"></div>
+            </div>
+            <div class="px-6 mt-3 flex gap-1.5">
+              <div class="step-bar flex-1 bg-white/40"></div>
+              <div class="step-bar flex-1 bg-white"></div>
+            </div>
+            <p class="text-center text-[10px] text-white/70 mt-1.5 font-semibold tracking-wider uppercase">Langkah 2 dari 2 · Selesai</p>
+          </div>
+
+          <!-- Captured photo preview -->
+          <div class="absolute top-[148px] left-4 right-4 z-20">
+            <div class="rounded-3xl overflow-hidden shadow-xl border-4 border-white relative" style="aspect-ratio:4/5">
+              <div class="w-full h-full" style="background: linear-gradient(135deg, #fce8e8 0%, #fdeeee 50%, #f5d4d4 100%);">
+                <div class="w-full h-full flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-32 h-32 rounded-full mx-auto mb-2" style="background:linear-gradient(180deg,#d4a5a5 0%,#a07474 100%)"></div>
+                    <div class="w-40 h-12 rounded-t-full mx-auto" style="background:linear-gradient(180deg,#a07474 0%,#7a4f4f 100%)"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Verified badge -->
+              <div class="absolute top-3 right-3 inline-flex items-center gap-1 bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-lg">
+                <i data-lucide="check" class="w-3 h-3"></i>
+                <span class="text-[10px] font-extrabold tracking-wider uppercase">Wajah valid</span>
+              </div>
+              <!-- Retake -->
+              <button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg backdrop-blur-sm">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary card -->
+          <div class="absolute bottom-[200px] left-4 right-4 z-20">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Lokasi</span>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                  <span class="dot-live"></span>
+                  Dalam radius (42m)
+                </span>
+              </div>
+              <div class="border-t border-gray-100"></div>
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Waktu</span>
+                <span class="text-xs font-bold text-gray-900 tabular-nums">08:17:42</span>
+              </div>
+              <div class="border-t border-gray-100"></div>
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Status</span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Tepat waktu</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom -->
+          <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-6 z-30">
+            <button class="w-full py-3.5 rounded-xl text-white font-bold text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2" style="background:#8B1A1A">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              Konfirmasi Clock In
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Spec / changelog -->
+  <div class="max-w-3xl mx-auto mt-12 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+    <h2 class="font-bold text-lg mb-3 text-gray-900">Apa yang berubah dari versi sekarang</h2>
+    <ul class="space-y-2 text-sm text-gray-700">
+      <li>✅ <b>Header bordeaux</b> dengan progress bar 2-step + label "Langkah X dari 2"</li>
+      <li>✅ <b>Schedule chip</b> floating di atas (jadwal jam kerja hari ini)</li>
+      <li>✅ <b>Camera full-bleed</b> (bukan box rounded di tengah)</li>
+      <li>✅ <b>Silhouette outline</b> dashed putih dengan animation flow + inner shadow guide</li>
+      <li>✅ <b>Hint pill</b> "Posisikan wajah dalam outline" di bawah silhouette</li>
+      <li>✅ <b>Bottom sheet</b> rounded dengan handle bar + input catatan + tombol bordeaux besar</li>
+      <li>✅ <b>REC indicator</b> kecil di pojok untuk feel kamera live</li>
+      <li>✅ <b>After-capture</b>: photo preview rounded + summary card (lokasi/waktu/status) + retake button</li>
+      <li>✅ <b>Reduce motion friendly</b> — animation silhouette pakai stroke-dashoffset (CSS only)</li>
+    </ul>
+    <p class="text-xs text-gray-500 mt-4">Tetap pakai design system existing: bordeaux <code>#8B1A1A</code>, Tailwind, lucide icons. Tanpa serif/gold rebuild.</p>
+  </div>
+
+  <p class="text-center text-xs text-gray-400 mt-8">
+    Preview ini lokal · belum masuk codebase. Kalau approve, aku migrate /absen ke flow ini.
+  </p>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

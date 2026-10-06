@@ -115,7 +115,12 @@ export default function AdminPage() {
   const [todayRecords, setTodayRecords] = useState<Attendance[]>([]);
   const settingsFormInitRef = useRef(false);
 
+  // Guards against stale responses: switching month quickly could let a slow
+  // older response arrive last and overwrite the newer month's data
+  const fetchSeqRef = useRef(0);
+
   const fetchData = useCallback(async () => {
+    const seq = ++fetchSeqRef.current;
     setLoading(true);
     const date = new Date(month + "-01");
     const start = format(startOfMonth(date), "yyyy-MM-dd");
@@ -149,6 +154,8 @@ export default function AdminPage() {
     ]);
 
     if (leavesRes.error) console.error("Leaves fetch error:", leavesRes.error);
+
+    if (seq !== fetchSeqRef.current) return; // a newer fetch finished first
 
     setEmployees(empRes.data || []);
     setRecords(attRes.data || []);
@@ -947,14 +954,15 @@ export default function AdminPage() {
                   });
                   setProfileMsg("");
                 }}
-                onOpenEditHours={(emp, loadSchedule) => {
+                onOpenEditHours={(emp) => {
                   setEditHoursEmp(emp);
                   setEditStart(emp.work_start || "");
                   setEditEnd(emp.work_end || "");
-                  if (loadSchedule) {
-                    setEditSchedule(emp.schedule || {});
-                    setUseCustomSchedule(!!emp.schedule);
-                  }
+                  // Always load the existing per-day schedule — saving with the
+                  // toggle off nulls `schedule`, so opening without loading it
+                  // (old mobile path) silently wiped custom schedules
+                  setEditSchedule(emp.schedule || {});
+                  setUseCustomSchedule(!!emp.schedule && Object.keys(emp.schedule).length > 0);
                   setEditHoursMsg("");
                 }}
                 onTestNotif={sendTestNotif}

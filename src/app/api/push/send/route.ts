@@ -38,15 +38,18 @@ export async function POST(req: NextRequest) {
     }
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get subscriptions for target employees
+    // Get subscriptions for target employees.
+    // Explicit targets are REQUIRED — an empty list used to skip the filter
+    // and broadcast to every subscription on an unauthenticated endpoint.
     const targetIds: string[] = employee_ids || (employee_id ? [employee_id] : []);
-
-    let query = supabase.from("push_subscriptions").select("*");
-    if (targetIds.length > 0) {
-      query = query.in("employee_id", targetIds);
+    if (targetIds.length === 0) {
+      return NextResponse.json({ error: "employee_id or employee_ids required" }, { status: 400 });
     }
 
-    const { data: subs, error: fetchErr } = await query;
+    const { data: subs, error: fetchErr } = await supabase
+      .from("push_subscriptions")
+      .select("*")
+      .in("employee_id", targetIds);
     if (fetchErr) {
       return NextResponse.json({ error: fetchErr.message }, { status: 500 });
     }

@@ -40,7 +40,7 @@ interface Props {
   onOpenEmployee: (id: string) => void;
   onOpenResetPin: (emp: Employee) => void;
   onOpenEditProfile: (emp: Employee) => void;
-  onOpenEditHours: (emp: Employee, loadSchedule: boolean) => void;
+  onOpenEditHours: (emp: Employee) => void;
   onTestNotif: (id: string, name: string) => void;
   onDeleteEmployee: (emp: Employee) => void;
 }
@@ -218,7 +218,7 @@ export default function KaryawanTab({
                             <UserCircle2 size={14} />
                           </button>
                           <button
-                            onClick={() => onOpenEditHours(emp, true)}
+                            onClick={() => onOpenEditHours(emp)}
                             className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition flex items-center justify-center"
                             title="Atur Jam Kerja"
                           >
@@ -314,7 +314,7 @@ export default function KaryawanTab({
                   {emp.role !== "admin" && (
                     <>
                       <button
-                        onClick={() => onOpenEditHours(emp, false)}
+                        onClick={() => onOpenEditHours(emp)}
                         className="text-xs px-3 py-2 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center gap-1"
                       >
                         <Clock3 size={12} /> Jam

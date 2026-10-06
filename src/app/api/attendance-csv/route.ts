@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
     return [
       r.date,
       emp?.name || "",
-      clockIn ? clockIn.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "",
-      clockOut ? clockOut.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "",
+      clockIn ? clockIn.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "",
+      clockOut ? clockOut.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "",
       statusLabel,
       durationHours,
       r.clock_in_lat || "",

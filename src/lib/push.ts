@@ -23,10 +23,25 @@ export async function getPushPermissionStatus(): Promise<NotificationPermission>
   return Notification.permission;
 }
 
+// navigator.serviceWorker.ready never resolves if SW registration failed,
+// which would hang callers (e.g. login stuck on "Memproses...") — so time out.
+function swReady(timeoutMs = 5000): Promise<ServiceWorkerRegistration> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Service worker belum siap")), timeoutMs)
+    ),
+  ]);
+}
+
 export async function getExistingSubscription(): Promise<PushSubscription | null> {
   if (!(await isPushSupported())) return null;
-  const reg = await navigator.serviceWorker.ready;
-  return reg.pushManager.getSubscription();
+  try {
+    const reg = await swReady();
+    return reg.pushManager.getSubscription();
+  } catch {
+    return null;
+  }
 }
 
 export async function subscribeToPush(employeeId: string): Promise<boolean> {
@@ -47,7 +62,7 @@ export async function subscribeToPush(employeeId: string): Promise<boolean> {
   }
 
   // Get service worker registration
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await swReady();
 
   // Check existing subscription
   let subscription = await reg.pushManager.getSubscription();
@@ -84,7 +99,7 @@ export async function subscribeToPush(employeeId: string): Promise<boolean> {
 
 export async function unsubscribeFromPush(): Promise<boolean> {
   if (!(await isPushSupported())) return false;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await swReady();
   const subscription = await reg.pushManager.getSubscription();
   if (subscription) {
     await supabase.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);

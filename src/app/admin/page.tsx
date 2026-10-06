@@ -452,10 +452,14 @@ export default function AdminPage() {
     const label = status === "approved" ? "menyetujui" : "menolak";
     if (!confirm(`Yakin ${label} ${ids.length} reimbursement sekaligus?`)) return;
     const reviewerId = admin?.id || null;
-    await supabase
+    const { error } = await supabase
       .from("reimbursements")
       .update({ status, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
       .in("id", ids);
+    if (error) {
+      toast("Gagal update reimburse: " + error.message, "error");
+      return;
+    }
     setSelectedReimbIds(new Set());
     fetchData();
   }
@@ -464,7 +468,7 @@ export default function AdminPage() {
     const reviewerId = admin?.id || null;
     // Get leave for notification
     const leave = leaves.find((l) => l.id === id);
-    await supabase
+    const { error } = await supabase
       .from("leaves")
       .update({
         status,
@@ -473,6 +477,11 @@ export default function AdminPage() {
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
+
+    if (error) {
+      toast("Gagal update pengajuan: " + error.message, "error");
+      return;
+    }
 
     // Send push notification to employee
     if (leave?.employee_id) {
@@ -499,7 +508,7 @@ export default function AdminPage() {
   async function reviewReimb(id: string, status: "approved" | "rejected", notes: string = "") {
     const reviewerId = admin?.id || null;
     const reimb = reimbs.find((r) => r.id === id);
-    await supabase
+    const { error } = await supabase
       .from("reimbursements")
       .update({
         status,
@@ -508,6 +517,11 @@ export default function AdminPage() {
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
+
+    if (error) {
+      toast("Gagal update reimburse: " + error.message, "error");
+      return;
+    }
 
     if (reimb?.employee_id) {
       const statusText = status === "approved" ? "Disetujui ✅" : "Ditolak ❌";
@@ -550,7 +564,8 @@ export default function AdminPage() {
           .from("leaves")
           .select("*")
           .eq("employee_id", emp.id)
-          .or(`start_date.lte.${monthEnd},end_date.gte.${monthStart}`)
+          .lte("start_date", monthEnd)
+          .gte("end_date", monthStart)
           .order("start_date", { ascending: false }),
         supabase
           .from("reimbursements")

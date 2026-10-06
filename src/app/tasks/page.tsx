@@ -434,9 +434,9 @@ export default function TasksPage() {
     const tasksInCol = tasks.filter((t) => t.status === col.key).length;
     if (tasksInCol > 0) {
       if (!confirm(`Kolom "${col.label}" punya ${tasksInCol} task. Tetap hapus? (Task akan pindah ke kolom pertama)`)) return;
-      // Move tasks to first column
-      const firstCol = columns[0];
-      if (firstCol && firstCol.key !== col.key) {
+      // Move tasks to the first REMAINING column (columns[0] could be the one being deleted)
+      const firstCol = columns.find((c) => c.key !== col.key);
+      if (firstCol) {
         // Scope by board to avoid affecting tasks on other boards
         let q = supabase.from("tasks").update({ status: firstCol.key }).eq("status", col.key);
         if (activeBoard?.id) q = q.eq("board_id", activeBoard.id);
@@ -580,7 +580,7 @@ export default function TasksPage() {
 
   async function saveTask(e?: React.FormEvent | React.MouseEvent) {
     if (e) e.preventDefault();
-    if (!user || !form.title.trim()) return;
+    if (!user || !form.title.trim() || loading) return;
     setLoading(true);
     const primaryAssignee = form.assignee_ids[0] || null;
     if (showForm.task) {
@@ -616,42 +616,52 @@ export default function TasksPage() {
     setShowForm({ open: false, status: "brief" });
   }
 
+  const quickAddSavingRef = useRef(false);
   async function quickAddTask(colKey: string, title: string) {
-    if (!title.trim() || !user) return;
-    const assignees = quickAddAssignees.length > 0 ? quickAddAssignees : [user.id];
-    const attachments = quickAddImage ? [{
-      id: crypto.randomUUID(),
-      type: "image" as const,
-      url: quickAddImage,
-      name: "Gambar",
-      added_at: new Date().toISOString(),
-    }] : [];
-    const { data } = await supabase.from("tasks").insert({
-      title: title.trim(),
-      description: quickAddDesc.trim() || null,
-      status: colKey,
-      color: CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)].key,
-      assignees,
-      assignee_id: assignees[0],
-      due_date: quickAddDeadline || null,
-      attachments,
-      cover_url: quickAddImage,
-      created_by: user.id,
-      board_id: activeBoard?.id || null,
-    }).select().single();
-    if (data) {
-      const empMap = new Map(employees.map((e) => [e.id, e]));
-      const assigneeObjects = assignees.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
-      const newTask: Task = { ...data, assignees, assigneeObjects, assignee: assigneeObjects[0] };
-      setTasks((prev) => [...prev, newTask]);
+    if (!title.trim() || !user || quickAddSavingRef.current) return;
+    quickAddSavingRef.current = true;
+    try {
+      const assignees = quickAddAssignees.length > 0 ? quickAddAssignees : [user.id];
+      const attachments = quickAddImage ? [{
+        id: crypto.randomUUID(),
+        type: "image" as const,
+        url: quickAddImage,
+        name: "Gambar",
+        added_at: new Date().toISOString(),
+      }] : [];
+      const { data, error } = await supabase.from("tasks").insert({
+        title: title.trim(),
+        description: quickAddDesc.trim() || null,
+        status: colKey,
+        color: CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)].key,
+        assignees,
+        assignee_id: assignees[0],
+        due_date: quickAddDeadline || null,
+        attachments,
+        cover_url: quickAddImage,
+        created_by: user.id,
+        board_id: activeBoard?.id || null,
+      }).select().single();
+      if (error) {
+        toast("Gagal: " + error.message, "error");
+        return;
+      }
+      if (data) {
+        const empMap = new Map(employees.map((e) => [e.id, e]));
+        const assigneeObjects = assignees.map((id) => empMap.get(id)).filter(Boolean) as Employee[];
+        const newTask: Task = { ...data, assignees, assigneeObjects, assignee: assigneeObjects[0] };
+        setTasks((prev) => [...prev, newTask]);
+      }
+      // Notify role members
+      notifyBoardMembers(title.trim());
+      // Reset form but keep assignees & color for continuous add
+      setQuickAddText("");
+      setQuickAddDesc("");
+      setQuickAddDeadline("");
+      setQuickAddImage(null);
+    } finally {
+      quickAddSavingRef.current = false;
     }
-    // Notify role members
-    notifyBoardMembers(title.trim());
-    // Reset form but keep assignees & color for continuous add
-    setQuickAddText("");
-    setQuickAddDesc("");
-    setQuickAddDeadline("");
-    setQuickAddImage(null);
   }
 
   async function quickAddUploadImage(file: File) {

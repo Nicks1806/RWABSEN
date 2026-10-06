@@ -549,8 +549,8 @@ export default function AbsenPage() {
       reason: leaveForm.reason.trim(),
       status: "pending",
     });
-    setLeaveLoading(false);
     if (error) {
+      setLeaveLoading(false);
       setLeaveMsg({ type: "error", text: "Gagal mengirim: " + error.message });
       return;
     }
@@ -587,6 +587,7 @@ export default function AbsenPage() {
         reason: "",
       });
       setLeaveMsg(null);
+      setLeaveLoading(false);
     }, 1500);
   }
 

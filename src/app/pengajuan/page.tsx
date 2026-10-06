@@ -115,8 +115,8 @@ export default function PengajuanPage() {
       reason: leaveForm.reason.trim(),
       status: "pending",
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setMsg({ type: "error", text: "Gagal: " + error.message });
       return;
     }
@@ -150,6 +150,7 @@ export default function PengajuanPage() {
         reason: "",
       });
       setMsg(null);
+      setLoading(false);
     }, 1500);
   }
 
@@ -200,8 +201,8 @@ export default function PengajuanPage() {
     if (bankAcct && bankAcct !== employee.bank_account) {
       await supabase.from("employees").update({ bank_account: bankAcct }).eq("id", employee.id);
     }
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setMsg({ type: "error", text: "Gagal: " + error.message });
       return;
     }
@@ -237,6 +238,7 @@ export default function PengajuanPage() {
       });
       setReimbFile(null);
       setMsg(null);
+      setLoading(false);
     }, 1500);
   }
 

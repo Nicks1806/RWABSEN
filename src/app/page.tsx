@@ -23,7 +23,7 @@ export default function LoginPage() {
     const { data, error: dbError } = await supabase
       .from("employees")
       .select("*")
-      .ilike("name", name.trim())
+      .ilike("name", name.trim().replace(/[\\%_]/g, "\\$&"))
       .eq("pin", pin)
       .eq("is_active", true)
       .single();

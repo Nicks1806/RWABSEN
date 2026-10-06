@@ -159,7 +159,7 @@ async function exportPDF() {
 ### 4. Bump SW cache setiap major client change
 ```js
 // public/sw.js
-const CACHE_NAME = "redwine-v16";  // → v17
+const CACHE_NAME = "redwine-v19";  // → bump +1 tiap client change
 ```
 Otherwise mobile PWA users lihat blank screen.
 

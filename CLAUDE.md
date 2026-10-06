@@ -109,7 +109,7 @@ redwine-attendance/
 │       ├── types.ts                    # ALL TypeScript interfaces
 │       └── workHours.ts                # Per-employee work hours
 ├── public/
-│   ├── sw.js                           # Service worker (v16)
+│   ├── sw.js                           # Service worker (v19)
 │   ├── manifest.json                   # PWA manifest
 │   ├── icon.png / apple-icon.png       # PWA icons
 │   ├── logo.png
@@ -560,7 +560,7 @@ Vercel Dashboard → Deployments → pilih deployment lama → **Promote to Prod
 
 ### Service Worker Cache (`public/sw.js`)
 - Network-first HTML, cache-first static, SKIP Supabase + Next chunks
-- Bump `CACHE_NAME` setiap client code change signifikan (currently `redwine-v16`)
+- Bump `CACHE_NAME` setiap client code change signifikan (currently `redwine-v19`)
 
 ### Push Notification Reliability (`src/app/api/push/send/route.ts`)
 - `Promise.allSettled` biar 1 failure tidak gagalkan yang lain

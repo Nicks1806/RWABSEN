@@ -123,7 +123,7 @@ async function exportPDF() {
 ### ⚠️ 3.5 PWA cache invalidation
 Setelah client-side code change signifikan, bump `CACHE_NAME` di `public/sw.js`:
 ```js
-const CACHE_NAME = "redwine-v16";  // → bump ke v17
+const CACHE_NAME = "redwine-v19";  // → bump +1 tiap client change
 ```
 Otherwise mobile PWA users lihat blank screen karena chunk lama sudah tidak ada di server.
 
@@ -164,18 +164,29 @@ redwine-attendance/
 │   │   ├── riwayat/page.tsx          # /riwayat Attendance history
 │   │   └── tasks/
 │   │       ├── layout.tsx            # force-dynamic
-│   │       └── page.tsx              # /tasks Kanban (2545 lines)
+│   │       └── page.tsx              # /tasks Kanban (~2100 lines, sudah displit)
 │   ├── components/
 │   │   ├── Avatar.tsx                # loading=lazy + initial fallback
 │   │   ├── BottomNav.tsx             # Mobile bottom nav (5 tabs)
+│   │   ├── ErrorBoundary.tsx         # Error page (ganti white screen crash)
 │   │   ├── InstallAppButton.tsx      # PWA install prompt
 │   │   ├── Logo.tsx
 │   │   ├── NotifToggle.tsx           # Push permission toggle
 │   │   ├── PWARegister.tsx           # Service worker registration
 │   │   ├── Skeleton.tsx              # Loading skeletons library
-│   │   └── TaskDetailModal.tsx       # Task detail dialog
+│   │   ├── TaskDetailModal.tsx       # Task detail dialog
+│   │   ├── Toast.tsx                 # ToastProvider + useToast (ganti alert)
+│   │   ├── admin/                    # Split dari admin/page.tsx (Okt 2026)
+│   │   │   ├── AdminStatCard.tsx, AdminSkeleton.tsx
+│   │   │   ├── AnalyticsTab.tsx      # Charts recharts (dynamic import di sini)
+│   │   │   ├── SettingsTab.tsx       # Form pengaturan + Google Sheets sync
+│   │   │   └── EditProfileModal / ResetPinModal / DeleteEmployeeModal / EditWorkHoursModal
+│   │   └── tasks/                    # Split dari tasks/page.tsx (Okt 2026)
+│   │       ├── TaskCard.tsx, MobileTaskCard.tsx
+│   │       └── ColumnDroppable.tsx, CardOverlay.tsx
 │   └── lib/
 │       ├── auth.ts                   # localStorage session (22 lines)
+│       ├── boardConfig.ts            # COL_COLORS, DEFAULT_COLUMNS, CARD/BOARD_COLORS
 │       ├── debounce.ts               # Debounce util (19 lines)
 │       ├── faceDetection.ts          # Lazy face-api wrapper (54 lines)
 │       ├── geo.ts                    # GPS distance calc (48 lines)
@@ -187,7 +198,7 @@ redwine-attendance/
 │       ├── types.ts                  # ALL TypeScript interfaces (193 lines)
 │       └── workHours.ts              # Per-employee work hours (84 lines)
 ├── public/
-│   ├── sw.js                         # Service worker v16
+│   ├── sw.js                         # Service worker v19
 │   ├── manifest.json                 # PWA manifest
 │   ├── icon.png / apple-icon.png
 │   ├── logo.png
@@ -687,7 +698,7 @@ Bisa dipakai di Google Sheets: `=IMPORTDATA("https://.../api/attendance-csv?mont
 3. Install → icon RedWine di home screen
 4. Buka PWA (standalone mode, no browser UI)
 5. Service worker register:
-   - CACHE_NAME=redwine-v16
+   - CACHE_NAME=redwine-v19
    - Cache STATIC_ASSETS pada install
    - Skip cache untuk Supabase + Next chunks
    - Network-first HTML, cache-first static
@@ -776,7 +787,7 @@ Prevents Supabase storage quota exhaustion.
 
 ### `public/sw.js` — Cache strategy
 ```js
-const CACHE_NAME = "redwine-v16";  // BUMP setiap major client change
+const CACHE_NAME = "redwine-v19";  // BUMP setiap major client change
 
 // Skip Supabase + Next chunks:
 if (url.hostname.includes("supabase.co")) return;
@@ -899,6 +910,12 @@ Baru → Lama:
 
 | Commit | Perubahan |
 |---|---|
+| `b23719e` | fix: today stats terpisah dari bulan, settings form tidak ke-reset, task edit tidak hilang (realtime), celah radius GPS saat settings telat load (SW v19) |
+| `6eb7019` | fix: 8 bug audit — PDF leave filter OR→AND, CSV timezone WIB, login escape wildcard + SW ready timeout, error check review, double-submit pengajuan/tasks, delete kolom pertama (SW v18) |
+| `92d646f` | refactor: extract AnalyticsTab (+recharts dynamic imports) dari admin page |
+| `4c334fd` | refactor: extract SettingsTab + 4 modal admin (EditProfile/ResetPin/DeleteEmployee/EditWorkHours), SW v17 |
+| `bf28563` | feat: toast notifications (ganti alert), ErrorBoundary, split tasks page (TaskCard/MobileTaskCard/boardConfig) |
+| `7ecc151` | docs: TECHNICAL_REFERENCE.md |
 | `cbef14a` | docs: full audit — CLAUDE.md + MIGRATION_NOTES.md |
 | `79d6feb` | docs: HANDOFF.md untuk inter-session continuity |
 | `256d663` | docs: SQL migration Thamrin City coords |
@@ -935,6 +952,12 @@ Total ~60+ commits sepanjang project. Lihat `git log --oneline` untuk history le
 | Duplicate attendance row | Double-tap submit selama transition | `disabled={loading \|\| transitioning}` |
 | Board A delete kolom pengaruh board B | Missing `.eq('board_id', ...)` filter | Fix commit `27f8914` |
 | Face detection tidak jalan | Model face-api gagal load dari CDN | Fail-open by design — user tetap boleh submit |
+| Laporan PDF ikut cuti bulan lain | Filter leave pakai `.or()` bukan AND | Fix commit `6eb7019` — chained `.lte().gte()` |
+| Google Sheets jam minus 7 jam | `toLocaleTimeString` tanpa timezone (Vercel UTC) | Fix `6eb7019` — `timeZone: "Asia/Jakarta"` |
+| Login stuck "Memproses..." | `serviceWorker.ready` tidak pernah resolve kalau SW gagal register | Fix `6eb7019` — `swReady()` timeout 5s di `lib/push.ts` |
+| Ketikan form Pengaturan hilang | Refetch on focus/realtime menimpa `settingsForm` | Fix `b23719e` — form diisi sekali via `settingsFormInitRef` |
+| Edit task hilang saat realtime update | `useEffect([task])` reset form tiap object task dibangun ulang | Fix `b23719e` — depend `[task.id]` saja |
+| Stat "Hadir Hari Ini" jadi 0 | Stat today dihitung dari `records` bulan terpilih | Fix `b23719e` — `todayRecords` di-fetch terpisah |
 
 ---
 
@@ -1101,7 +1124,7 @@ useEffect(() => {
 ### Bump SW cache (setelah major change)
 ```js
 // public/sw.js
-const CACHE_NAME = "redwine-v16";  // → v17
+const CACHE_NAME = "redwine-v19";  // → bump +1 tiap client change
 ```
 Commit + push.
 

@@ -616,7 +616,7 @@ function pdfSafe(s: string | null | undefined): string {
 **File: `public/sw.js`** — PWA caching strategy.
 
 ```js
-const CACHE_NAME = "redwine-v16";           // BUMP setiap major client change!
+const CACHE_NAME = "redwine-v19";           // BUMP setiap major client change!
 
 const STATIC_ASSETS = [
   "/",

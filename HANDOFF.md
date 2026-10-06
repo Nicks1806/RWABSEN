@@ -64,7 +64,7 @@
 
 ### ⚠️ Vercel deploy limits
 - Free tier: 100 deployments/day
-- Service worker cache: bump `CACHE_NAME` in `public/sw.js` when chunks change (e.g., `redwine-v16` → `v17`)
+- Service worker cache: bump `CACHE_NAME` in `public/sw.js` when chunks change (e.g., `redwine-v19` → `v20`)
 - Edge cache stale → use `force-dynamic` layout
 
 ---

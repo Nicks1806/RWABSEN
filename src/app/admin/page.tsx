@@ -134,13 +134,17 @@ export default function AdminPage() {
       // even when the admin is viewing a different month
       supabase.from("attendance").select("*, employees(name)").eq("date", todayStr),
       supabase.from("settings").select("*").single(),
+      // Month-scoped history + ALL pending (a request for next month must
+      // still show up for approval). Previously fetched every row ever.
       supabase
         .from("leaves")
         .select("*")
+        .or(`status.eq.pending,and(start_date.lte.${end},end_date.gte.${start})`)
         .order("created_at", { ascending: false }),
       supabase
         .from("reimbursements")
         .select("*")
+        .or(`status.eq.pending,and(transaction_date.gte.${start},transaction_date.lte.${end})`)
         .order("created_at", { ascending: false }),
     ]);
 

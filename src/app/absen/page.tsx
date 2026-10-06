@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import type JsQR from "jsqr";
 import { hasFace } from "@/lib/faceDetection";
-import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/components/Toast";
 
@@ -659,77 +658,79 @@ export default function AbsenPage() {
   const isOffDay = todayWorkHours?.off === true;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
+      {/* Top bar */}
+      <header className="sticky top-0 z-10" style={{ background: "var(--surface-100)" }}>
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <Logo size="sm" />
-          <div className="flex items-center gap-1">
+          <button
+            onClick={() => router.push("/home")}
+            className="ico-circ"
+            aria-label="Kembali"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span className="rw-micro" style={{ color: "var(--ink-muted)", letterSpacing: "0.08em" }}>ABSENSI</span>
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => router.push("/riwayat")}
-              className="p-2 text-gray-500 hover:text-primary transition"
+              className="ico-circ"
               title="Riwayat"
             >
-              <History size={20} />
+              <History size={18} />
             </button>
             <button
               onClick={() => setShowLeaveForm(true)}
-              className="p-2 text-gray-500 hover:text-primary transition"
+              className="ico-circ"
               title="Ajukan Izin"
             >
-              <FileText size={20} />
+              <FileText size={18} />
             </button>
             <button
               onClick={() => setShowChangePin(true)}
-              className="p-2 text-gray-500 hover:text-primary transition"
+              className="ico-circ"
               title="Ganti PIN"
             >
-              <Key size={20} />
+              <Key size={18} />
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-500 hover:text-red-500 transition"
+              className="ico-circ"
               title="Keluar"
+              style={{ color: "var(--danger)" }}
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Greeting & Time */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <p className="text-gray-500 text-sm">Halo,</p>
-          <p className="text-xl font-bold text-gray-800">{employee.name}</p>
-          <div className="mt-3 flex items-center gap-2 text-gray-600">
-            <Clock size={16} />
-            <span className="text-2xl font-mono font-bold text-primary">
-              {format(currentTime, "HH:mm:ss")}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400 mt-1">
-            {format(currentTime, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+      <main className="max-w-lg mx-auto px-4 pb-6 space-y-4">
+        {/* Time hero */}
+        <div className="text-center py-2">
+          <p className="rw-display-xl" style={{ color: "var(--wine)", fontSize: "3rem", lineHeight: 1 }}>
+            {format(currentTime, "HH:mm")}
+          </p>
+          <p className="rw-micro mt-2" style={{ color: "var(--ink-muted)" }}>
+            {format(currentTime, "EEEE, dd MMMM yyyy", { locale: idLocale }).toUpperCase()}
           </p>
         </div>
 
-        {/* Push Notif Toggle */}
         {/* Today Status */}
         {todayRecord && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-semibold text-gray-700 mb-2">Status Hari Ini</h3>
+          <div className="rw-card" style={{ padding: "var(--space-4)" }}>
+            <p className="rw-micro" style={{ color: "var(--ink-muted)", marginBottom: 8 }}>STATUS HARI INI</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-green-50 rounded-xl p-3">
-                <p className="text-xs text-green-600">Clock In</p>
-                <p className="font-bold text-green-700">
+              <div style={{ background: "var(--success-tint, #e8f5ed)", borderRadius: "var(--radius-lg)", padding: "12px" }}>
+                <p className="rw-micro" style={{ color: "var(--success)" }}>CLOCK IN</p>
+                <p style={{ fontWeight: 700, fontSize: 18, color: "var(--success)", marginTop: 2 }}>
                   {todayRecord.clock_in
                     ? format(new Date(todayRecord.clock_in), "HH:mm")
                     : "-"}
                 </p>
               </div>
-              <div className="bg-orange-50 rounded-xl p-3">
-                <p className="text-xs text-orange-600">Clock Out</p>
-                <p className="font-bold text-orange-700">
+              <div style={{ background: "var(--warning-tint, #fef3e0)", borderRadius: "var(--radius-lg)", padding: "12px" }}>
+                <p className="rw-micro" style={{ color: "var(--warning)" }}>CLOCK OUT</p>
+                <p style={{ fontWeight: 700, fontSize: 18, color: "var(--warning)", marginTop: 2 }}>
                   {todayRecord.clock_out
                     ? format(new Date(todayRecord.clock_out), "HH:mm")
                     : "-"}
@@ -737,53 +738,68 @@ export default function AbsenPage() {
               </div>
             </div>
             {todayRecord.status === "late" && (
-              <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+              <div className="rw-badge rw-badge--danger" style={{ marginTop: 8 }}>
                 <AlertTriangle size={12} /> Terlambat
-              </p>
+              </div>
             )}
           </div>
         )}
 
         {/* Attendance Action */}
         {todayRecord?.clock_in && todayRecord?.clock_out ? (
-          <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-green-100">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <CheckCircle size={32} className="text-green-600" />
+          <div className="rw-card text-center" style={{ padding: "var(--space-6)", border: "2px solid var(--success-tint, #d4edda)" }}>
+            <div
+              className="mx-auto mb-3"
+              style={{
+                width: 64, height: 64, borderRadius: "var(--radius-full)",
+                background: "var(--success-tint, #e8f5ed)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <CheckCircle size={32} style={{ color: "var(--success)" }} />
             </div>
-            <p className="font-bold text-green-700 text-lg">Absensi Selesai</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="rw-heading" style={{ color: "var(--success)" }}>Absensi Selesai</p>
+            <p style={{ fontSize: 14, color: "var(--ink-muted)", marginTop: 4 }}>
               Clock in & clock out hari ini sudah tercatat
             </p>
-            <p className="text-xs text-gray-400 mt-2">Sampai jumpa besok!</p>
+            <p className="rw-micro" style={{ color: "var(--ink-muted)", marginTop: 8 }}>Sampai jumpa besok!</p>
           </div>
         ) : isOffDay && !todayRecord && !overrideOffDay ? (
-          <div className="bg-white rounded-2xl p-8 shadow-sm text-center border-2 border-purple-100">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Clock size={32} className="text-purple-600" />
+          <div className="rw-card text-center" style={{ padding: "var(--space-6)", border: "2px solid var(--wine-tint)" }}>
+            <div
+              className="mx-auto mb-3"
+              style={{
+                width: 64, height: 64, borderRadius: "var(--radius-full)",
+                background: "var(--wine-tint)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Clock size={32} style={{ color: "var(--wine)" }} />
             </div>
-            <p className="font-bold text-purple-700 text-lg">Hari Libur</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="rw-heading" style={{ color: "var(--wine)" }}>Hari Libur</p>
+            <p style={{ fontSize: 14, color: "var(--ink-muted)", marginTop: 4 }}>
               Hari ini bukan jadwal kerja Anda
             </p>
-            <p className="text-xs text-gray-400 mt-2 mb-4">Selamat beristirahat!</p>
+            <p className="rw-micro" style={{ color: "var(--ink-muted)", marginTop: 8, marginBottom: 16 }}>Selamat beristirahat!</p>
             <button
               onClick={() => setOverrideOffDay(true)}
-              className="text-xs px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition"
+              className="rw-btn rw-btn--outline"
+              style={{ fontSize: 12 }}
             >
               Tetap Absen (Lembur)
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="rw-card space-y-4" style={{ padding: "var(--space-4)" }}>
             <div className="flex items-center justify-between gap-3">
-              <h3 className="font-semibold text-gray-700">
+              <p className="rw-heading" style={{ color: "var(--ink)" }}>
                 {mode === "clock_in" ? "Clock In" : "Clock Out"}
-              </h3>
+              </p>
               {settings && (() => {
                 const eff = getEffectiveWorkHours(employee, settings);
                 if (eff.off || !eff.start || !eff.end) return null;
                 return (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/8 px-2.5 py-1 rounded-full">
+                  <span className="rw-badge rw-badge--wine">
                     <Clock size={10} />
                     {eff.start} – {eff.end}
                   </span>
@@ -802,14 +818,14 @@ export default function AbsenPage() {
                     muted
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-8 border-4 border-primary rounded-2xl pointer-events-none"></div>
+                  <div className="absolute inset-8 border-4 rounded-2xl pointer-events-none" style={{ borderColor: "var(--wine)" }}></div>
                   <div className="absolute bottom-3 left-0 right-0 text-center text-white text-xs drop-shadow">
                     Arahkan ke QR Code di kantor
                   </div>
                 </div>
                 <button
                   onClick={stopQRScan}
-                  className="w-full py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
+                  className="rw-btn rw-btn--outline rw-btn--block"
                 >
                   Batal Scan
                 </button>
@@ -817,7 +833,7 @@ export default function AbsenPage() {
             )}
 
             {qrVerified && !capturedPhoto && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-sm text-green-700">
+              <div className="flex items-center gap-2 text-sm" style={{ background: "var(--success-tint, #e8f5ed)", color: "var(--success)", borderRadius: "var(--radius-lg)", padding: 12 }}>
                 <CheckCircle size={18} /> QR terverifikasi - lanjutkan foto selfie
               </div>
             )}
@@ -828,23 +844,28 @@ export default function AbsenPage() {
                 {settings?.qr_required && !qrVerified && (
                   <button
                     onClick={startQRScan}
-                    className="w-full py-12 border-2 border-dashed border-primary rounded-xl flex flex-col items-center gap-2 text-primary hover:bg-primary/5 transition"
+                    className="w-full py-12 border-2 border-dashed flex flex-col items-center gap-2 transition"
+                    style={{ borderColor: "var(--wine)", color: "var(--wine)", borderRadius: "var(--radius-xl)" }}
                   >
                     <QrCodeIcon size={32} />
                     <span className="font-semibold">Scan QR Code Kantor</span>
-                    <span className="text-xs">Wajib scan QR sebelum foto</span>
+                    <span className="rw-micro">Wajib scan QR sebelum foto</span>
                   </button>
                 )}
                 {(!settings?.qr_required || qrVerified) && (
                   <button
                     onClick={startCamera}
-                    className="group w-full py-10 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center gap-2.5 text-gray-500 hover:border-primary/60 hover:text-primary hover:bg-primary/5 transition active:scale-[0.99]"
+                    className="group w-full py-10 border-2 border-dashed flex flex-col items-center gap-2.5 transition active:scale-[0.99]"
+                    style={{ borderColor: "var(--sand)", color: "var(--ink-muted)", borderRadius: "var(--radius-xl)" }}
                   >
-                    <div className="w-14 h-14 rounded-full bg-gray-100 group-hover:bg-primary/10 flex items-center justify-center transition">
-                      <Camera size={26} className="group-hover:scale-110 transition-transform" />
+                    <div
+                      className="flex items-center justify-center transition"
+                      style={{ width: 56, height: 56, borderRadius: "var(--radius-full)", background: "var(--wine-tint)" }}
+                    >
+                      <Camera size={26} style={{ color: "var(--wine)" }} />
                     </div>
-                    <span className="font-semibold text-sm">Ambil Foto Selfie</span>
-                    <span className="text-[10px] uppercase tracking-wider text-gray-400 group-hover:text-primary/60">Pastikan wajah terlihat jelas</span>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Ambil Foto Selfie</span>
+                    <span className="rw-micro">PASTIKAN WAJAH TERLIHAT JELAS</span>
                   </button>
                 )}
               </div>
@@ -852,7 +873,7 @@ export default function AbsenPage() {
 
             {cameraActive && (
               <div>
-                <div className="relative rounded-2xl overflow-hidden bg-black aspect-[3/4] shadow-md">
+                <div className="relative overflow-hidden bg-black aspect-[3/4]" style={{ borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-md)" }}>
                   <video
                     ref={videoRef}
                     autoPlay
@@ -860,7 +881,7 @@ export default function AbsenPage() {
                     muted
                     className="absolute inset-0 w-full h-full object-cover camera-mirror"
                   />
-                  {/* Dashed silhouette outline — wide-shoulder torso, vertical body sides */}
+                  {/* Dashed silhouette outline */}
                   <div className="absolute inset-0 pointer-events-none">
                     <svg viewBox="0 0 400 600" className="w-full h-full opacity-95 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
                       <path
@@ -889,11 +910,12 @@ export default function AbsenPage() {
                     <UserIcon size={12} />
                     Posisikan wajah dalam outline
                   </div>
-                  {/* Capture button — floating bottom sheet style (overlay on camera) */}
+                  {/* Capture button */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent">
                     <button
                       onClick={capturePhoto}
-                      className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                      className="rw-btn rw-btn--primary rw-btn--block"
+                      style={{ gap: 8 }}
                     >
                       <Camera size={16} /> Ambil Foto
                     </button>
@@ -904,7 +926,7 @@ export default function AbsenPage() {
 
             {capturedPhoto && (
               <div className="space-y-3">
-                <div className="relative rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-gray-100">
+                <div className="relative overflow-hidden" style={{ borderRadius: "var(--radius-xl)", border: "2px solid var(--surface-200)", boxShadow: "var(--shadow-md)", background: "var(--surface-300)" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={capturedPhoto}
@@ -912,14 +934,15 @@ export default function AbsenPage() {
                     className="w-full"
                   />
                   {/* Verified badge top-right */}
-                  <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-lg">
+                  <div className="absolute top-3 right-3 rw-badge rw-badge--success" style={{ boxShadow: "var(--shadow-md)" }}>
                     <CheckCircle size={12} />
-                    <span className="text-[10px] font-extrabold tracking-wider uppercase">Foto siap</span>
+                    Foto siap
                   </div>
                   {/* Retake floating button */}
                   <button
                     onClick={retakePhoto}
-                    className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg backdrop-blur-sm hover:bg-white transition active:scale-95"
+                    className="ico-circ absolute bottom-3 right-3"
+                    style={{ width: 40, height: 40, background: "rgba(255,255,255,0.9)", boxShadow: "var(--shadow-md)", backdropFilter: "blur(8px)" }}
                     title="Ulangi foto"
                     aria-label="Ulangi foto"
                   >
@@ -933,10 +956,10 @@ export default function AbsenPage() {
 
             {/* GPS Denied - Instructions */}
             {gpsDenied && !location && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+              <div style={{ background: "var(--warning-tint, #fef3e0)", border: "1px solid var(--warning)", borderRadius: "var(--radius-lg)", padding: 12 }} className="space-y-2">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800">
+                  <AlertTriangle size={18} style={{ color: "var(--warning)" }} className="shrink-0 mt-0.5" />
+                  <div className="text-sm" style={{ color: "var(--ink)" }}>
                     <p className="font-semibold mb-1">Izin lokasi diperlukan</p>
                     <p className="text-xs">
                       Untuk mengaktifkan:
@@ -954,14 +977,16 @@ export default function AbsenPage() {
                     type="button"
                     onClick={tryGetLocation}
                     disabled={gpsRetrying}
-                    className="flex-1 py-2 px-3 text-xs bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50"
+                    className="rw-btn rw-btn--warning flex-1"
+                    style={{ fontSize: 12, padding: "8px 12px" }}
                   >
                     {gpsRetrying ? "Mencoba..." : "Coba Lagi"}
                   </button>
                   <button
                     type="button"
                     onClick={submitWithoutGps}
-                    className="flex-1 py-2 px-3 text-xs bg-white border border-amber-300 text-amber-700 rounded-lg font-medium hover:bg-amber-50"
+                    className="rw-btn rw-btn--outline flex-1"
+                    style={{ fontSize: 12, padding: "8px 12px" }}
                   >
                     Lanjutkan tanpa GPS
                   </button>
@@ -972,11 +997,13 @@ export default function AbsenPage() {
             {/* Location Info */}
             {location && (
               <div
-                className={`flex items-center gap-2 p-3 rounded-xl text-sm ${
-                  isOutsideRadius
-                    ? "bg-red-50 text-red-600"
-                    : "bg-green-50 text-green-600"
-                }`}
+                className="flex items-center gap-2 text-sm"
+                style={{
+                  padding: 12,
+                  borderRadius: "var(--radius-lg)",
+                  background: isOutsideRadius ? "var(--danger-tint, #fde8e8)" : "var(--success-tint, #e8f5ed)",
+                  color: isOutsideRadius ? "var(--danger)" : "var(--success)",
+                }}
               >
                 <MapPin size={16} />
                 {isOutsideRadius ? (
@@ -996,7 +1023,7 @@ export default function AbsenPage() {
             {/* Notes (required if outside radius) */}
             {isOutsideRadius && (
               <div>
-                <label className="block text-sm font-medium text-red-600 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--danger)" }}>
                   Keterangan (Wajib - di luar radius kantor)
                 </label>
                 <textarea
@@ -1004,7 +1031,8 @@ export default function AbsenPage() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Contoh: Meeting di luar kantor, WFH, dll."
                   rows={2}
-                  className="w-full px-4 py-3 border border-red-300 rounded-xl focus:ring-2 focus:ring-red-400 outline-none transition text-sm"
+                  className="rw-input"
+                  style={{ borderColor: "var(--danger)" }}
                   required
                 />
               </div>
@@ -1012,7 +1040,7 @@ export default function AbsenPage() {
 
             {!isOutsideRadius && (
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--ink-muted)" }}>
                   Keterangan (Opsional)
                 </label>
                 <textarea
@@ -1020,7 +1048,7 @@ export default function AbsenPage() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Tambah catatan..."
                   rows={2}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none transition text-sm"
+                  className="rw-input"
                 />
               </div>
             )}
@@ -1030,7 +1058,7 @@ export default function AbsenPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loading || transitioning}
-                className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50"
+                className="rw-btn rw-btn--primary rw-btn--block"
               >
                 {loading
                   ? "Memproses..."
@@ -1045,11 +1073,14 @@ export default function AbsenPage() {
         {/* Message */}
         {message && (
           <div
-            className={`p-4 rounded-xl text-sm font-medium ${
-              message.type === "success"
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-700"
-            }`}
+            style={{
+              padding: 16,
+              borderRadius: "var(--radius-lg)",
+              fontSize: 14,
+              fontWeight: 500,
+              background: message.type === "success" ? "var(--success-tint, #e8f5ed)" : "var(--danger-tint, #fde8e8)",
+              color: message.type === "success" ? "var(--success)" : "var(--danger)",
+            }}
           >
             {message.text}
           </div>
@@ -1060,20 +1091,21 @@ export default function AbsenPage() {
       {/* Leave Request Modal */}
       {showLeaveForm && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+          className="rw-overlay flex items-end md:items-center justify-center md:p-4"
           onClick={() => !leaveLoading && setShowLeaveForm(false)}
         >
           <div
-            className="bg-white w-full md:max-w-sm rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up overflow-hidden"
+            className="rw-sheet animate-slide-up overflow-hidden"
+            style={{ maxWidth: 400 }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle for mobile */}
             <div className="md:hidden flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+              <div style={{ width: 40, height: 4, borderRadius: "var(--radius-full)", background: "var(--surface-300)" }} />
             </div>
 
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-br from-primary to-primary-dark px-5 pt-5 pb-6 text-white relative">
+            {/* Header */}
+            <div style={{ background: "var(--wine)", padding: "20px 20px 24px" }} className="text-white relative">
               <button
                 onClick={() => !leaveLoading && setShowLeaveForm(false)}
                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"
@@ -1081,12 +1113,12 @@ export default function AbsenPage() {
                 <X size={18} />
               </button>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 flex items-center justify-center" style={{ borderRadius: "var(--radius-lg)" }}>
                   <FileText size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Pengajuan Izin</h3>
-                  <p className="text-xs text-white/80">Pilih jenis dan isi detail</p>
+                  <h3 className="rw-heading" style={{ color: "#fff" }}>Pengajuan Izin</h3>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>Pilih jenis dan isi detail</p>
                 </div>
               </div>
             </div>
@@ -1095,29 +1127,34 @@ export default function AbsenPage() {
             <form onSubmit={submitLeave} className="p-5 space-y-4">
               {/* Jenis - visual card selector */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Jenis Pengajuan
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 8 }}>
+                  JENIS PENGAJUAN
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {([
-                    { key: "izin", label: "Izin", emoji: "📝", color: "purple" },
-                    { key: "cuti", label: "Cuti", emoji: "🏖️", color: "blue" },
-                    { key: "sakit", label: "Sakit", emoji: "🏥", color: "orange" },
+                    { key: "izin", label: "Izin", emoji: "📝" },
+                    { key: "cuti", label: "Cuti", emoji: "🏖️" },
+                    { key: "sakit", label: "Sakit", emoji: "🏥" },
                   ] as const).map((t) => {
-                    const active = leaveForm.leave_type === t.key;
+                    const isActive = leaveForm.leave_type === t.key;
                     return (
                       <button
                         key={t.key}
                         type="button"
                         onClick={() => setLeaveForm({ ...leaveForm, leave_type: t.key })}
-                        className={`py-3 rounded-xl text-center transition-all ${
-                          active
-                            ? "bg-primary text-white shadow-md scale-105 ring-2 ring-primary/20"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                        }`}
+                        className="text-center transition-all"
+                        style={{
+                          padding: 12,
+                          borderRadius: "var(--radius-lg)",
+                          background: isActive ? "var(--wine)" : "var(--surface-100)",
+                          color: isActive ? "#fff" : "var(--ink-muted)",
+                          fontWeight: 600,
+                          transform: isActive ? "scale(1.05)" : undefined,
+                          boxShadow: isActive ? "var(--shadow-md)" : undefined,
+                        }}
                       >
                         <div className="text-2xl">{t.emoji}</div>
-                        <div className="text-xs font-semibold mt-0.5">{t.label}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2 }}>{t.label}</div>
                       </button>
                     );
                   })}
@@ -1126,27 +1163,29 @@ export default function AbsenPage() {
 
               {/* Tanggal */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Periode
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 8 }}>
+                  PERIODE
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">DARI</label>
+                  <div style={{ background: "var(--surface-100)", borderRadius: "var(--radius-lg)", padding: 12 }}>
+                    <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 4 }}>DARI</label>
                     <input
                       type="date"
                       value={leaveForm.start_date}
                       onChange={(e) => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      className="w-full bg-transparent text-sm font-semibold outline-none"
+                      style={{ color: "var(--ink)" }}
                       required
                     />
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">SAMPAI</label>
+                  <div style={{ background: "var(--surface-100)", borderRadius: "var(--radius-lg)", padding: 12 }}>
+                    <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 4 }}>SAMPAI</label>
                     <input
                       type="date"
                       value={leaveForm.end_date}
                       onChange={(e) => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      className="w-full bg-transparent text-sm font-semibold outline-none"
+                      style={{ color: "var(--ink)" }}
                       required
                     />
                   </div>
@@ -1157,7 +1196,7 @@ export default function AbsenPage() {
                       (1000 * 60 * 60 * 24)
                   ) + 1;
                   return (
-                    <p className="text-[11px] text-primary font-medium mt-1.5 text-right">
+                    <p style={{ fontSize: 11, color: "var(--wine)", fontWeight: 500, marginTop: 6, textAlign: "right" }}>
                       Total: {days} hari
                     </p>
                   );
@@ -1166,15 +1205,16 @@ export default function AbsenPage() {
 
               {/* Alasan */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Alasan
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 8 }}>
+                  ALASAN
                 </label>
                 <textarea
                   value={leaveForm.reason}
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                   rows={3}
                   placeholder="Contoh: Acara keluarga, sakit flu, keperluan mendesak..."
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition resize-none"
+                  className="rw-input"
+                  style={{ resize: "none" }}
                   required
                 />
               </div>
@@ -1182,11 +1222,13 @@ export default function AbsenPage() {
               {/* Message */}
               {leaveMsg && (
                 <div
-                  className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-                    leaveMsg.type === "success"
-                      ? "bg-green-50 text-green-700"
-                      : "bg-red-50 text-red-700"
-                  }`}
+                  className="flex items-center gap-2 text-sm"
+                  style={{
+                    padding: 12,
+                    borderRadius: "var(--radius-lg)",
+                    background: leaveMsg.type === "success" ? "var(--success-tint, #e8f5ed)" : "var(--danger-tint, #fde8e8)",
+                    color: leaveMsg.type === "success" ? "var(--success)" : "var(--danger)",
+                  }}
                 >
                   {leaveMsg.type === "success" ? (
                     <CheckCircle size={16} />
@@ -1203,14 +1245,15 @@ export default function AbsenPage() {
                   type="button"
                   onClick={() => setShowLeaveForm(false)}
                   disabled={leaveLoading}
-                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                  className="rw-btn rw-btn--outline flex-1"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={leaveLoading}
-                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 shadow-sm transition"
+                  className="rw-btn rw-btn--primary"
+                  style={{ flex: 2 }}
                 >
                   {leaveLoading ? "Mengirim..." : "Kirim Pengajuan"}
                 </button>
@@ -1223,66 +1266,63 @@ export default function AbsenPage() {
       {/* Change PIN Modal */}
       {showChangePin && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="rw-overlay flex items-center justify-center p-4"
           onClick={() => !pinLoading && setShowChangePin(false)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-sm"
+            className="rw-card w-full max-w-sm"
+            style={{ padding: "var(--space-5)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+              <h3 className="rw-heading flex items-center gap-2" style={{ color: "var(--ink)" }}>
                 <Key size={18} /> Ganti PIN
               </h3>
               <button
                 onClick={() => !pinLoading && setShowChangePin(false)}
-                className="text-gray-400"
+                className="ico-circ"
               >
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleChangePin} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">PIN Lama</label>
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 4 }}>PIN LAMA</label>
                 <input
                   type="password"
                   value={oldPin}
                   onChange={(e) => setOldPin(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
                   inputMode="numeric"
                   required
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">PIN Baru</label>
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 4 }}>PIN BARU</label>
                 <input
                   type="password"
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
                   inputMode="numeric"
                   required
                   minLength={4}
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Konfirmasi PIN Baru</label>
+                <label className="rw-micro" style={{ display: "block", color: "var(--ink-muted)", marginBottom: 4 }}>KONFIRMASI PIN BARU</label>
                 <input
                   type="password"
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
                   inputMode="numeric"
                   required
                 />
               </div>
               {pinMsg && (
-                <p
-                  className={`text-sm ${
-                    pinMsg.type === "success" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
+                <p style={{ fontSize: 14, color: pinMsg.type === "success" ? "var(--success)" : "var(--danger)" }}>
                   {pinMsg.text}
                 </p>
               )}
@@ -1291,14 +1331,14 @@ export default function AbsenPage() {
                   type="button"
                   onClick={() => setShowChangePin(false)}
                   disabled={pinLoading}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                  className="rw-btn rw-btn--outline flex-1"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={pinLoading}
-                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50"
+                  className="rw-btn rw-btn--primary flex-1"
                 >
                   {pinLoading ? "Memproses..." : "Simpan"}
                 </button>
@@ -1313,15 +1353,15 @@ export default function AbsenPage() {
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto animate-fade-in"
           style={{
-            background: "linear-gradient(135deg, #8B1A1A 0%, #5A1010 100%)",
+            background: "linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%)",
           }}
         >
           <div className="text-center">
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center animate-scale-in">
               <CheckCircle size={44} className="text-white" />
             </div>
-            <p className="text-white font-bold text-xl tracking-tight">Berhasil!</p>
-            <p className="text-white/70 text-sm mt-1">Mengarahkan ke beranda...</p>
+            <p className="rw-display" style={{ color: "#fff" }}>Berhasil!</p>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 4 }}>Mengarahkan ke beranda...</p>
           </div>
         </div>
       )}

@@ -28,30 +28,64 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-            <AlertTriangle size={28} className="text-red-500" />
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--surface-100)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div
+          className="rw-card"
+          style={{ maxWidth: 384, width: "100%", textAlign: "center", padding: 32 }}
+        >
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "var(--radius-full)",
+              background: "var(--danger-tint)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <AlertTriangle size={28} style={{ color: "var(--danger)" }} />
           </div>
-          <h2 className="text-lg font-bold text-gray-800">Terjadi Kesalahan</h2>
-          <p className="text-sm text-gray-500">
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
+            Terjadi Kesalahan
+          </h2>
+          <p style={{ fontSize: 14, color: "var(--ink-muted)", marginBottom: 16 }}>
             {this.props.fallbackMessage || "Halaman mengalami error. Coba muat ulang."}
           </p>
           {process.env.NODE_ENV === "development" && this.state.error && (
-            <pre className="text-xs text-left bg-gray-100 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
+            <pre
+              style={{
+                fontSize: 12,
+                textAlign: "left",
+                background: "var(--surface-200)",
+                borderRadius: "var(--radius-md)",
+                padding: 12,
+                overflow: "auto",
+                maxHeight: 128,
+                color: "var(--danger)",
+                marginBottom: 16,
+              }}
+            >
               {this.state.error.message}
             </pre>
           )}
-          <div className="flex gap-3 justify-center pt-2">
-            <button
-              onClick={this.handleRetry}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-dark transition"
-            >
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", paddingTop: 8 }}>
+            <button onClick={this.handleRetry} className="rw-btn rw-btn--primary" style={{ gap: 8 }}>
               <RefreshCw size={16} /> Coba Lagi
             </button>
             <button
               onClick={() => (window.location.href = "/home")}
-              className="px-5 py-2.5 border border-gray-200 rounded-full text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+              className="rw-btn rw-btn--outline"
             >
               Ke Home
             </button>

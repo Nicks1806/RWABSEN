@@ -21,7 +21,6 @@ export default function BottomNav() {
   const [inboxCount, setInboxCount] = useState(0);
   const lastFetchRef = useRef(0);
 
-  // Prefetch every nav target so tab switches feel instant
   useEffect(() => {
     ITEMS.forEach((it) => {
       try {
@@ -53,10 +52,13 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="h-24" />
-      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="h-28" />
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none"
+        style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+      >
         <div className="max-w-lg mx-auto pointer-events-auto">
-          <div className="bg-white/95 backdrop-blur-2xl border border-gray-200/60 rounded-2xl shadow-[0_10px_40px_rgba(139,26,26,0.12)] flex items-center gap-1 p-1.5">
+          <div className="rw-nav">
             {ITEMS.map((it) => {
               const Icon = it.icon;
               const isActive = active(it.path);
@@ -67,23 +69,35 @@ export default function BottomNav() {
                   key={it.key}
                   href={it.path}
                   prefetch
-                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl relative transition-all duration-200 active:scale-90 ${
-                    isActive
-                      ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/30"
-                      : "text-gray-500 hover:bg-gray-50 active:bg-gray-100"
-                  }`}
+                  className={isActive ? "is-active" : ""}
+                  style={{ position: "relative" }}
                 >
-                  <div className="relative">
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                  <div style={{ position: "relative" }}>
+                    <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
                     {badge > 0 ? (
-                      <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center ring-2 ring-white">
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: -4,
+                          left: "calc(50% + 6px)",
+                          minWidth: 16,
+                          height: 16,
+                          padding: "0 4px",
+                          borderRadius: "var(--radius-full)",
+                          background: "var(--danger)",
+                          color: "#fff",
+                          fontWeight: 700,
+                          fontSize: 9,
+                          lineHeight: "16px",
+                          textAlign: "center",
+                          boxShadow: "0 0 0 2px var(--surface-200)",
+                        }}
+                      >
                         {badge > 9 ? "9+" : badge}
                       </span>
                     ) : null}
                   </div>
-                  <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
-                    {it.label}
-                  </span>
+                  <span>{it.label}</span>
                 </Link>
               );
             })}

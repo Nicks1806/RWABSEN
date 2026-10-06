@@ -534,12 +534,20 @@ export default function DashboardTab({
                 {r.notes && (
                   <p className="text-xs" style={{ color: "var(--ink-muted)" }}>Ket: {r.notes}</p>
                 )}
-                <div className="flex items-center gap-3 text-xs pt-1">
+                <div className="flex items-center gap-2 pt-2">
                   {r.clock_in_photo && (
                     <button
+                      type="button"
                       onClick={() => setPhotoModal(r.clock_in_photo!)}
-                      className="flex items-center gap-1"
-                      style={{ color: "var(--wine)" }}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium"
+                      style={{
+                        padding: "8px 14px",
+                        background: "var(--wine-tint)",
+                        color: "var(--wine)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--wine)",
+                        minHeight: 36,
+                      }}
                     >
                       <ImageIcon size={14} /> Foto
                     </button>
@@ -549,16 +557,31 @@ export default function DashboardTab({
                       href={`https://www.google.com/maps?q=${r.clock_in_lat},${r.clock_in_lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1"
-                      style={{ color: "var(--wine)" }}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium"
+                      style={{
+                        padding: "8px 14px",
+                        background: "var(--surface-200)",
+                        color: "var(--wine)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--line)",
+                        minHeight: 36,
+                      }}
                     >
                       <MapPin size={14} /> Lokasi
                     </a>
                   )}
                   <button
+                    type="button"
                     onClick={() => onDeleteAttendance(r.id)}
-                    className="flex items-center gap-1 ml-auto"
-                    style={{ color: "var(--danger)" }}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium ml-auto"
+                    style={{
+                      padding: "8px 14px",
+                      background: "var(--danger-tint)",
+                      color: "var(--danger)",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--danger)",
+                      minHeight: 36,
+                    }}
                   >
                     <Trash2 size={14} /> Hapus
                   </button>

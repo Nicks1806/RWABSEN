@@ -9,20 +9,17 @@ import { Employee, Attendance, Settings, Announcement } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
-  LogIn,
-  LogOut,
-  CalendarDays,
+  MapPin,
+  Calendar,
   LayoutGrid,
   Megaphone,
-  ClipboardList,
   ChevronRight,
+  Bell,
 } from "lucide-react";
-import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import BottomNav from "@/components/BottomNav";
 import { getEffectiveWorkHours } from "@/lib/workHours";
 import { canAccessTasks } from "@/lib/permissions";
-import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 export default function HomePage() {
   const router = useRouter();
@@ -30,14 +27,17 @@ export default function HomePage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [monthlyHours, setMonthlyHours] = useState(0);
   const [monthlyDays, setMonthlyDays] = useState(0);
+  const [monthlyLate, setMonthlyLate] = useState(0);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   const fetchData = useCallback(async (empId: string) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const startOfMonth = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+    const startOfMonth = format(
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      "yyyy-MM-dd"
+    );
 
     const [attRes, setRes, monthRes, annRes] = await Promise.all([
       supabase
@@ -49,7 +49,7 @@ export default function HomePage() {
       supabase.from("settings").select("*").single(),
       supabase
         .from("attendance")
-        .select("clock_in, clock_out")
+        .select("clock_in, clock_out, status")
         .eq("employee_id", empId)
         .gte("date", startOfMonth)
         .lte("date", today),
@@ -63,17 +63,22 @@ export default function HomePage() {
 
     setTodayRecord(attRes.data || null);
     if (setRes.data) setSettings(setRes.data);
-    // Calc monthly hours
+
     let totalMins = 0;
     let presentDays = 0;
+    let lateDays = 0;
     for (const r of monthRes.data || []) {
       if (r.clock_in) presentDays++;
+      if (r.status === "late") lateDays++;
       if (r.clock_in && r.clock_out) {
-        totalMins += (new Date(r.clock_out).getTime() - new Date(r.clock_in).getTime()) / 60000;
+        totalMins +=
+          (new Date(r.clock_out).getTime() - new Date(r.clock_in).getTime()) /
+          60000;
       }
     }
-    setMonthlyHours(Math.round((totalMins / 60) * 10) / 10);
+    setMonthlyHours(Math.round(totalMins / 60));
     setMonthlyDays(presentDays);
+    setMonthlyLate(lateDays);
     setAnnouncements(annRes.data || []);
   }, []);
 
@@ -90,7 +95,6 @@ export default function HomePage() {
     setEmployee(emp);
     fetchData(emp.id);
 
-    // Refresh profile
     supabase
       .from("employees")
       .select("*")
@@ -107,12 +111,8 @@ export default function HomePage() {
           }
         }
       });
+  }, [router, fetchData, toast]);
 
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, [router, fetchData]);
-
-  // Realtime
   useEffect(() => {
     if (!employee) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -147,202 +147,488 @@ export default function HomePage() {
 
   if (!employee) return <HomeSkeleton />;
 
-  const hour = currentTime.getHours();
+  const hour = new Date().getHours();
   const greeting =
-    hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
+    hour < 11
+      ? "Selamat pagi"
+      : hour < 15
+        ? "Selamat siang"
+        : hour < 18
+          ? "Selamat sore"
+          : "Selamat malam";
 
   const effHours = settings ? getEffectiveWorkHours(employee, settings) : null;
   const isOffDay = effHours?.off === true;
   const alreadyClockedIn = !!todayRecord?.clock_in;
   const alreadyClockedOut = !!todayRecord?.clock_out;
 
+  const clockInTime = todayRecord?.clock_in
+    ? format(new Date(todayRecord.clock_in), "HH:mm")
+    : null;
+  const clockOutTime = todayRecord?.clock_out
+    ? format(new Date(todayRecord.clock_out), "HH:mm")
+    : null;
+
+  const isLate =
+    alreadyClockedIn && effHours && !isOffDay
+      ? new Date(todayRecord!.clock_in!).getHours() * 60 +
+          new Date(todayRecord!.clock_in!).getMinutes() >
+        parseInt(effHours.start.split(":")[0]) * 60 +
+          parseInt(effHours.start.split(":")[1]) +
+          5
+      : false;
+
+  const statusKey = isOffDay
+    ? "libur"
+    : !alreadyClockedIn
+      ? "belum"
+      : isLate
+        ? "terlambat"
+        : "hadir";
+
+  const BADGE_MAP: Record<string, { cls: string; label: string }> = {
+    hadir: { cls: "rw-badge--success", label: "Hadir" },
+    terlambat: { cls: "rw-badge--danger", label: "Terlambat" },
+    belum: { cls: "rw-badge--warning", label: "Belum" },
+    libur: { cls: "rw-badge--neutral", label: "Libur" },
+  };
+  const badge = BADGE_MAP[statusKey];
+
+  const todayFormatted = format(new Date(), "EEEE, d MMMM", {
+    locale: idLocale,
+  });
+  const monthName = format(new Date(), "MMMM", { locale: idLocale });
+  const firstName = employee.name.split(" ")[0];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Status bar-like header */}
-      <div className="bg-gray-50">
-        <div className="max-w-lg mx-auto px-4 pt-4 pb-2 flex items-center justify-between">
-          <Logo size="sm" />
+    <div className="min-h-screen" style={{ background: "var(--surface-100)" }}>
+      {/* Top bar */}
+      <div
+        className="flex items-center justify-between"
+        style={{ padding: "20px 16px 0" }}
+      >
+        <div className="flex items-center gap-3">
+          <Avatar name={employee.name} photoUrl={employee.photo_url} size="md" />
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 14,
+                lineHeight: "18px",
+                color: "var(--ink)",
+              }}
+              className="truncate"
+            >
+              {employee.name}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                lineHeight: "16px",
+                color: "var(--ink-muted)",
+              }}
+            >
+              {employee.position || "Staff"} · Thamrin City
+            </div>
+          </div>
         </div>
+        <button
+          onClick={() => router.push("/inbox")}
+          className="relative"
+          style={{
+            all: "unset",
+            cursor: "pointer",
+            width: 44,
+            height: 44,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "var(--radius-md)",
+            color: "var(--ink)",
+            flexShrink: 0,
+          }}
+          aria-label="Inbox"
+        >
+          <Bell size={20} />
+        </button>
       </div>
 
-      <main className="max-w-lg mx-auto px-4 pb-4 space-y-4">
-        {/* Greeting */}
-        <div className="flex items-center gap-3 pt-2">
-          <Avatar name={employee.name} photoUrl={employee.photo_url} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-gray-500">{greeting},</p>
-            <p className="font-bold text-gray-800 truncate">{employee.name}</p>
-          </div>
-        </div>
+      {/* Hero greeting */}
+      <div style={{ padding: "32px 16px 24px" }}>
+        <p className="rw-micro" style={{ color: "var(--gold-text)", marginBottom: 6 }}>
+          {todayFormatted}
+        </p>
+        <h1 className="rw-display">
+          {greeting},
+          <br />
+          {firstName}
+        </h1>
+        {!alreadyClockedIn && (
+          <p style={{ color: "var(--ink-muted)", fontSize: 15, marginTop: 8 }}>
+            Kamu belum clock in hari ini.
+          </p>
+        )}
+        {alreadyClockedIn && alreadyClockedOut && (
+          <p style={{ color: "var(--ink-muted)", fontSize: 15, marginTop: 8 }}>
+            Shift selesai. Terima kasih untuk hari ini.
+          </p>
+        )}
+      </div>
 
-        {/* Shift Card - Talenta-style */}
-        <div className="bg-primary rounded-3xl overflow-hidden shadow-lg">
-          <div className="px-5 py-3 text-center text-white text-sm font-medium">
-            Jadwal shift untuk {format(currentTime, "EEE, dd MMM yyyy", { locale: idLocale })}
-          </div>
-          <div className="bg-red-50 pt-5 pb-5 px-5 rounded-t-3xl">
-            {isOffDay ? (
-              <div className="text-center py-3">
-                <CalendarDays size={36} className="text-purple-500 mx-auto mb-2" />
-                <p className="font-bold text-lg text-purple-700">Hari Libur</p>
-                <p className="text-xs text-gray-500 mt-1">Bukan jadwal kerja Anda hari ini</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-center text-gray-700 font-semibold">HO</p>
-                <p className="text-center text-2xl font-bold text-gray-900 mt-1">
-                  {effHours?.start.slice(0, 5)} - {effHours?.end.slice(0, 5)}
+      {/* Staggered content */}
+      <div className="flex flex-col gap-6" style={{ padding: "0 16px" }}>
+        {/* Shift card */}
+        {isOffDay ? (
+          <div className="rw-shift">
+            <div
+              style={{ padding: "20px 20px 16px" }}
+              className="flex items-center justify-between"
+            >
+              <div>
+                <p className="rw-micro">Hari ini</p>
+                <p
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 24,
+                    lineHeight: "28px",
+                    marginTop: 4,
+                    color: "var(--ink-muted)",
+                  }}
+                >
+                  Hari Libur
                 </p>
-
-                {/* Clock in / out buttons - side by side with divider */}
-                <div className="mt-5 bg-white rounded-full border border-gray-200 flex items-center overflow-hidden shadow-sm">
-                  <button
-                    onClick={() => router.push("/absen")}
-                    disabled={alreadyClockedIn}
-                    className={`flex-1 py-3 flex items-center justify-center gap-2 font-semibold text-sm transition ${
-                      alreadyClockedIn ? "text-gray-300 cursor-not-allowed" : "text-primary hover:bg-red-50"
-                    }`}
+              </div>
+              <span className={`rw-badge ${badge.cls}`}>{badge.label}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rw-shift">
+            <div
+              style={{ padding: "20px 20px 16px" }}
+              className="flex items-start justify-between gap-3"
+            >
+              <div>
+                <p className="rw-micro">
+                  Shift hari ini · {format(new Date(), "EEE, d MMM", { locale: idLocale })}
+                </p>
+                <p
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 32,
+                    lineHeight: "36px",
+                    letterSpacing: "-0.02em",
+                    fontVariantNumeric: "tabular-nums",
+                    marginTop: 4,
+                  }}
+                >
+                  {effHours?.start.slice(0, 5)}{" "}
+                  <span
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 400,
+                      color: "var(--ink-muted)",
+                      letterSpacing: 0,
+                    }}
                   >
-                    <LogIn size={18} /> Clock in
-                  </button>
-                  <div className="w-px h-6 bg-gray-200" />
-                  <button
-                    onClick={() => router.push("/absen")}
-                    disabled={!alreadyClockedIn || alreadyClockedOut}
-                    className={`flex-1 py-3 flex items-center justify-center gap-2 font-semibold text-sm transition ${
+                    – {effHours?.end.slice(0, 5)}
+                  </span>
+                </p>
+              </div>
+              <span className={`rw-badge ${badge.cls}`}>{badge.label}</span>
+            </div>
+
+            {/* GPS line */}
+            <div
+              className="flex items-center gap-1.5"
+              style={{
+                padding: "0 20px 16px",
+                fontSize: 12,
+                lineHeight: "16px",
+                color: "var(--ink-muted)",
+              }}
+            >
+              <MapPin size={14} />
+              Thamrin City
+            </div>
+
+            {/* Clock in / out split */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1px 1fr",
+                borderTop: "1px solid var(--line)",
+              }}
+            >
+              <button
+                onClick={() => router.push("/absen")}
+                disabled={alreadyClockedIn}
+                style={{
+                  all: "unset",
+                  cursor: alreadyClockedIn ? "default" : "pointer",
+                  padding: 16,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                  textAlign: "center",
+                }}
+              >
+                <b
+                  style={{
+                    fontWeight: 500,
+                    fontSize: 14,
+                    lineHeight: "20px",
+                    color: alreadyClockedIn ? "var(--ink-muted)" : "var(--wine)",
+                  }}
+                >
+                  Clock In
+                </b>
+                <span
+                  style={{
+                    fontSize: 12,
+                    lineHeight: "16px",
+                    color: "var(--ink-muted)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {clockInTime || "Belum"}
+                </span>
+              </button>
+              <div style={{ background: "var(--line)" }} />
+              <button
+                onClick={() => router.push("/absen")}
+                disabled={!alreadyClockedIn || alreadyClockedOut}
+                style={{
+                  all: "unset",
+                  cursor:
+                    !alreadyClockedIn || alreadyClockedOut ? "default" : "pointer",
+                  padding: 16,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                  textAlign: "center",
+                }}
+              >
+                <b
+                  style={{
+                    fontWeight: 500,
+                    fontSize: 14,
+                    lineHeight: "20px",
+                    color:
                       !alreadyClockedIn || alreadyClockedOut
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "text-red-600 hover:bg-red-50"
-                    }`}
-                  >
-                    <LogOut size={18} /> Clock out
-                  </button>
-                </div>
-
-                {/* Status text - show clock in + clock out times */}
-                {alreadyClockedIn && (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-center text-sm text-gray-600">
-                      Anda telah berhasil clock in pada pukul{" "}
-                      <span className="font-semibold text-green-600">
-                        {format(new Date(todayRecord!.clock_in!), "HH:mm")}
-                      </span>
-                    </p>
-                    {alreadyClockedOut && (
-                      <p className="text-center text-sm text-gray-600">
-                        Clock out pada pukul{" "}
-                        <span className="font-semibold text-red-600">
-                          {format(new Date(todayRecord!.clock_out!), "HH:mm")}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Belum clock in info */}
-                {!alreadyClockedIn && (
-                  <p className="text-center text-sm text-gray-500 mt-3">
-                    Anda belum clock in hari ini
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-
-        {/* Monthly Stats Banner */}
-        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-5 text-white relative overflow-hidden">
-          <div className="absolute -right-4 -bottom-4 opacity-10">
-            <LayoutGrid size={100} />
-          </div>
-          <p className="text-xs text-white/80 mb-1">Rangkuman Bulan Ini</p>
-          <div className="flex items-end gap-6 mt-2">
-            <div>
-              <p className="text-3xl font-bold">{monthlyDays}</p>
-              <p className="text-xs text-white/80">Hari hadir</p>
-            </div>
-            <div className="h-10 w-px bg-white/30" />
-            <div>
-              <p className="text-3xl font-bold">{monthlyHours}</p>
-              <p className="text-xs text-white/80">Jam kerja</p>
+                        ? "var(--ink-muted)"
+                        : "var(--wine)",
+                  }}
+                >
+                  Clock Out
+                </b>
+                <span
+                  style={{
+                    fontSize: 12,
+                    lineHeight: "16px",
+                    color: "var(--ink-muted)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {clockOutTime || "Belum"}
+                </span>
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Task Board Quick Access - only for Admin/Founder/GM */}
-        {canAccessTasks(employee) && (
-          <button
-            onClick={() => router.push("/tasks")}
-            className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3 hover:shadow-md transition"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white shadow-sm">
-              <ClipboardList size={22} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-semibold text-gray-800">Task Board</p>
-              <p className="text-xs text-gray-500">Schedule tugas — Brief / Today / Done</p>
-            </div>
-            <ChevronRight size={18} className="text-gray-400" />
-          </button>
         )}
 
-        {/* Pengumuman */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <Megaphone size={16} className="text-primary" /> Pengumuman
-            </h3>
-            {announcements.length > 3 && (
-              <button className="text-xs text-primary font-medium">Lihat semua</button>
-            )}
+        {/* Monthly stats */}
+        <div className="flex flex-col gap-2">
+          <p className="rw-micro">{monthName} · rekap kamu</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            <div className="rw-stat" style={{ padding: 12 }}>
+              <p className="rw-micro">Hadir</p>
+              <p
+                className="rw-stat__value"
+                style={{ fontSize: 24, lineHeight: "28px" }}
+              >
+                {monthlyDays}
+              </p>
+            </div>
+            <div className="rw-stat" style={{ padding: 12 }}>
+              <p className="rw-micro">Telat</p>
+              <p
+                className="rw-stat__value"
+                style={{ fontSize: 24, lineHeight: "28px" }}
+              >
+                {monthlyLate}
+              </p>
+            </div>
+            <div className="rw-stat" style={{ padding: 12 }}>
+              <p className="rw-micro">Jam</p>
+              <p
+                className="rw-stat__value"
+                style={{ fontSize: 24, lineHeight: "28px" }}
+              >
+                {monthlyHours}
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Quick links */}
+        <div
+          style={{
+            background: "var(--surface-200)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-hairline)",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            className="rw-li"
+            onClick={() => router.push("/riwayat")}
+            style={{ width: "100%" }}
+          >
+            <span className="ico-circ">
+              <Calendar size={18} />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 500, fontSize: 15, lineHeight: "20px" }}>
+                Riwayat absen
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: "16px",
+                  color: "var(--ink-muted)",
+                  marginTop: 2,
+                }}
+              >
+                Foto, jam, dan lokasi tiap hari
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: "var(--ink-muted)" }} />
+          </button>
+
+          {canAccessTasks(employee) && (
+            <button
+              className="rw-li"
+              onClick={() => router.push("/tasks")}
+              style={{ width: "100%", borderTop: "1px solid var(--line)" }}
+            >
+              <span className="ico-circ">
+                <LayoutGrid size={18} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 500, fontSize: 15, lineHeight: "20px" }}>
+                  Task Board
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: "16px",
+                    color: "var(--ink-muted)",
+                    marginTop: 2,
+                  }}
+                >
+                  Tugas aktif untuk kamu
+                </div>
+              </div>
+              <ChevronRight size={18} style={{ color: "var(--ink-muted)" }} />
+            </button>
+          )}
+        </div>
+
+        {/* Announcements */}
+        <div>
+          <div
+            className="flex items-baseline justify-between gap-3"
+            style={{ marginBottom: 12 }}
+          >
+            <h2 className="rw-title">Pengumuman</h2>
+          </div>
+
           {announcements.length === 0 ? (
-            <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-              <Megaphone size={28} className="text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Belum ada pengumuman</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Pengumuman dari admin akan muncul di sini
+            <div className="rw-card" style={{ textAlign: "center", padding: "32px 20px" }}>
+              <Megaphone
+                size={28}
+                style={{ color: "var(--ink-muted)", margin: "0 auto 8px" }}
+              />
+              <p style={{ fontSize: 14, color: "var(--ink-muted)" }}>
+                Belum ada pengumuman
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-3">
               {announcements.slice(0, 3).map((a) => {
-                const colors = {
-                  normal: "border-l-blue-400 bg-white",
-                  important: "border-l-amber-500 bg-amber-50",
-                  urgent: "border-l-red-500 bg-red-50",
-                }[a.priority || "normal"];
+                const priorityLabel =
+                  a.priority === "urgent"
+                    ? "Penting"
+                    : a.priority === "important"
+                      ? "Info"
+                      : "Info";
+                const priorityColor =
+                  a.priority === "urgent"
+                    ? "var(--wine)"
+                    : "var(--ink-muted)";
                 return (
-                  <div
-                    key={a.id}
-                    className={`rounded-2xl shadow-sm border-l-4 p-4 ${colors}`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-semibold text-sm text-gray-800">{a.title}</p>
-                      {a.priority === "urgent" && (
-                        <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
-                          PENTING
-                        </span>
-                      )}
-                      {a.priority === "important" && (
-                        <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
-                          INFO
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-600 whitespace-pre-wrap">{a.body}</p>
-                    <p className="text-[10px] text-gray-400 mt-2">
-                      {format(new Date(a.created_at), "dd MMM yyyy • HH:mm", { locale: idLocale })}
+                  <div key={a.id} className="rw-card">
+                    <p
+                      className="rw-micro"
+                      style={{ color: priorityColor, marginBottom: 4 }}
+                    >
+                      {priorityLabel}
                     </p>
+                    <h3
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 17,
+                        lineHeight: "24px",
+                        margin: 0,
+                      }}
+                    >
+                      {a.title}
+                    </h3>
+                    <p
+                      style={{
+                        color: "var(--ink-muted)",
+                        fontSize: 14,
+                        lineHeight: "20px",
+                        marginTop: 6,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {a.body}
+                    </p>
+                    <hr
+                      style={{
+                        height: 1,
+                        background: "var(--line)",
+                        border: 0,
+                        margin: "16px 0",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        lineHeight: "16px",
+                        color: "var(--ink-muted)",
+                      }}
+                    >
+                      {format(new Date(a.created_at), "d MMM yyyy", {
+                        locale: idLocale,
+                      })}
+                    </span>
                   </div>
                 );
               })}
             </div>
           )}
         </div>
-
-      </main>
+      </div>
 
       <BottomNav />
     </div>
@@ -351,24 +637,36 @@ export default function HomePage() {
 
 function HomeSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-primary/5 pb-28">
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
+    <div className="min-h-screen pb-28" style={{ background: "var(--surface-100)" }}>
+      <div className="max-w-lg mx-auto" style={{ padding: "20px 16px" }}>
         <div className="flex items-center gap-3">
-          <Skeleton className="w-14 h-14 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-24" />
+          <div
+            className="rw-skel"
+            style={{ width: 40, height: 40, borderRadius: "50%" }}
+          />
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="rw-skel" style={{ height: 14, width: "60%" }} />
+            <div className="rw-skel" style={{ height: 10, width: "35%" }} />
           </div>
         </div>
-        <Skeleton className="h-36 rounded-2xl" />
-        <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
+        <div style={{ marginTop: 32 }}>
+          <div className="rw-skel" style={{ height: 20, width: "40%", marginBottom: 8 }} />
+          <div className="rw-skel" style={{ height: 36, width: "70%" }} />
         </div>
-        <SkeletonCard />
-        <SkeletonCard />
+        <div className="rw-skel" style={{ height: 160, width: "100%", marginTop: 24, borderRadius: "var(--radius-lg)" }} />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          <div className="rw-skel" style={{ height: 80, borderRadius: "var(--radius-lg)" }} />
+          <div className="rw-skel" style={{ height: 80, borderRadius: "var(--radius-lg)" }} />
+          <div className="rw-skel" style={{ height: 80, borderRadius: "var(--radius-lg)" }} />
+        </div>
       </div>
     </div>
   );
 }
-

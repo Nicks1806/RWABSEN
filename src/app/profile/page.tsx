@@ -37,12 +37,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  // Photo upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoMsg, setPhotoMsg] = useState("");
 
-  // Change PIN
   const [showPin, setShowPin] = useState(false);
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -61,7 +59,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // Fetch fresh data
     supabase
       .from("employees")
       .select("*")
@@ -228,13 +225,20 @@ export default function ProfilePage() {
   const eff = getEffectiveWorkHours(employee, null);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
       {/* Profile Header */}
-      <div className="bg-gradient-to-br from-primary to-primary-dark pt-6 pb-16 text-white">
+      <div
+        style={{
+          background: "var(--wine)",
+          paddingTop: "var(--space-6)",
+          paddingBottom: 64,
+          color: "var(--on-wine)",
+        }}
+      >
         <div className="max-w-lg mx-auto px-4">
-          <h1 className="text-center font-bold text-lg mb-4">Akun Saya</h1>
+          <p className="rw-micro text-center" style={{ color: "var(--on-wine)", opacity: 0.7, marginBottom: "var(--space-4)" }}>Profil</p>
           <div className="flex flex-col items-center">
-            <div className="relative">
+            <div style={{ position: "relative" }}>
               <Avatar
                 name={employee.name}
                 photoUrl={employee.photo_url}
@@ -244,7 +248,22 @@ export default function ProfilePage() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
-                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center shadow-lg hover:bg-gray-50 disabled:opacity-50"
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  right: -4,
+                  width: 32,
+                  height: 32,
+                  borderRadius: "var(--radius-full)",
+                  background: "var(--surface-200)",
+                  color: "var(--wine)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "var(--shadow-md)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
                 title="Ubah foto"
               >
                 {uploadingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
@@ -258,41 +277,51 @@ export default function ProfilePage() {
               />
             </div>
             {photoMsg && (
-              <p
-                className={`text-xs mt-2 ${
-                  photoMsg.includes("Gagal") || photoMsg.includes("Max") || photoMsg.includes("Harus")
-                    ? "text-red-200"
-                    : "text-green-200"
-                }`}
-              >
+              <p style={{
+                fontSize: 12,
+                marginTop: "var(--space-2)",
+                color: photoMsg.includes("Gagal") || photoMsg.includes("Max") || photoMsg.includes("Harus")
+                  ? "var(--danger-tint)"
+                  : "var(--success-tint)",
+              }}>
                 {photoMsg}
               </p>
             )}
-            <p className="text-xl font-bold mt-3">{employee.name}</p>
-            <p className="text-sm text-white/80">{employee.position || "Karyawan"}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, marginTop: "var(--space-3)" }}>{employee.name}</p>
+            <p style={{ fontSize: 14, opacity: 0.8 }}>{employee.position || "Karyawan"}</p>
           </div>
         </div>
       </div>
 
-      <main className="max-w-lg mx-auto px-4 -mt-10 space-y-4">
+      <main className="max-w-lg mx-auto px-4 pb-28" style={{ marginTop: -40, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {/* Contact info card */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800">Informasi Kontak</h2>
+        <div className="rw-card">
+          <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-3)" }}>
+            <h2 className="rw-heading" style={{ color: "var(--ink)" }}>Informasi Kontak</h2>
             {editing ? (
-              <button onClick={() => setEditing(false)} className="text-gray-400">
+              <button onClick={() => setEditing(false)} style={{ color: "var(--ink-muted)", background: "none", border: "none", cursor: "pointer" }}>
                 <X size={18} />
               </button>
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="flex items-center gap-1 text-xs text-primary font-medium"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--wine)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 <Edit3 size={12} /> Edit
               </button>
             )}
           </div>
-          <div className="space-y-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             <InfoRow icon={<Phone size={16} />} label="Nomor HP">
               {editing ? (
                 <input
@@ -300,10 +329,11 @@ export default function ProfilePage() {
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   placeholder="+62..."
-                  className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
+                  style={{ minHeight: 36, padding: "6px 12px", fontSize: 14 }}
                 />
               ) : (
-                <span className="text-sm text-gray-700">{employee.phone || "-"}</span>
+                <span style={{ fontSize: 14, color: "var(--ink)" }}>{employee.phone || "-"}</span>
               )}
             </InfoRow>
             <InfoRow icon={<Mail size={16} />} label="Email">
@@ -313,10 +343,11 @@ export default function ProfilePage() {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="email@..."
-                  className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
+                  style={{ minHeight: 36, padding: "6px 12px", fontSize: 14 }}
                 />
               ) : (
-                <span className="text-sm text-gray-700">{employee.email || "-"}</span>
+                <span style={{ fontSize: 14, color: "var(--ink)" }}>{employee.email || "-"}</span>
               )}
             </InfoRow>
             <InfoRow icon={<MapPin size={16} />} label="Alamat">
@@ -325,26 +356,32 @@ export default function ProfilePage() {
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   rows={2}
-                  className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
+                  style={{ minHeight: "auto", padding: "6px 12px", fontSize: 14, resize: "none" }}
                 />
               ) : (
-                <span className="text-sm text-gray-700">{employee.address || "-"}</span>
+                <span style={{ fontSize: 14, color: "var(--ink)" }}>{employee.address || "-"}</span>
               )}
             </InfoRow>
             <InfoRow icon={<CreditCard size={16} />} label="Nomor Rekening">
               {editing ? (
-                <div className="space-y-1">
+                <div>
                   <input
                     type="text"
                     value={form.bank_account}
                     onChange={(e) => setForm({ ...form, bank_account: e.target.value })}
                     placeholder="Contoh: BCA 1234567890 a/n Nama Lengkap"
-                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary"
+                    className="rw-input"
+                    style={{ minHeight: 36, padding: "6px 12px", fontSize: 14 }}
                   />
-                  <p className="text-[10px] text-gray-400 italic">Dipakai otomatis saat pengajuan reimburse</p>
+                  <p style={{ fontSize: 10, color: "var(--ink-muted)", fontStyle: "italic", marginTop: 4 }}>
+                    Dipakai otomatis saat pengajuan reimburse
+                  </p>
                 </div>
               ) : (
-                <span className="text-sm text-gray-700 font-mono">{employee.bank_account || "-"}</span>
+                <span style={{ fontSize: 14, color: "var(--ink)", fontFamily: "var(--font-geist-mono, monospace)" }}>
+                  {employee.bank_account || "-"}
+                </span>
               )}
             </InfoRow>
           </div>
@@ -352,25 +389,32 @@ export default function ProfilePage() {
             <button
               onClick={saveProfile}
               disabled={saving}
-              className="w-full mt-3 py-2 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark inline-flex items-center justify-center gap-1"
+              className="rw-btn rw-btn--primary rw-btn--block rw-btn--sm"
+              style={{ marginTop: "var(--space-3)" }}
             >
               <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
             </button>
           )}
           {msg && (
-            <p className={`text-xs mt-2 ${msg === "Tersimpan!" ? "text-green-600" : "text-red-600"}`}>{msg}</p>
+            <p style={{
+              fontSize: 12,
+              marginTop: "var(--space-2)",
+              color: msg === "Tersimpan!" ? "var(--success)" : "var(--danger)",
+            }}>
+              {msg}
+            </p>
           )}
         </div>
 
         {/* Work info */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="font-semibold text-gray-800 mb-3">Informasi Kerja</h2>
-          <div className="space-y-3">
+        <div className="rw-card">
+          <h2 className="rw-heading" style={{ color: "var(--ink)", marginBottom: "var(--space-3)" }}>Informasi Kerja</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             <InfoRow icon={<Briefcase size={16} />} label="Posisi">
-              <span className="text-sm text-gray-700">{employee.position || "-"}</span>
+              <span style={{ fontSize: 14, color: "var(--ink)" }}>{employee.position || "-"}</span>
             </InfoRow>
             <InfoRow icon={<Calendar size={16} />} label="Bergabung">
-              <span className="text-sm text-gray-700">
+              <span style={{ fontSize: 14, color: "var(--ink)" }}>
                 {employee.join_date
                   ? format(new Date(employee.join_date), "dd MMM yyyy", { locale: idLocale })
                   : "-"}
@@ -379,17 +423,17 @@ export default function ProfilePage() {
           </div>
           {/* Schedule */}
           {employee.schedule && Object.keys(employee.schedule).length > 0 ? (
-            <div className="mt-4 pt-3 border-t">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Jadwal Minggu Ini</p>
-              <div className="space-y-1">
+            <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--line)" }}>
+              <p className="rw-micro" style={{ marginBottom: "var(--space-2)" }}>Jadwal Minggu Ini</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {DAY_ORDER.map((day) => {
                   const s = employee.schedule?.[day];
                   const isOff = s?.off;
                   const hasCustom = s?.start && s?.end;
                   return (
-                    <div key={day} className="flex justify-between text-xs">
-                      <span className="text-gray-500">{DAY_LABELS[day]}</span>
-                      <span className={isOff ? "text-purple-600 font-medium" : "text-gray-700"}>
+                    <div key={day} className="flex justify-between" style={{ fontSize: 13 }}>
+                      <span style={{ color: "var(--ink-muted)" }}>{DAY_LABELS[day]}</span>
+                      <span style={{ color: isOff ? "var(--wine)" : "var(--ink)", fontWeight: isOff ? 500 : 400 }}>
                         {isOff
                           ? "Libur"
                           : hasCustom
@@ -404,10 +448,10 @@ export default function ProfilePage() {
               </div>
             </div>
           ) : employee.work_start ? (
-            <div className="mt-4 pt-3 border-t">
-              <p className="text-xs text-gray-500">
+            <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--line)" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>
                 Jam kerja:{" "}
-                <span className="font-semibold text-primary">
+                <span style={{ fontWeight: 600, color: "var(--wine)" }}>
                   {employee.work_start.slice(0, 5)} - {employee.work_end?.slice(0, 5)}
                 </span>
               </p>
@@ -419,34 +463,78 @@ export default function ProfilePage() {
         <NotifToggle employeeId={employee.id} />
 
         {/* Settings */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="rw-card" style={{ padding: 0, overflow: "hidden" }}>
           <button
             onClick={() => setShowPin(true)}
-            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 border-b"
+            style={{
+              width: "100%",
+              padding: "var(--space-4) var(--space-5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--line)",
+              background: "none",
+              border: "none",
+              borderBottomWidth: 1,
+              borderBottomStyle: "solid",
+              borderBottomColor: "var(--line)",
+              cursor: "pointer",
+            }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Key size={16} className="text-blue-600" />
+            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--wine-tint)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--wine)",
+                }}
+              >
+                <Key size={16} />
               </div>
-              <span className="text-sm font-medium">Ganti PIN</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>Ganti PIN</span>
             </div>
-            <ChevronRight size={16} className="text-gray-400" />
+            <ChevronRight size={16} style={{ color: "var(--ink-muted)" }} />
           </button>
           <button
             onClick={handleLogout}
-            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50"
+            style={{
+              width: "100%",
+              padding: "var(--space-4) var(--space-5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
-                <LogOut size={16} className="text-red-600" />
+            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--danger-tint)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--danger)",
+                }}
+              >
+                <LogOut size={16} />
               </div>
-              <span className="text-sm font-medium text-red-600">Keluar</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--danger)" }}>Keluar</span>
             </div>
-            <ChevronRight size={16} className="text-gray-400" />
+            <ChevronRight size={16} style={{ color: "var(--ink-muted)" }} />
           </button>
         </div>
 
-        <p className="text-center text-[10px] text-gray-400 pt-2">
+        <p style={{ textAlign: "center", fontSize: 10, color: "var(--ink-muted)", paddingTop: "var(--space-2)" }}>
           RedWine Attendance • v1.0
         </p>
       </main>
@@ -454,37 +542,47 @@ export default function ProfilePage() {
       {/* Change PIN Modal */}
       {showPin && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+          className="rw-overlay"
           onClick={() => !pinLoading && setShowPin(false)}
         >
           <div
-            className="bg-white w-full md:max-w-sm rounded-t-3xl md:rounded-3xl p-5 animate-slide-up"
+            className="rw-card animate-slide-up"
+            style={{
+              width: "100%",
+              maxWidth: 384,
+              margin: "0 var(--space-4)",
+              padding: "var(--space-5)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="md:hidden flex justify-center pb-3">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
-            </div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+            <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-4)" }}>
+              <h3 className="rw-heading flex items-center" style={{ gap: 8, color: "var(--ink)" }}>
                 <Key size={18} /> Ganti PIN
               </h3>
-              <button onClick={() => setShowPin(false)} className="text-gray-400">
-                <X size={20} />
+              <button
+                onClick={() => setShowPin(false)}
+                className="ico-circ"
+                style={{ width: 32, height: 32, color: "var(--ink-muted)", background: "var(--surface-100)", border: "none" }}
+              >
+                <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleChangePin} className="space-y-3">
+            <form onSubmit={handleChangePin} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <InputField label="PIN Lama" value={oldPin} onChange={setOldPin} />
               <InputField label="PIN Baru" value={newPin} onChange={setNewPin} />
               <InputField label="Konfirmasi PIN" value={confirmPin} onChange={setConfirmPin} />
               {pinMsg && (
-                <p className={`text-sm ${pinMsg.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                <p style={{
+                  fontSize: 13,
+                  color: pinMsg.type === "success" ? "var(--success)" : "var(--danger)",
+                }}>
                   {pinMsg.text}
                 </p>
               )}
               <button
                 type="submit"
                 disabled={pinLoading}
-                className="w-full py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-50"
+                className="rw-btn rw-btn--primary rw-btn--block"
               >
                 {pinLoading ? "Memproses..." : "Simpan"}
               </button>
@@ -508,12 +606,24 @@ function InfoRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-3 items-start">
-      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 shrink-0">
+    <div className="flex items-start" style={{ gap: "var(--space-3)" }}>
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "var(--radius-sm)",
+          background: "var(--surface-100)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--ink-muted)",
+          flexShrink: 0,
+        }}
+      >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-gray-400 font-medium mb-0.5">{label}</p>
+        <p className="rw-micro" style={{ marginBottom: 2 }}>{label}</p>
         {children}
       </div>
     </div>
@@ -531,14 +641,15 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-xs text-gray-600 mb-1">{label}</label>
+      <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-1)" }}>{label}</label>
       <input
         type="password"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         inputMode="numeric"
         required
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+        className="rw-input"
+        style={{ minHeight: 40, fontSize: 14 }}
       />
     </div>
   );

@@ -825,7 +825,7 @@ export default function TasksPage() {
     >
       <header className="sticky top-0 z-20" style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)" }}>
         {/* Top row — board name + actions */}
-        <div className="max-w-7xl mx-auto px-4 pt-3 pb-2">
+        <div className="px-4 pt-3 pb-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -898,8 +898,8 @@ export default function TasksPage() {
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   placeholder="Cari task..."
-                  className="rw-input pl-8 pr-8 py-1.5 w-44 text-xs"
-                  style={{ minHeight: 34 }}
+                  className="rw-input w-44 text-xs"
+                  style={{ minHeight: 34, paddingLeft: 34, paddingRight: 32 }}
                 />
                 {searchQ && (
                   <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
@@ -944,7 +944,7 @@ export default function TasksPage() {
         </div>
 
         {/* Stats + mobile search row */}
-        <div className="max-w-7xl mx-auto px-4 pb-3">
+        <div className="px-4 pb-3">
           {/* Mobile search */}
           <div className="flex items-center gap-2 mb-2 md:hidden">
             <div className="relative flex-1">
@@ -954,8 +954,8 @@ export default function TasksPage() {
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 placeholder="Cari task..."
-                className="rw-input pl-9 pr-9 py-2 w-full text-sm"
-                style={{ minHeight: 38 }}
+                className="rw-input w-full text-sm"
+                style={{ minHeight: 38, paddingLeft: 36, paddingRight: 36 }}
               />
               {searchQ && (
                 <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>

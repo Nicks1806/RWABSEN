@@ -57,7 +57,18 @@ export default function NotifToggle({ employeeId, compact = false }: Props) {
 
   if (!supported) {
     return compact ? null : (
-      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg p-2">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 12,
+          color: "var(--warning)",
+          background: "var(--warning-tint)",
+          borderRadius: "var(--radius-md)",
+          padding: 8,
+        }}
+      >
         <AlertCircle size={14} />
         <span>Browser tidak support notifikasi. Install app dulu.</span>
       </div>
@@ -66,7 +77,18 @@ export default function NotifToggle({ employeeId, compact = false }: Props) {
 
   if (permission === "denied") {
     return compact ? null : (
-      <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 rounded-lg p-2">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 12,
+          color: "var(--danger)",
+          background: "var(--danger-tint)",
+          borderRadius: "var(--radius-md)",
+          padding: 8,
+        }}
+      >
         <AlertCircle size={14} />
         <span>Notifikasi diblokir. Aktifkan di pengaturan browser.</span>
       </div>
@@ -78,9 +100,14 @@ export default function NotifToggle({ employeeId, compact = false }: Props) {
       <button
         onClick={toggle}
         disabled={loading}
-        className={`p-2 transition ${
-          subscribed ? "text-primary hover:text-primary-dark" : "text-gray-500 hover:text-primary"
-        }`}
+        style={{
+          padding: 8,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          transition: "color 0.15s ease",
+          color: subscribed ? "var(--wine)" : "var(--ink-muted)",
+        }}
         title={subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi"}
       >
         {subscribed ? <Bell size={20} /> : <BellOff size={20} />}
@@ -89,35 +116,45 @@ export default function NotifToggle({ employeeId, compact = false }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-4 border border-gray-200">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1">
+    <div className="rw-card">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flex: 1 }}>
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-              subscribed ? "bg-primary/10 text-primary" : "bg-gray-100 text-gray-400"
-            }`}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "var(--radius-lg)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              background: subscribed ? "var(--wine-tint)" : "var(--surface-300)",
+              color: subscribed ? "var(--wine)" : "var(--ink-muted)",
+            }}
           >
             {subscribed ? <Bell size={18} /> : <BellOff size={18} />}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-gray-800">Notifikasi Push</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Notifikasi Push</p>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
               {subscribed
                 ? "Aktif - Anda akan dapat notif saat pengajuan disetujui/ditolak"
                 : "Aktifkan untuk dapat notif langsung di HP"}
             </p>
             {msg && (
               <p
-                className={`text-xs mt-1 ${
-                  msg.includes("Gagal") || msg.includes("ditolak") ? "text-red-600" : "text-green-600"
-                }`}
+                style={{
+                  fontSize: 12,
+                  marginTop: 4,
+                  color: msg.includes("Gagal") || msg.includes("ditolak") ? "var(--danger)" : "var(--success)",
+                }}
               >
                 {msg}
               </p>
             )}
           </div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+        <label style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
           <input
             type="checkbox"
             checked={subscribed}
@@ -126,10 +163,29 @@ export default function NotifToggle({ employeeId, compact = false }: Props) {
             className="sr-only peer"
           />
           <div
-            className={`w-11 h-6 rounded-full peer-checked:bg-primary bg-gray-300 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all ${
-              loading ? "opacity-50" : ""
-            }`}
-          ></div>
+            style={{
+              width: 44,
+              height: 24,
+              borderRadius: "var(--radius-full)",
+              background: subscribed ? "var(--wine)" : "var(--surface-300)",
+              position: "relative",
+              transition: "background 0.2s ease",
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 2,
+                left: subscribed ? 22 : 2,
+                width: 20,
+                height: 20,
+                borderRadius: "var(--radius-full)",
+                background: "#fff",
+                transition: "left 0.2s ease",
+              }}
+            />
+          </div>
         </label>
       </div>
     </div>

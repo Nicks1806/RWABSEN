@@ -165,7 +165,6 @@ export default function PengajuanPage() {
     }
     setLoading(true);
 
-    // Upload attachment if exists
     let attachmentUrl: string | null = null;
     if (reimbFile) {
       try {
@@ -197,7 +196,6 @@ export default function PengajuanPage() {
       status: "pending",
     });
 
-    // Save bank_account to employee profile if changed (for next time)
     if (bankAcct && bankAcct !== employee.bank_account) {
       await supabase.from("employees").update({ bank_account: bankAcct }).eq("id", employee.id);
     }
@@ -208,7 +206,6 @@ export default function PengajuanPage() {
     }
     setMsg({ type: "success", text: "Reimburse terkirim!" });
 
-    // Notify admin
     try {
       const { data: admins } = await supabase.from("employees").select("id").eq("role", "admin");
       if (admins && admins.length > 0) {
@@ -254,48 +251,73 @@ export default function PengajuanPage() {
   if (!employee) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-br from-primary to-primary-dark text-white pt-6 pb-14 px-4">
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
+      {/* Header */}
+      <header
+        className="sticky top-0 z-30 px-4 pt-4 pb-3"
+        style={{ background: "var(--surface-100)" }}
+      >
         <div className="max-w-lg mx-auto">
-          <h1 className="text-center font-bold text-lg">Pengajuan Saya</h1>
-          <p className="text-center text-xs text-white/80 mt-1">
-            {topTab === "izin" ? "Cuti, Izin, Sakit" : "Reimburse biaya"}
-          </p>
+          <p className="rw-micro text-center" style={{ marginBottom: 4 }}>Pengajuan</p>
+          <h1 className="rw-heading text-center" style={{ color: "var(--ink)" }}>
+            {topTab === "izin" ? "Izin & Cuti" : "Reimburse"}
+          </h1>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 -mt-8 pb-8 space-y-4">
+      <main className="max-w-lg mx-auto px-4 pb-28" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {/* Top Tab Switcher */}
-        <div className="bg-white rounded-2xl shadow-sm p-1 grid grid-cols-2 gap-1">
+        <div
+          className="rw-card grid grid-cols-2"
+          style={{ padding: "var(--space-1)", gap: "var(--space-1)" }}
+        >
           <button
-            onClick={() => {
-              setTopTab("izin");
-              setFilter("all");
+            onClick={() => { setTopTab("izin"); setFilter("all"); }}
+            style={{
+              padding: "var(--space-3) var(--space-2)",
+              borderRadius: "var(--radius-md)",
+              fontSize: 14,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              background: topTab === "izin" ? "var(--wine)" : "transparent",
+              color: topTab === "izin" ? "var(--on-wine)" : "var(--ink-muted)",
             }}
-            className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
-              topTab === "izin" ? "bg-primary text-white shadow-sm" : "text-gray-500"
-            }`}
           >
             <FileText size={16} /> Izin/Cuti
           </button>
           <button
-            onClick={() => {
-              setTopTab("reimburse");
-              setFilter("all");
+            onClick={() => { setTopTab("reimburse"); setFilter("all"); }}
+            style={{
+              padding: "var(--space-3) var(--space-2)",
+              borderRadius: "var(--radius-md)",
+              fontSize: 14,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              background: topTab === "reimburse" ? "var(--wine)" : "transparent",
+              color: topTab === "reimburse" ? "var(--on-wine)" : "var(--ink-muted)",
             }}
-            className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
-              topTab === "reimburse" ? "bg-primary text-white shadow-sm" : "text-gray-500"
-            }`}
           >
             <Wallet size={16} /> Reimburse
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <StatCard label="Menunggu" value={stats.pending} color="yellow" />
-          <StatCard label="Disetujui" value={stats.approved} color="green" />
-          <StatCard label="Ditolak" value={stats.rejected} color="red" />
+        <div className="grid grid-cols-3" style={{ gap: "var(--space-2)" }}>
+          <StatCard label="Menunggu" value={stats.pending} variant="warning" />
+          <StatCard label="Disetujui" value={stats.approved} variant="success" />
+          <StatCard label="Ditolak" value={stats.rejected} variant="danger" />
         </div>
 
         {/* Submit Button */}
@@ -304,18 +326,18 @@ export default function PengajuanPage() {
             if (topTab === "izin") {
               setShowLeaveForm(true);
             } else {
-              // Prefill bank_account from profile
               setReimbForm((prev) => ({ ...prev, bank_account: employee?.bank_account || "" }));
               setShowReimbForm(true);
             }
           }}
-          className="w-full py-3 bg-primary text-white rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-md hover:bg-primary-dark transition"
+          className="rw-btn rw-btn--primary rw-btn--block"
+          style={{ borderRadius: "var(--radius-lg)" }}
         >
           <Plus size={18} /> Ajukan Baru
         </button>
 
         {/* Filter */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+        <div className="flex overflow-x-auto scrollbar-hide" style={{ gap: "var(--space-2)" }}>
           {[
             { key: "all" as const, label: "Semua" },
             { key: "pending" as const, label: "Menunggu" },
@@ -325,11 +347,18 @@ export default function PengajuanPage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                filter === f.key
-                  ? "bg-primary text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "var(--radius-full)",
+                fontSize: 12,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                border: filter === f.key ? "1px solid var(--wine)" : "1px solid var(--line)",
+                background: filter === f.key ? "var(--wine-tint)" : "var(--surface-200)",
+                color: filter === f.key ? "var(--wine)" : "var(--ink-muted)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
             >
               {f.label}
             </button>
@@ -337,15 +366,15 @@ export default function PengajuanPage() {
         </div>
 
         {/* List */}
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {filtered.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center">
+            <div className="rw-card" style={{ padding: "var(--space-8)", textAlign: "center" }}>
               {topTab === "izin" ? (
-                <FileText size={32} className="text-gray-300 mx-auto mb-2" />
+                <FileText size={32} style={{ color: "var(--ink-muted)", margin: "0 auto 8px", opacity: 0.4 }} />
               ) : (
-                <Wallet size={32} className="text-gray-300 mx-auto mb-2" />
+                <Wallet size={32} style={{ color: "var(--ink-muted)", margin: "0 auto 8px", opacity: 0.4 }} />
               )}
-              <p className="text-sm text-gray-400">Belum ada pengajuan</p>
+              <p style={{ fontSize: 14, color: "var(--ink-muted)" }}>Belum ada pengajuan</p>
             </div>
           ) : topTab === "izin" ? (
             (filtered as Leave[]).map((leave) => <LeaveCard key={leave.id} leave={leave} />)
@@ -358,38 +387,69 @@ export default function PengajuanPage() {
       {/* Leave Form Modal */}
       {showLeaveForm && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+          className="rw-overlay"
           onClick={() => !loading && setShowLeaveForm(false)}
         >
           <div
-            className="bg-white w-full md:max-w-sm rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto"
+            className="rw-sheet"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 bg-white z-10">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            {/* Drag handle */}
+            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 z-10" style={{ background: "var(--surface-200)" }}>
+              <div style={{ width: 40, height: 4, borderRadius: "var(--radius-full)", background: "var(--line)" }} />
             </div>
-            <div className="bg-gradient-to-br from-primary to-primary-dark px-5 pt-4 pb-5 text-white relative">
+
+            {/* Wine header */}
+            <div
+              style={{
+                background: "var(--wine)",
+                padding: "var(--space-4) var(--space-5) var(--space-5)",
+                color: "var(--on-wine)",
+                position: "relative",
+              }}
+            >
               <button
                 onClick={() => !loading && setShowLeaveForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                className="ico-circ"
+                style={{
+                  position: "absolute",
+                  top: "var(--space-4)",
+                  right: "var(--space-4)",
+                  width: 32,
+                  height: 32,
+                  background: "rgba(255,255,255,0.15)",
+                  color: "var(--on-wine)",
+                  border: "none",
+                }}
               >
                 <X size={18} />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+              <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "var(--radius-lg)",
+                    background: "rgba(255,255,255,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <FileText size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Pengajuan Baru</h3>
-                  <p className="text-xs text-white/80">Izin / Cuti / Sakit</p>
+                  <h3 className="rw-heading" style={{ color: "var(--on-wine)" }}>Pengajuan Baru</h3>
+                  <p style={{ fontSize: 12, opacity: 0.8 }}>Izin / Cuti / Sakit</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={submitLeave} className="p-5 space-y-4">
+            <form onSubmit={submitLeave} style={{ padding: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              {/* Leave type */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Jenis</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Jenis</label>
+                <div className="grid grid-cols-3" style={{ gap: "var(--space-2)" }}>
                   {([
                     { key: "izin", label: "Izin", emoji: "📝" },
                     { key: "cuti", label: "Cuti", emoji: "🏖️" },
@@ -401,82 +461,99 @@ export default function PengajuanPage() {
                         key={t.key}
                         type="button"
                         onClick={() => setLeaveForm({ ...leaveForm, leave_type: t.key })}
-                        className={`py-3 rounded-xl text-center transition-all ${
-                          active
-                            ? "bg-primary text-white shadow-md scale-105 ring-2 ring-primary/20"
-                            : "bg-gray-50 text-gray-600"
-                        }`}
+                        style={{
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-md)",
+                          textAlign: "center",
+                          border: active ? "2px solid var(--wine)" : "1px solid var(--line)",
+                          background: active ? "var(--wine-tint)" : "var(--surface-200)",
+                          color: active ? "var(--wine)" : "var(--ink)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
                       >
-                        <div className="text-2xl">{t.emoji}</div>
-                        <div className="text-xs font-semibold mt-0.5">{t.label}</div>
+                        <div style={{ fontSize: 24 }}>{t.emoji}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2 }}>{t.label}</div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              {/* Period */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Periode</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">DARI</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Periode</label>
+                <div className="grid grid-cols-2" style={{ gap: "var(--space-2)" }}>
+                  <div style={{ background: "var(--surface-100)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" }}>
+                    <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-1)" }}>Dari</label>
                     <input
                       type="date"
                       value={leaveForm.start_date}
                       onChange={(e) => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      style={{ width: "100%", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--ink)", border: "none", outline: "none" }}
                       required
                     />
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">SAMPAI</label>
+                  <div style={{ background: "var(--surface-100)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" }}>
+                    <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-1)" }}>Sampai</label>
                     <input
                       type="date"
                       value={leaveForm.end_date}
                       onChange={(e) => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      style={{ width: "100%", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--ink)", border: "none", outline: "none" }}
                       required
                     />
                   </div>
                 </div>
               </div>
 
+              {/* Reason */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Alasan</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Alasan</label>
                 <textarea
                   value={leaveForm.reason}
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                   rows={3}
                   placeholder="Contoh: Acara keluarga, sakit flu..."
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white resize-none"
+                  className="rw-input"
+                  style={{ resize: "none", minHeight: "auto", paddingTop: 10, paddingBottom: 10 }}
                   required
                 />
               </div>
 
               {msg && (
                 <div
-                  className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-                    msg.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                  }`}
+                  style={{
+                    padding: "var(--space-3)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: 13,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: msg.type === "success" ? "var(--success-tint)" : "var(--danger-tint)",
+                    color: msg.type === "success" ? "var(--success)" : "var(--danger)",
+                  }}
                 >
                   {msg.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-                  <span className="flex-1">{msg.text}</span>
+                  <span style={{ flex: 1 }}>{msg.text}</span>
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex" style={{ gap: "var(--space-2)", paddingTop: "var(--space-1)" }}>
                 <button
                   type="button"
                   onClick={() => setShowLeaveForm(false)}
                   disabled={loading}
-                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium disabled:opacity-50"
+                  className="rw-btn rw-btn--outline rw-btn--sm"
+                  style={{ flex: 1 }}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+                  className="rw-btn rw-btn--primary rw-btn--sm"
+                  style={{ flex: 2 }}
                 >
                   {loading ? "Mengirim..." : "Kirim Pengajuan"}
                 </button>
@@ -489,38 +566,69 @@ export default function PengajuanPage() {
       {/* Reimburse Form Modal */}
       {showReimbForm && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+          className="rw-overlay"
           onClick={() => !loading && setShowReimbForm(false)}
         >
           <div
-            className="bg-white w-full md:max-w-sm rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto"
+            className="rw-sheet"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 bg-white z-10">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            {/* Drag handle */}
+            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 z-10" style={{ background: "var(--surface-200)" }}>
+              <div style={{ width: 40, height: 4, borderRadius: "var(--radius-full)", background: "var(--line)" }} />
             </div>
-            <div className="bg-gradient-to-br from-primary to-primary-dark px-5 pt-4 pb-5 text-white relative">
+
+            {/* Wine header */}
+            <div
+              style={{
+                background: "var(--wine)",
+                padding: "var(--space-4) var(--space-5) var(--space-5)",
+                color: "var(--on-wine)",
+                position: "relative",
+              }}
+            >
               <button
                 onClick={() => !loading && setShowReimbForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                className="ico-circ"
+                style={{
+                  position: "absolute",
+                  top: "var(--space-4)",
+                  right: "var(--space-4)",
+                  width: 32,
+                  height: 32,
+                  background: "rgba(255,255,255,0.15)",
+                  color: "var(--on-wine)",
+                  border: "none",
+                }}
               >
                 <X size={18} />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+              <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "var(--radius-lg)",
+                    background: "rgba(255,255,255,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Wallet size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Pengajuan Reimburse</h3>
-                  <p className="text-xs text-white/80">Klaim pengeluaran</p>
+                  <h3 className="rw-heading" style={{ color: "var(--on-wine)" }}>Pengajuan Reimburse</h3>
+                  <p style={{ fontSize: 12, opacity: 0.8 }}>Klaim pengeluaran</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={submitReimb} className="p-5 space-y-4">
+            <form onSubmit={submitReimb} style={{ padding: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              {/* Category */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Kategori</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Kategori</label>
+                <div className="grid grid-cols-3" style={{ gap: "var(--space-2)" }}>
                   {([
                     { key: "umum", label: "Umum", emoji: "📦" },
                     { key: "transport", label: "Transport", emoji: "🚗" },
@@ -534,35 +642,54 @@ export default function PengajuanPage() {
                         key={t.key}
                         type="button"
                         onClick={() => setReimbForm({ ...reimbForm, category: t.key })}
-                        className={`py-2.5 rounded-xl text-center transition-all ${
-                          active
-                            ? "bg-primary text-white shadow-md scale-105 ring-2 ring-primary/20"
-                            : "bg-gray-50 text-gray-600"
-                        }`}
+                        style={{
+                          padding: "var(--space-2) var(--space-1)",
+                          borderRadius: "var(--radius-md)",
+                          textAlign: "center",
+                          border: active ? "2px solid var(--wine)" : "1px solid var(--line)",
+                          background: active ? "var(--wine-tint)" : "var(--surface-200)",
+                          color: active ? "var(--wine)" : "var(--ink)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
                       >
-                        <div className="text-xl">{t.emoji}</div>
-                        <div className="text-[10px] font-semibold mt-0.5">{t.label}</div>
+                        <div style={{ fontSize: 20 }}>{t.emoji}</div>
+                        <div style={{ fontSize: 10, fontWeight: 600, marginTop: 2 }}>{t.label}</div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              {/* Transaction date */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Tanggal Transaksi</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Tanggal Transaksi</label>
                 <input
                   type="date"
                   value={reimbForm.transaction_date}
                   onChange={(e) => setReimbForm({ ...reimbForm, transaction_date: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                  className="rw-input"
                   required
                 />
               </div>
 
+              {/* Amount */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Jumlah (Rp)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold">Rp</span>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Jumlah (Rp)</label>
+                <div style={{ position: "relative" }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 16,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "var(--ink-muted)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Rp
+                  </span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -573,18 +700,30 @@ export default function PengajuanPage() {
                       setReimbForm({ ...reimbForm, amount: formatted });
                     }}
                     placeholder="0"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                    className="rw-input"
+                    style={{ paddingLeft: 40, fontWeight: 600 }}
                     required
                   />
                 </div>
               </div>
 
+              {/* Bank account */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-semibold text-gray-700">No. Rekening</label>
+                <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-2)" }}>
+                  <label className="rw-micro">No. Rekening</label>
                   {employee?.bank_account && reimbForm.bank_account === employee.bank_account && (
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500" /> Dari profil
+                    <span style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "2px 8px",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      background: "var(--success-tint)",
+                      color: "var(--success)",
+                    }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--success)" }} /> Dari profil
                     </span>
                   )}
                 </div>
@@ -593,16 +732,17 @@ export default function PengajuanPage() {
                   value={reimbForm.bank_account}
                   onChange={(e) => setReimbForm({ ...reimbForm, bank_account: e.target.value })}
                   placeholder="Contoh: BCA 1234567890 a/n Anselline"
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                  className="rw-input"
                   required
                 />
-                <p className="text-[10px] text-gray-400 mt-1">
+                <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: "var(--space-1)" }}>
                   Rekening untuk transfer penggantian. Ubah sekali → otomatis tersimpan di profil.
                 </p>
               </div>
 
+              {/* File upload */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Bukti (Opsional)</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Bukti (Opsional)</label>
                 <input
                   ref={reimbFileRef}
                   type="file"
@@ -613,16 +753,27 @@ export default function PengajuanPage() {
                 <button
                   type="button"
                   onClick={() => reimbFileRef.current?.click()}
-                  className={`w-full py-3 border-2 border-dashed rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition ${
-                    reimbFile
-                      ? "border-green-400 bg-green-50 text-green-700"
-                      : "border-gray-300 text-gray-500 hover:border-primary hover:text-primary"
-                  }`}
+                  style={{
+                    width: "100%",
+                    padding: "var(--space-3)",
+                    border: reimbFile ? "2px dashed var(--success)" : "2px dashed var(--line)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    background: reimbFile ? "var(--success-tint)" : "transparent",
+                    color: reimbFile ? "var(--success)" : "var(--ink-muted)",
+                    transition: "all 0.15s ease",
+                  }}
                 >
                   {reimbFile ? (
                     <>
                       <ImageIcon size={16} />
-                      <span className="truncate max-w-[200px]">{reimbFile.name}</span>
+                      <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reimbFile.name}</span>
                     </>
                   ) : (
                     <>
@@ -637,48 +788,59 @@ export default function PengajuanPage() {
                       setReimbFile(null);
                       if (reimbFileRef.current) reimbFileRef.current.value = "";
                     }}
-                    className="text-xs text-red-600 mt-1 underline"
+                    style={{ fontSize: 12, color: "var(--danger)", marginTop: "var(--space-1)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}
                   >
                     Hapus file
                   </button>
                 )}
               </div>
 
+              {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Deskripsi</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>Deskripsi</label>
                 <textarea
                   value={reimbForm.description}
                   onChange={(e) => setReimbForm({ ...reimbForm, description: e.target.value })}
                   rows={3}
                   placeholder="Detail pengeluaran..."
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white resize-none"
+                  className="rw-input"
+                  style={{ resize: "none", minHeight: "auto", paddingTop: 10, paddingBottom: 10 }}
                 />
               </div>
 
               {msg && (
                 <div
-                  className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-                    msg.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                  }`}
+                  style={{
+                    padding: "var(--space-3)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: 13,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: msg.type === "success" ? "var(--success-tint)" : "var(--danger-tint)",
+                    color: msg.type === "success" ? "var(--success)" : "var(--danger)",
+                  }}
                 >
                   {msg.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-                  <span className="flex-1">{msg.text}</span>
+                  <span style={{ flex: 1 }}>{msg.text}</span>
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex" style={{ gap: "var(--space-2)", paddingTop: "var(--space-1)" }}>
                 <button
                   type="button"
                   onClick={() => setShowReimbForm(false)}
                   disabled={loading}
-                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium disabled:opacity-50"
+                  className="rw-btn rw-btn--outline rw-btn--sm"
+                  style={{ flex: 1 }}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+                  className="rw-btn rw-btn--primary rw-btn--sm"
+                  style={{ flex: 2 }}
                 >
                   {loading ? "Mengirim..." : "Kirim Reimburse"}
                 </button>
@@ -693,16 +855,25 @@ export default function PengajuanPage() {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: "yellow" | "green" | "red" }) {
-  const colors = {
-    yellow: "bg-yellow-50 text-yellow-700",
-    green: "bg-green-50 text-green-700",
-    red: "bg-red-50 text-red-700",
-  };
+function StatCard({ label, value, variant }: { label: string; value: number; variant: "warning" | "success" | "danger" }) {
+  const styles = {
+    warning: { bg: "var(--warning-tint)", color: "var(--warning)" },
+    success: { bg: "var(--success-tint)", color: "var(--success)" },
+    danger: { bg: "var(--danger-tint)", color: "var(--danger)" },
+  }[variant];
+
   return (
-    <div className={`rounded-2xl p-3 text-center shadow-sm ${colors[color]}`}>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-[10px] font-medium">{label}</p>
+    <div
+      style={{
+        borderRadius: "var(--radius-lg)",
+        padding: "var(--space-3)",
+        textAlign: "center",
+        background: styles.bg,
+        border: "1px solid var(--line)",
+      }}
+    >
+      <p style={{ fontSize: 24, fontWeight: 700, color: styles.color, fontVariantNumeric: "tabular-nums" }}>{value}</p>
+      <p className="rw-micro" style={{ color: styles.color }}>{label}</p>
     </div>
   );
 }
@@ -712,17 +883,20 @@ function statusInfo(status: "pending" | "approved" | "rejected") {
     pending: {
       icon: <Clock size={14} />,
       label: "Menunggu",
-      color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      bg: "var(--warning-tint)",
+      color: "var(--warning)",
     },
     approved: {
       icon: <CheckCircle size={14} />,
       label: "Disetujui",
-      color: "bg-green-50 text-green-700 border-green-200",
+      bg: "var(--success-tint)",
+      color: "var(--success)",
     },
     rejected: {
       icon: <XCircle size={14} />,
       label: "Ditolak",
-      color: "bg-red-50 text-red-700 border-red-200",
+      bg: "var(--danger-tint)",
+      color: "var(--danger)",
     },
   }[status];
 }
@@ -737,33 +911,55 @@ function LeaveCard({ leave }: { leave: Leave }) {
   const s = statusInfo(leave.status);
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{typeInfo.emoji}</span>
+    <div className="rw-card">
+      <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-2)" }}>
+        <div className="flex items-center" style={{ gap: "var(--space-2)" }}>
+          <span style={{ fontSize: 24 }}>{typeInfo.emoji}</span>
           <div>
-            <p className="font-semibold text-sm">{typeInfo.label}</p>
-            <p className="text-[10px] text-gray-400">
+            <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{typeInfo.label}</p>
+            <p style={{ fontSize: 10, color: "var(--ink-muted)" }}>
               {format(new Date(leave.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
             </p>
           </div>
         </div>
-        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border font-medium ${s.color}`}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 10,
+            fontWeight: 600,
+            padding: "4px 10px",
+            borderRadius: "var(--radius-full)",
+            background: s.bg,
+            color: s.color,
+          }}
+        >
           {s.icon} {s.label}
         </span>
       </div>
-      <div className="bg-gray-50 rounded-xl p-2.5 mb-2">
-        <p className="text-[11px] text-gray-500 mb-0.5">Periode</p>
-        <p className="text-sm font-semibold text-gray-700">
+
+      <div
+        style={{
+          background: "var(--surface-100)",
+          borderRadius: "var(--radius-md)",
+          padding: "var(--space-2) var(--space-3)",
+          marginBottom: "var(--space-2)",
+        }}
+      >
+        <p className="rw-micro" style={{ marginBottom: 2 }}>Periode</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
           {format(new Date(leave.start_date), "dd MMM", { locale: idLocale })}
           {leave.start_date !== leave.end_date &&
             ` - ${format(new Date(leave.end_date), "dd MMM yyyy", { locale: idLocale })}`}
           {leave.start_date === leave.end_date && ` ${format(new Date(leave.end_date), "yyyy", { locale: idLocale })}`}
         </p>
       </div>
-      <p className="text-xs text-gray-600">{leave.reason}</p>
+
+      <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>{leave.reason}</p>
+
       {leave.admin_notes && (
-        <p className="text-xs text-gray-500 italic mt-2 pt-2 border-t">
+        <p style={{ fontSize: 12, color: "var(--ink-muted)", fontStyle: "italic", marginTop: "var(--space-2)", paddingTop: "var(--space-2)", borderTop: "1px solid var(--line)" }}>
           Catatan admin: {leave.admin_notes}
         </p>
       )}
@@ -783,49 +979,81 @@ function ReimbCard({ reimb }: { reimb: Reimbursement }) {
   const s = statusInfo(reimb.status);
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{catInfo.emoji}</span>
+    <div className="rw-card">
+      <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-2)" }}>
+        <div className="flex items-center" style={{ gap: "var(--space-2)" }}>
+          <span style={{ fontSize: 24 }}>{catInfo.emoji}</span>
           <div>
-            <p className="font-semibold text-sm">{catInfo.label}</p>
-            <p className="text-[10px] text-gray-400">
+            <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{catInfo.label}</p>
+            <p style={{ fontSize: 10, color: "var(--ink-muted)" }}>
               {format(new Date(reimb.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
             </p>
           </div>
         </div>
-        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border font-medium ${s.color}`}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 10,
+            fontWeight: 600,
+            padding: "4px 10px",
+            borderRadius: "var(--radius-full)",
+            background: s.bg,
+            color: s.color,
+          }}
+        >
           {s.icon} {s.label}
         </span>
       </div>
-      <div className="bg-primary/5 rounded-xl p-3 mb-2">
-        <p className="text-[11px] text-gray-500 mb-0.5">Jumlah</p>
-        <p className="text-xl font-bold text-primary">
+
+      <div
+        style={{
+          background: "var(--wine-tint)",
+          borderRadius: "var(--radius-md)",
+          padding: "var(--space-3)",
+          marginBottom: "var(--space-2)",
+        }}
+      >
+        <p className="rw-micro" style={{ marginBottom: 2 }}>Jumlah</p>
+        <p style={{ fontSize: 22, fontWeight: 700, color: "var(--wine)", fontVariantNumeric: "tabular-nums" }}>
           Rp {reimb.amount.toLocaleString("id-ID")}
         </p>
-        <p className="text-[10px] text-gray-500 mt-1">
+        <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: "var(--space-1)" }}>
           Transaksi: {format(new Date(reimb.transaction_date), "dd MMM yyyy", { locale: idLocale })}
         </p>
       </div>
-      {reimb.description && <p className="text-xs text-gray-600">{reimb.description}</p>}
+
+      {reimb.description && <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>{reimb.description}</p>}
+
       {reimb.bank_account && (
-        <p className="text-xs text-gray-500 mt-1.5">
-          <span className="text-gray-400">Rek: </span>
-          <span className="font-mono">{reimb.bank_account}</span>
+        <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 6 }}>
+          <span style={{ opacity: 0.7 }}>Rek: </span>
+          <span style={{ fontFamily: "var(--font-geist-mono, monospace)" }}>{reimb.bank_account}</span>
         </p>
       )}
+
       {reimb.attachment_url && (
         <a
           href={reimb.attachment_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+          style={{
+            marginTop: "var(--space-2)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--wine)",
+          }}
         >
           <ImageIcon size={12} /> Lihat bukti
         </a>
       )}
+
       {reimb.admin_notes && (
-        <p className="text-xs text-gray-500 italic mt-2 pt-2 border-t">
+        <p style={{ fontSize: 12, color: "var(--ink-muted)", fontStyle: "italic", marginTop: "var(--space-2)", paddingTop: "var(--space-2)", borderTop: "1px solid var(--line)" }}>
           Catatan admin: {reimb.admin_notes}
         </p>
       )}

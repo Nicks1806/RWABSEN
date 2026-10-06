@@ -36,7 +36,7 @@ export default function LeavesTab({
   onBulkReviewLeaves, onBulkReviewReimbs, onReviewLeave, onReviewReimb, globalSearch,
 }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Sub-tab: Izin vs Reimburse */}
       <div className="rw-card p-1 grid grid-cols-2 gap-1" style={{ padding: "var(--space-1)" }}>
         <button
@@ -74,7 +74,7 @@ export default function LeavesTab({
       {leavesSubTab === "izin" ? (
       <>
       {/* Filter */}
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-2.5 overflow-x-auto pb-1">
         {[
           { key: "all" as const, label: "Semua", count: leaves.length },
           { key: "pending" as const, label: "Menunggu", count: leaves.filter((l) => l.status === "pending").length },
@@ -138,7 +138,7 @@ export default function LeavesTab({
       )}
 
       {/* Leave List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {leaves
           .filter((l) => leaveFilter === "all" || l.status === leaveFilter)
           .filter((l) => {
@@ -175,8 +175,8 @@ export default function LeavesTab({
                   outlineOffset: "1px",
                 }}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3.5 min-w-0">
                     {leave.status === "pending" && (
                       <input
                         type="checkbox"
@@ -269,7 +269,7 @@ export default function LeavesTab({
       ) : (
         /* REIMBURSE SECTION */
         <>
-          <div className="flex gap-2 overflow-x-auto">
+          <div className="flex gap-2.5 overflow-x-auto pb-1">
             {[
               { key: "all" as const, label: "Semua", count: reimbs.length },
               { key: "pending" as const, label: "Menunggu", count: reimbs.filter((r) => r.status === "pending").length },
@@ -332,7 +332,7 @@ export default function LeavesTab({
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {reimbs
               .filter((r) => leaveFilter === "all" || r.status === leaveFilter)
               .filter((r) => {
@@ -365,8 +365,8 @@ export default function LeavesTab({
                       outlineOffset: "1px",
                     }}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
                         {reimb.status === "pending" && (
                           <input
                             type="checkbox"

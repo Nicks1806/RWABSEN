@@ -56,7 +56,6 @@ export default function InboxPage() {
 
     setItems(inboxItems);
 
-    // Mark as seen
     localStorage.setItem("inbox_last_seen", new Date().toISOString());
   }, []);
 
@@ -73,20 +72,23 @@ export default function InboxPage() {
   if (!employee) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white sticky top-0 z-10 border-b">
-        <div className="max-w-lg mx-auto px-4 py-4">
-          <h1 className="font-bold text-lg">Inbox</h1>
-          <p className="text-xs text-gray-500">Notifikasi dari admin</p>
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
+      <header
+        className="sticky top-0 z-30 px-4 pt-4 pb-3"
+        style={{ background: "var(--surface-100)", borderBottom: "1px solid var(--line)" }}
+      >
+        <div className="max-w-lg mx-auto">
+          <p className="rw-micro" style={{ marginBottom: 4 }}>Notifikasi</p>
+          <h1 className="rw-heading" style={{ color: "var(--ink)" }}>Inbox</h1>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-4 space-y-2">
+      <main className="max-w-lg mx-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center mt-4">
-            <Bell size={32} className="text-gray-300 mx-auto mb-2" />
-            <p className="font-semibold text-gray-700 text-sm">Belum ada notifikasi</p>
-            <p className="text-xs text-gray-400 mt-1">
+          <div className="rw-card" style={{ padding: "var(--space-8)", textAlign: "center", marginTop: "var(--space-4)" }}>
+            <Bell size={32} style={{ color: "var(--ink-muted)", margin: "0 auto 8px", opacity: 0.4 }} />
+            <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Belum ada notifikasi</p>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
               Notifikasi akan muncul saat pengajuan disetujui/ditolak
             </p>
           </div>
@@ -95,27 +97,45 @@ export default function InboxPage() {
             <button
               key={item.id}
               onClick={() => router.push("/pengajuan")}
-              className="w-full bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition flex gap-3 text-left"
+              className="rw-card"
+              style={{
+                width: "100%",
+                display: "flex",
+                gap: "var(--space-3)",
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "box-shadow 0.15s ease",
+                padding: "var(--space-4)",
+                border: "1px solid var(--line)",
+              }}
             >
               <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  item.type === "approved"
-                    ? "bg-green-50 text-green-600"
-                    : "bg-red-50 text-red-600"
-                }`}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "var(--radius-md)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  background: item.type === "approved" ? "var(--success-tint)" : "var(--danger-tint)",
+                  color: item.type === "approved" ? "var(--success)" : "var(--danger)",
+                }}
               >
                 {item.type === "approved" ? <CheckCircle size={20} /> : <XCircle size={20} />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-sm text-gray-800">{item.title}</p>
-                  <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                <div className="flex items-start justify-between" style={{ gap: "var(--space-2)" }}>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{item.title}</p>
+                  <span style={{ fontSize: 10, color: "var(--ink-muted)", whiteSpace: "nowrap" }}>
                     {format(new Date(item.time), "dd/MM HH:mm")}
                   </span>
                 </div>
-                <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{item.body}</p>
+                <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {item.body}
+                </p>
                 {item.meta && (
-                  <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                  <p style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
                     <FileText size={10} /> {item.meta}
                   </p>
                 )}

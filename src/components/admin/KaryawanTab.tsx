@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { getEffectiveWorkHours } from "@/lib/workHours";
-import { getPositionColor } from "@/lib/positions";
+import { POSITIONS, getPositionColor } from "@/lib/positions";
 import type { Employee, Settings } from "@/lib/types";
 
 interface Props {
@@ -31,8 +31,8 @@ interface Props {
   month: string;
   showPins: boolean;
   setShowPins: (v: boolean) => void;
-  newEmployee: { name: string; pin: string };
-  setNewEmployee: (v: { name: string; pin: string }) => void;
+  newEmployee: { name: string; pin: string; position: string };
+  setNewEmployee: (v: { name: string; pin: string; position: string }) => void;
   empMsg: string;
   onAddEmployee: (e: FormEvent) => void;
   reportLoadingId: string | null;
@@ -67,7 +67,7 @@ export default function KaryawanTab({
             <p className="text-xs" style={{ color: "var(--ink-muted)" }}>Karyawan bisa langsung login dengan nama & PIN</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3">
           <input
             type="text"
             placeholder="Nama karyawan"
@@ -84,6 +84,16 @@ export default function KaryawanTab({
             className="rw-input font-mono"
             required
           />
+          <select
+            value={newEmployee.position}
+            onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
+            className="rw-input"
+          >
+            <option value="">Posisi (opsional)</option>
+            {POSITIONS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
           <button type="submit" className="rw-btn rw-btn--primary inline-flex items-center gap-1.5 justify-center">
             <Plus size={16} /> Tambah
           </button>

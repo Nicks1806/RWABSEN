@@ -64,7 +64,7 @@ export default function AdminPage() {
   const [settingsMsg, setSettingsMsg] = useState("");
 
   // Employee form
-  const [newEmployee, setNewEmployee] = useState({ name: "", pin: "" });
+  const [newEmployee, setNewEmployee] = useState({ name: "", pin: "", position: "" });
   const [empMsg, setEmpMsg] = useState("");
 
   // Reset PIN modal
@@ -359,10 +359,11 @@ export default function AdminPage() {
       name: newEmployee.name.trim(),
       pin: newEmployee.pin.trim(),
       role: "employee",
+      position: newEmployee.position || null,
     });
     setEmpMsg(error ? "Gagal menambah karyawan" : "Karyawan ditambahkan!");
     if (!error) {
-      setNewEmployee({ name: "", pin: "" });
+      setNewEmployee({ name: "", pin: "", position: "" });
       fetchData();
     }
     setTimeout(() => setEmpMsg(""), 3000);

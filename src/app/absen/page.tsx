@@ -44,6 +44,7 @@ export default function AbsenPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState(0);
   const [distance, setDistance] = useState<number | null>(null);
   const [isOutsideRadius, setIsOutsideRadius] = useState(false);
   const [notes, setNotes] = useState("");
@@ -212,22 +213,27 @@ export default function AbsenPage() {
     await tryGetLocation();
   }
 
+  // Evaluate radius in an effect so it still runs when settings arrive AFTER
+  // GPS (slow connection) — previously the check was silently skipped and
+  // isOutsideRadius stayed false, letting off-site clock-ins skip the
+  // mandatory notes
+  useEffect(() => {
+    if (!location || !settings || Number.isNaN(location.lat)) return;
+    const dist = getDistanceFromLatLng(location.lat, location.lng, settings.office_lat, settings.office_lng);
+    // Consider GPS accuracy: effective distance = dist - accuracy margin
+    // If GPS is imprecise (e.g., accuracy 80m), give benefit of doubt
+    const effectiveDist = Math.max(0, dist - gpsAccuracy);
+    setDistance(Math.round(dist));
+    setIsOutsideRadius(effectiveDist > settings.radius_meters);
+  }, [location, gpsAccuracy, settings]);
+
   async function tryGetLocation() {
     setGpsRetrying(true);
     setGpsDenied(false);
     try {
       const pos = await getCurrentPosition();
-      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setLocation(loc);
-      if (settings) {
-        const dist = getDistanceFromLatLng(loc.lat, loc.lng, settings.office_lat, settings.office_lng);
-        const accuracy = pos.coords.accuracy || 0;
-        // Consider GPS accuracy: effective distance = dist - accuracy margin
-        // If GPS is imprecise (e.g., accuracy 80m), give benefit of doubt
-        const effectiveDist = Math.max(0, dist - accuracy);
-        setDistance(Math.round(dist));
-        setIsOutsideRadius(effectiveDist > settings.radius_meters);
-      }
+      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setGpsAccuracy(pos.coords.accuracy || 0);
       setMessage(null);
     } catch (err) {
       const geoErr = err as GeolocationPositionError;
@@ -292,6 +298,10 @@ export default function AbsenPage() {
 
   async function handleSubmit() {
     if (!employee || !capturedPhoto || !location) return;
+    if (!settings) {
+      setMessage({ type: "error", text: "Pengaturan kantor belum termuat. Tunggu sebentar lalu coba lagi." });
+      return;
+    }
     if (isOutsideRadius && !notes.trim()) {
       setMessage({ type: "error", text: "Anda di luar radius kantor. Wajib isi keterangan." });
       return;

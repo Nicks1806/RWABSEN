@@ -75,7 +75,10 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
     setAttachments(task.attachments || []);
     setChecklist(task.checklist || []);
     setComments(task.comments || []);
-  }, [task]);
+    // Depend on task.id only: realtime refetches rebuild the task object,
+    // and resetting here would wipe edits the user is still typing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id]);
 
   // ===== Persistence helpers =====
   async function saveAll() {

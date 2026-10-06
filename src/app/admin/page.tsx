@@ -133,13 +133,18 @@ export default function AdminPage() {
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // Today's attendance, independent of the selected month
+  const [todayRecords, setTodayRecords] = useState<Attendance[]>([]);
+  const settingsFormInitRef = useRef(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const date = new Date(month + "-01");
     const start = format(startOfMonth(date), "yyyy-MM-dd");
     const end = format(endOfMonth(date), "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
 
-    const [empRes, attRes, setRes, leavesRes, reimbRes] = await Promise.all([
+    const [empRes, attRes, todayRes, setRes, leavesRes, reimbRes] = await Promise.all([
       supabase.from("employees").select("*").eq("is_active", true).order("name"),
       supabase
         .from("attendance")
@@ -147,6 +152,9 @@ export default function AdminPage() {
         .gte("date", start)
         .lte("date", end)
         .order("date", { ascending: false }),
+      // Today's rows fetched separately so "Hari Ini" stats stay correct
+      // even when the admin is viewing a different month
+      supabase.from("attendance").select("*, employees(name)").eq("date", todayStr),
       supabase.from("settings").select("*").single(),
       supabase
         .from("leaves")
@@ -162,6 +170,7 @@ export default function AdminPage() {
 
     setEmployees(empRes.data || []);
     setRecords(attRes.data || []);
+    setTodayRecords(todayRes.data || []);
 
     // Manually attach employee name (more robust than FK auto-join)
     const empMap = new Map((empRes.data || []).map((e) => [e.id, e]));
@@ -178,15 +187,20 @@ export default function AdminPage() {
     setReimbs(reimbsWithEmp);
     if (setRes.data) {
       setSettings(setRes.data);
-      setSettingsForm({
-        office_lat: String(setRes.data.office_lat),
-        office_lng: String(setRes.data.office_lng),
-        radius_meters: String(setRes.data.radius_meters),
-        work_start: setRes.data.work_start,
-        work_end: setRes.data.work_end,
-      });
-      setWorkDays(setRes.data.work_days || ["mon", "tue", "wed", "thu", "fri", "sat"]);
-      setQrRequired(!!setRes.data.qr_required);
+      // Populate the settings form only once — refetches (window focus,
+      // realtime) must not wipe values the admin is still typing
+      if (!settingsFormInitRef.current) {
+        settingsFormInitRef.current = true;
+        setSettingsForm({
+          office_lat: String(setRes.data.office_lat),
+          office_lng: String(setRes.data.office_lng),
+          radius_meters: String(setRes.data.radius_meters),
+          work_start: setRes.data.work_start,
+          work_end: setRes.data.work_end,
+        });
+        setWorkDays(setRes.data.work_days || ["mon", "tue", "wed", "thu", "fri", "sat"]);
+        setQrRequired(!!setRes.data.qr_required);
+      }
     }
     setLoading(false);
   }, [month]);
@@ -242,13 +256,6 @@ export default function AdminPage() {
   }, [admin, fetchData]);
 
   // Stats - memoized to avoid recompute on every render
-  const today = format(new Date(), "yyyy-MM-dd");
-
-  const todayRecords = useMemo(
-    () => records.filter((r) => r.date === today),
-    [records, today]
-  );
-
   const totalEmployees = useMemo(
     () => employees.filter((e) => e.role === "employee").length,
     [employees]

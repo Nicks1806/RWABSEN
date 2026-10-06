@@ -823,9 +823,10 @@ export default function TasksPage() {
       className="min-h-screen flex flex-col transition-[margin] duration-300 ease-out"
       style={{ background: "var(--surface-100)", marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
     >
-      <header className="sticky top-0 z-20" style={{ background: "var(--surface-100)", borderBottom: "1px solid var(--line)", boxShadow: "var(--shadow-sm)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-2 mb-3">
+      <header className="sticky top-0 z-20" style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)" }}>
+        {/* Top row — board name + actions */}
+        <div className="max-w-7xl mx-auto px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => {
@@ -835,14 +836,14 @@ export default function TasksPage() {
                     router.push("/home");
                   }
                 }}
-                className="ico-circ"
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition active:scale-90"
                 style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
                 aria-label="Kembali"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={16} />
               </button>
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5">
                   {editingBoardName ? (
                     <input
                       type="text"
@@ -865,7 +866,7 @@ export default function TasksPage() {
                     />
                   ) : (
                     <h1
-                      className="group font-semibold text-lg md:text-xl cursor-pointer transition inline-flex items-center gap-2 tracking-tight"
+                      className="group font-bold text-base md:text-lg cursor-pointer transition inline-flex items-center gap-2 tracking-tight truncate"
                       style={{ color: "var(--ink)" }}
                       onClick={() => {
                         const currentName = activeBoard ? activeBoard.name : (localStorage.getItem("default_board_name") || "Task Board");
@@ -874,84 +875,87 @@ export default function TasksPage() {
                       }}
                       title="Klik untuk rename"
                     >
-                      <span>{activeBoard ? activeBoard.name : (typeof window !== "undefined" ? localStorage.getItem("default_board_name") || "Task Board" : "Task Board")}</span>
-                      <Pencil size={10} className="opacity-0 group-hover:opacity-40 transition" />
+                      <span className="truncate">{activeBoard ? activeBoard.name : (typeof window !== "undefined" ? localStorage.getItem("default_board_name") || "Task Board" : "Task Board")}</span>
+                      <Pencil size={10} className="opacity-0 group-hover:opacity-40 transition shrink-0" />
                     </h1>
                   )}
-                  <span className="text-[10px] font-medium tabular-nums pl-2 ml-0.5" style={{ color: "var(--wine)", borderLeft: "1px solid var(--line)" }}>
+                  <span
+                    className="text-[10px] font-semibold tabular-nums px-2 py-0.5 shrink-0"
+                    style={{ color: "var(--wine)", background: "var(--wine-tint)", borderRadius: "var(--radius-full)" }}
+                  >
                     {tasks.length} task
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Search */}
+
+            <div className="flex items-center gap-1.5">
+              {/* Desktop search */}
               <div className="relative hidden md:block">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
                 <input
                   type="text"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   placeholder="Cari task..."
-                  className="rw-input pl-8 pr-8 py-2 w-48 text-xs font-medium"
-                  style={{ minHeight: 36 }}
+                  className="rw-input pl-8 pr-8 py-1.5 w-44 text-xs"
+                  style={{ minHeight: 34 }}
                 />
                 {searchQ && (
-                  <button
-                    onClick={() => setSearchQ("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
-                    title="Clear"
-                  >
-                    <X size={11} />
+                  <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
+                    <X size={10} />
                   </button>
                 )}
               </div>
               <button
                 onClick={() => setFilterMine(!filterMine)}
-                className="rw-btn rw-btn--sm flex items-center gap-1.5 text-xs"
+                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
                 style={filterMine
-                  ? { background: "var(--wine)", color: "var(--on-wine)" }
-                  : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                  ? { background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-sm)" }
+                  : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
                 }
                 title="Toggle filter Tugas Saya"
               >
-                <UserIcon size={13} /> <span className="hidden sm:inline">{filterMine ? "Tugas Saya" : "Semua"}</span>
+                <UserIcon size={12} /> <span className="hidden sm:inline">{filterMine ? "Tugas Saya" : "Semua"}</span>
               </button>
               <button
                 onClick={() => setFilterOverdue(!filterOverdue)}
-                className="rw-btn rw-btn--sm flex items-center gap-1.5 text-xs"
+                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
                 style={filterOverdue
-                  ? { background: "var(--danger)", color: "#ffffff" }
-                  : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                  ? { background: "var(--danger)", color: "#ffffff", boxShadow: "var(--shadow-sm)" }
+                  : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
                 }
                 title="Filter overdue"
               >
-                <AlertCircle size={13} /> <span className="hidden sm:inline">Overdue</span>
+                <AlertCircle size={12} /> <span className="hidden sm:inline">Overdue</span>
               </button>
               {canManageBoards(user) && !isMobile && (
                 <button
                   onClick={() => setShowAddCol(true)}
-                  className="rw-btn rw-btn--outline rw-btn--sm flex items-center gap-1.5 text-xs font-semibold"
+                  className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
+                  style={{ background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }}
                   title="Tambah kolom"
                 >
-                  <Plus size={13} /> <span className="hidden sm:inline">Kolom</span>
+                  <Plus size={12} /> <span className="hidden sm:inline">Kolom</span>
                 </button>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Mobile search + label chips */}
-          <div className="flex items-center gap-2 mb-3 md:mb-2">
-            <div className="relative flex-1 md:hidden">
+        {/* Stats + mobile search row */}
+        <div className="max-w-7xl mx-auto px-4 pb-3">
+          {/* Mobile search */}
+          <div className="flex items-center gap-2 mb-2 md:hidden">
+            <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
               <input
                 type="text"
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 placeholder="Cari task..."
-                className="rw-input pl-9 pr-9 py-2 w-full text-sm font-medium"
-                style={{ minHeight: 40 }}
+                className="rw-input pl-9 pr-9 py-2 w-full text-sm"
+                style={{ minHeight: 38 }}
               />
               {searchQ && (
                 <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
@@ -962,7 +966,7 @@ export default function TasksPage() {
             {(searchQ || filterOverdue || filterMine) && (
               <button
                 onClick={() => { setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
-                className="shrink-0 text-[10px] font-medium tracking-wide transition pl-1"
+                className="shrink-0 text-[10px] font-medium tracking-wide transition"
                 style={{ color: "var(--ink-muted)" }}
                 title="Hapus semua filter"
               >
@@ -971,31 +975,45 @@ export default function TasksPage() {
             )}
           </div>
 
+          {/* Stats chips */}
           {!isMobile && (
-            <div className="rw-card inline-flex items-center gap-3 px-4 py-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--wine-tint)", color: "var(--wine)" }}>
-                  <UserIcon size={11} />
-                </span>
+            <div className="flex items-center gap-2">
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                style={{ background: "var(--wine-tint)", borderRadius: "var(--radius-full)" }}
+              >
+                <UserIcon size={11} style={{ color: "var(--wine)" }} />
                 <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Saya</span>
                 <span className="text-xs font-bold tabular-nums" style={{ color: "var(--wine)" }}>{myCount}</span>
               </div>
-              <span className="w-px h-3.5" style={{ background: "var(--line)" }} />
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--warning-tint)", color: "var(--warning)" }}>
-                  <ClockIcon size={11} />
-                </span>
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                style={{ background: "var(--warning-tint)", borderRadius: "var(--radius-full)" }}
+              >
+                <ClockIcon size={11} style={{ color: "var(--warning)" }} />
                 <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Today</span>
                 <span className="text-xs font-bold tabular-nums" style={{ color: "var(--warning)" }}>{todayTasksCount}</span>
               </div>
-              <span className="w-px h-3.5" style={{ background: "var(--line)" }} />
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={overdueCount > 0 ? { background: "var(--danger-tint)", color: "var(--danger)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>
-                  <AlertCircle size={11} />
-                </span>
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                style={{
+                  background: overdueCount > 0 ? "var(--danger-tint)" : "var(--surface-300)",
+                  borderRadius: "var(--radius-full)",
+                }}
+              >
+                <AlertCircle size={11} style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }} />
                 <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Overdue</span>
                 <span className="text-xs font-bold tabular-nums" style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }}>{overdueCount}</span>
               </div>
+              {(searchQ || filterOverdue || filterMine) && (
+                <button
+                  onClick={() => { setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
+                  className="text-[10px] font-medium px-2 py-1 rounded-md transition"
+                  style={{ color: "var(--ink-muted)", background: "var(--surface-300)" }}
+                >
+                  Reset filter
+                </button>
+              )}
             </div>
           )}
 
@@ -1638,284 +1656,308 @@ export default function TasksPage() {
 
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (
-        <div className="rw-overlay fixed inset-0 z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
-          <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto overflow-hidden animate-slide-up" style={{ background: "var(--surface-200)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-modal)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="rw-overlay fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-16 px-4" onClick={() => setShowBoardSwitcher(false)}>
+          <div className="w-full max-w-md max-h-[88vh] overflow-hidden flex flex-col animate-slide-up" style={{ background: "var(--surface-100)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-modal)", border: "1px solid var(--line)" }} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="relative px-6 pt-6 pb-5 sticky top-0 z-10 overflow-hidden" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>
-              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90" style={{ background: "rgba(255,255,255,0.2)" }}>
-                <X size={16} strokeWidth={2.5} />
+            <div className="relative px-5 pt-5 pb-4 shrink-0" style={{ background: "linear-gradient(135deg, var(--wine-deep) 0%, var(--wine) 100%)", color: "var(--on-wine)" }}>
+              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition active:scale-90" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
+                <X size={15} strokeWidth={2.5} />
               </button>
-              <div className="relative flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.2)" }}>
-                  <LayoutGrid size={22} strokeWidth={2} />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
+                  <LayoutGrid size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg leading-tight">Board Anda</h3>
-                  <p className="text-xs mt-0.5" style={{ opacity: 0.8 }}>Pilih atau buat board per divisi</p>
+                  <h3 className="font-bold text-base">Board Anda</h3>
+                  <p className="text-[11px] mt-0.5" style={{ opacity: 0.7 }}>Pilih atau buat board per divisi</p>
                 </div>
               </div>
             </div>
 
-            <div>
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
               {/* Search bar (only if > 3 boards) */}
               {boards.length > 3 && (
-                <div className="px-3 pt-3 pb-1">
+                <div className="px-4 pt-3 pb-1">
                   <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-muted)" }} />
                     <input
                       type="text"
                       value={boardSearch}
                       onChange={(e) => setBoardSearch(e.target.value)}
                       placeholder="Cari board..."
                       className="rw-input text-sm"
-                      style={{ minHeight: 40, paddingLeft: 14, paddingRight: 36 }}
+                      style={{ minHeight: 38, paddingLeft: 34, paddingRight: 34 }}
                     />
                     {boardSearch && (
-                      <button onClick={() => setBoardSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
-                        <X size={12} />
+                      <button onClick={() => setBoardSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
+                        <X size={10} />
                       </button>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className="p-3 space-y-1.5">
-              {/* Section label: Default */}
-              <p className="rw-micro px-2 pt-1 pb-1">Utama</p>
-              {/* Default board */}
-              <button
-                onClick={() => switchBoard(null)}
-                className="w-full flex items-center gap-3 p-3 transition group"
-                style={{
-                  borderRadius: "var(--radius-lg)",
-                  ...(!activeBoard
-                    ? { background: "var(--wine-tint)", border: "2px solid var(--wine)" }
-                    : { border: "1px solid transparent" }),
-                }}
-              >
-                <div className="relative w-12 h-12 flex items-center justify-center shrink-0 overflow-hidden" style={{ borderRadius: "var(--radius-lg)", background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-md)" }}>
-                  <Sparkles size={18} strokeWidth={2.2} className="relative" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>RedWine Board</p>
-                  <p className="text-[10px] mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
-                    <Sparkles size={9} style={{ color: "var(--wine)" }} /> Board utama - Semua divisi
-                  </p>
-                </div>
-                {!activeBoard && (
-                  <span className="text-[9px] px-2.5 py-1 rounded-full font-bold shrink-0" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
-                )}
-              </button>
-
-              {/* Section label: Boards per divisi */}
-              {(() => {
-                const filtered = boards
-                  .filter((b) => canAccessBoard(user, b))
-                  .filter((b) => !boardSearch.trim() || b.name.toLowerCase().includes(boardSearch.toLowerCase()));
-                if (filtered.length === 0) {
-                  if (boardSearch) return <p className="text-center text-xs py-6" style={{ color: "var(--ink-muted)" }}>Tidak ada board cocok dengan &quot;{boardSearch}&quot;</p>;
-                  return null;
-                }
-                return (
-                  <>
-                    <p className="rw-micro px-2 pt-3 pb-1">Board per Divisi</p>
-                    {filtered.map((b) => {
-                      const isActive = activeBoard?.id === b.id;
-                      const isEditing = editBoardId === b.id;
-                      return (
-                  <div key={b.id} className="transition" style={{
+              <div className="px-4 py-3">
+                {/* Section: Utama */}
+                <p className="rw-micro px-1 mb-2">Utama</p>
+                <button
+                  onClick={() => switchBoard(null)}
+                  className="w-full flex items-center gap-3.5 px-3.5 py-3 transition group"
+                  style={{
                     borderRadius: "var(--radius-lg)",
-                    ...(isActive ? { background: "var(--wine-tint)", border: "2px solid var(--wine)" } : isEditing ? { background: "var(--surface-200)", border: "2px solid var(--wine)" } : { border: "1px solid transparent" }),
-                  }}>
-                    <div className="flex items-center gap-3 p-3">
-                      <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                        <div className={`relative w-12 h-12 ${b.color} flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden`} style={{ borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}>
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent" />
-                          <span className="relative">{b.name.slice(0, 2).toUpperCase()}</span>
-                        </div>
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className="text-sm font-bold truncate" style={{ color: "var(--ink)" }}>{b.name}</p>
-                          {b.allowed_roles && b.allowed_roles.length > 0 ? (
-                            <div className="flex items-center gap-1 mt-1 overflow-hidden max-w-full">
-                              <Users size={10} style={{ color: "var(--ink-muted)" }} className="shrink-0" />
-                              <span className="text-[10px] truncate" style={{ color: "var(--ink-muted)" }}>
-                                {b.allowed_roles.length === 1
-                                  ? b.allowed_roles[0]
-                                  : `${b.allowed_roles[0]} +${b.allowed_roles.length - 1}`}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-1 mt-1">
-                              <span className="rw-badge rw-badge--success text-[10px]">Semua role</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isActive && (
-                          <span className="text-[9px] px-2.5 py-1 rounded-full font-bold" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
-                        )}
-                        {canManageBoards(user) && (
-                          <>
-                            <button
-                              onClick={() => {
-                                if (isEditing) {
-                                  setEditBoardId(null);
-                                  setEditBoardRoles([]);
-                                } else {
-                                  setEditBoardId(b.id);
-                                  setEditBoardRoles(b.allowed_roles || []);
-                                }
-                              }}
-                              className="ico-circ transition active:scale-90"
-                              style={isEditing
-                                ? { background: "var(--wine)", color: "var(--on-wine)" }
-                                : { background: "var(--surface-300)", color: "var(--ink-muted)" }
-                              }
-                              title="Edit akses role"
-                            >
-                              <Pencil size={14} strokeWidth={2.5} />
-                            </button>
-                            <button
-                              onClick={() => deleteBoard(b)}
-                              className="ico-circ transition active:scale-90"
-                              style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
-                              title="Hapus board"
-                            >
-                              <Trash2 size={14} strokeWidth={2.5} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Inline role editor */}
-                    {isEditing && canManageBoards(user) ? (
-                      <div className="p-4" style={{ borderTop: "1px solid var(--line)" }}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="rw-micro flex items-center gap-1.5">
-                              <UserIcon size={12} /> Akses Role
-                            </p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
-                              {editBoardRoles.length === 0 ? "Semua karyawan bisa akses" : `${editBoardRoles.length} role terpilih`}
-                            </p>
-                          </div>
-                          {editBoardRoles.length > 0 && (
-                            <button
-                              onClick={() => setEditBoardRoles([])}
-                              className="text-[10px] font-medium px-2 py-1 rounded"
-                              style={{ color: "var(--danger)" }}
-                            >
-                              Reset
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {POSITIONS.map((role) => {
-                            const selected = editBoardRoles.includes(role);
-                            return (
-                              <button
-                                key={role}
-                                onClick={() => setEditBoardRoles(selected ? editBoardRoles.filter((r) => r !== role) : [...editBoardRoles, role])}
-                                className="rw-btn rw-btn--sm px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-95"
-                                style={selected
-                                  ? { background: "var(--wine)", color: "var(--on-wine)" }
-                                  : { background: "var(--surface-200)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
-                                }
-                              >
-                                {selected && "&#10003; "}{role}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => { setEditBoardId(null); setEditBoardRoles([]); }}
-                            className="rw-btn rw-btn--outline rw-btn--sm flex-1"
-                          >
-                            Batal
-                          </button>
-                          <button
-                            onClick={() => saveEditBoardRoles(b)}
-                            className="rw-btn rw-btn--primary rw-btn--sm flex-[2] inline-flex items-center justify-center gap-1.5"
-                          >
-                            <Check size={13} strokeWidth={3} /> Simpan Akses
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
+                    ...(!activeBoard
+                      ? { background: "var(--wine-tint)", border: "2px solid var(--wine)", boxShadow: "var(--shadow-sm)" }
+                      : { background: "var(--surface-200)", border: "1px solid var(--line)" }),
+                  }}
+                >
+                  <div className="relative w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden" style={{ borderRadius: "var(--radius-md)", background: "linear-gradient(135deg, var(--wine) 0%, var(--wine-deep) 100%)", color: "var(--on-wine)", boxShadow: "0 2px 8px rgba(94,15,30,0.3)" }}>
+                    <Sparkles size={17} strokeWidth={2} />
                   </div>
-                );
-                    })}
-                  </>
-                );
-              })()}
+                  <div className="text-left flex-1 min-w-0">
+                    <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>RedWine Board</p>
+                    <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
+                      <Sparkles size={8} style={{ color: "var(--wine)" }} /> Board utama &middot; Semua divisi
+                    </p>
+                  </div>
+                  {!activeBoard && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold tracking-wide shrink-0" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
+                  )}
+                </button>
+
+                {/* Section: Boards per divisi */}
+                {(() => {
+                  const filtered = boards
+                    .filter((b) => canAccessBoard(user, b))
+                    .filter((b) => !boardSearch.trim() || b.name.toLowerCase().includes(boardSearch.toLowerCase()));
+                  if (filtered.length === 0) {
+                    if (boardSearch) return <p className="text-center text-xs py-8" style={{ color: "var(--ink-muted)" }}>Tidak ada board cocok dengan &quot;{boardSearch}&quot;</p>;
+                    return null;
+                  }
+                  return (
+                    <>
+                      <p className="rw-micro px-1 mt-4 mb-2">Board per Divisi</p>
+                      <div className="space-y-2">
+                        {filtered.map((b) => {
+                          const isActive = activeBoard?.id === b.id;
+                          const isEditing = editBoardId === b.id;
+                          return (
+                            <div
+                              key={b.id}
+                              className="transition-all"
+                              style={{
+                                borderRadius: "var(--radius-lg)",
+                                overflow: "hidden",
+                                ...(isActive
+                                  ? { background: "var(--wine-tint)", border: "2px solid var(--wine)", boxShadow: "var(--shadow-sm)" }
+                                  : isEditing
+                                  ? { background: "var(--surface-200)", border: "2px solid var(--wine)" }
+                                  : { background: "var(--surface-200)", border: "1px solid var(--line)" }),
+                              }}
+                            >
+                              <div className="flex items-center gap-3 px-3.5 py-3">
+                                <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                                  <div className={`relative w-11 h-11 ${b.color} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`} style={{ borderRadius: "var(--radius-md)", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                                    <span className="relative tracking-wider">{b.name.slice(0, 2).toUpperCase()}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <p className="text-[13px] font-bold truncate" style={{ color: "var(--ink)" }}>{b.name}</p>
+                                    {b.allowed_roles && b.allowed_roles.length > 0 ? (
+                                      <div className="flex items-center gap-1 mt-0.5 overflow-hidden max-w-full">
+                                        <Users size={9} style={{ color: "var(--ink-muted)" }} className="shrink-0" />
+                                        <span className="text-[10px] truncate" style={{ color: "var(--ink-muted)" }}>
+                                          {b.allowed_roles.length <= 2
+                                            ? b.allowed_roles.join(", ")
+                                            : `${b.allowed_roles[0]} +${b.allowed_roles.length - 1}`}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        <span className="text-[10px] font-medium px-1.5 py-px rounded" style={{ background: "var(--success-tint)", color: "var(--success)" }}>Semua role</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {isActive && (
+                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold tracking-wide" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
+                                  )}
+                                  {canManageBoards(user) && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          if (isEditing) {
+                                            setEditBoardId(null);
+                                            setEditBoardRoles([]);
+                                          } else {
+                                            setEditBoardId(b.id);
+                                            setEditBoardRoles(b.allowed_roles || []);
+                                          }
+                                        }}
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition active:scale-90"
+                                        style={isEditing
+                                          ? { background: "var(--wine)", color: "var(--on-wine)" }
+                                          : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                                        }
+                                        title="Edit akses role"
+                                      >
+                                        <Pencil size={13} />
+                                      </button>
+                                      <button
+                                        onClick={() => deleteBoard(b)}
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition active:scale-90"
+                                        style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
+                                        title="Hapus board"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Inline role editor */}
+                              {isEditing && canManageBoards(user) ? (
+                                <div className="px-4 pb-4 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                      <p className="rw-micro flex items-center gap-1.5">
+                                        <UserIcon size={11} /> Akses Role
+                                      </p>
+                                      <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
+                                        {editBoardRoles.length === 0 ? "Semua karyawan bisa akses" : `${editBoardRoles.length} role terpilih`}
+                                      </p>
+                                    </div>
+                                    {editBoardRoles.length > 0 && (
+                                      <button
+                                        onClick={() => setEditBoardRoles([])}
+                                        className="text-[10px] font-semibold px-2 py-1 rounded-md transition"
+                                        style={{ color: "var(--danger)", background: "var(--danger-tint)" }}
+                                      >
+                                        Reset
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 mb-4">
+                                    {POSITIONS.map((role) => {
+                                      const selected = editBoardRoles.includes(role);
+                                      return (
+                                        <button
+                                          key={role}
+                                          onClick={() => setEditBoardRoles(selected ? editBoardRoles.filter((r) => r !== role) : [...editBoardRoles, role])}
+                                          className="px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-95"
+                                          style={{
+                                            borderRadius: "var(--radius-md)",
+                                            ...(selected
+                                              ? { background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-sm)" }
+                                              : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }),
+                                          }}
+                                        >
+                                          {selected && "✓ "}{role}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => { setEditBoardId(null); setEditBoardRoles([]); }}
+                                      className="rw-btn rw-btn--outline rw-btn--sm flex-1"
+                                    >
+                                      Batal
+                                    </button>
+                                    <button
+                                      onClick={() => saveEditBoardRoles(b)}
+                                      className="rw-btn rw-btn--primary rw-btn--sm flex-[2] inline-flex items-center justify-center gap-1.5"
+                                    >
+                                      <Check size={13} strokeWidth={3} /> Simpan Akses
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
             {/* Create new board - only for managers */}
             {canManageBoards(user) && (
-            <div className="p-3" style={{ borderTop: "1px solid var(--line)" }}>
-              {showCreateBoard ? (
-                <div className="space-y-3">
-                  <input
-                    type="text" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") createBoard(); if (e.key === "Escape") setShowCreateBoard(false); }}
-                    placeholder="Nama board — misal: Sales Team, CS, Design..."
-                    className="rw-input text-sm"
-                    style={{ minHeight: 40 }}
-                    autoFocus
-                  />
-                  <div>
-                    <p className="rw-micro mb-1.5">Warna</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {BOARD_COLORS.map((c) => (
-                        <button key={c} onClick={() => setNewBoardColor(c)}
-                          className={`w-8 h-8 rounded-lg ${c} transition-all shadow-sm ${
-                            newBoardColor === c ? "ring-2 ring-offset-2 ring-gray-800 scale-110" : "opacity-50 hover:opacity-90"
-                          }`}
-                        />
-                      ))}
+              <div className="px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--line)", background: "var(--surface-200)" }}>
+                {showCreateBoard ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") createBoard(); if (e.key === "Escape") setShowCreateBoard(false); }}
+                      placeholder="Nama board baru..."
+                      className="rw-input text-sm"
+                      style={{ minHeight: 40 }}
+                      autoFocus
+                    />
+                    <div>
+                      <p className="rw-micro mb-2">Warna</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {BOARD_COLORS.map((c) => (
+                          <button key={c} onClick={() => setNewBoardColor(c)}
+                            className={`w-7 h-7 ${c} transition-all`}
+                            style={{
+                              borderRadius: "var(--radius-md)",
+                              boxShadow: newBoardColor === c ? "0 0 0 2px var(--surface-100), 0 0 0 4px var(--wine)" : "var(--shadow-sm)",
+                              opacity: newBoardColor === c ? 1 : 0.55,
+                              transform: newBoardColor === c ? "scale(1.15)" : "scale(1)",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="rw-micro mb-1.5">Akses Role</p>
+                      <p className="text-[10px] mb-2" style={{ color: "var(--ink-muted)" }}>Kosongkan = semua bisa akses</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {POSITIONS.map((role) => {
+                          const selected = newBoardRoles.includes(role);
+                          return (
+                            <button
+                              key={role}
+                              onClick={() => setNewBoardRoles(selected ? newBoardRoles.filter((r) => r !== role) : [...newBoardRoles, role])}
+                              className="px-2.5 py-1.5 text-[11px] font-medium transition"
+                              style={{
+                                borderRadius: "var(--radius-md)",
+                                ...(selected
+                                  ? { background: "var(--wine)", color: "var(--on-wine)" }
+                                  : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }),
+                              }}
+                            >
+                              {selected && "✓ "}{role}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); setNewBoardRoles([]); }} className="rw-btn rw-btn--outline rw-btn--sm flex-1">Batal</button>
+                      <button onClick={createBoard} disabled={!newBoardName.trim()} className="rw-btn rw-btn--primary rw-btn--sm flex-[2]">Buat Board</button>
                     </div>
                   </div>
-                  {/* Role access picker */}
-                  <div>
-                    <p className="rw-micro mb-1.5">Akses Role</p>
-                    <p className="text-[10px] mb-2" style={{ color: "var(--ink-muted)" }}>Kosongkan = semua bisa akses</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {POSITIONS.map((role) => {
-                        const selected = newBoardRoles.includes(role);
-                        return (
-                          <button
-                            key={role}
-                            onClick={() => setNewBoardRoles(selected ? newBoardRoles.filter((r) => r !== role) : [...newBoardRoles, role])}
-                            className="rw-btn rw-btn--sm px-2.5 py-1.5 text-[11px] font-medium transition"
-                            style={selected
-                              ? { background: "var(--wine)", color: "var(--on-wine)" }
-                              : { background: "var(--surface-300)", color: "var(--ink-muted)" }
-                            }
-                          >
-                            {selected && "&#10003; "}{role}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); setNewBoardRoles([]); }} className="rw-btn rw-btn--outline rw-btn--sm flex-1">Batal</button>
-                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="rw-btn rw-btn--primary rw-btn--sm flex-[2]">Buat Board</button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowCreateBoard(true)}
-                  className="rw-btn rw-btn--outline rw-btn--block py-3.5 text-sm font-bold inline-flex items-center justify-center gap-2 active:scale-95"
-                  style={{ borderStyle: "dashed", color: "var(--wine)" }}
-                >
-                  <Plus size={18} strokeWidth={2.5} /> Buat Board Baru
-                </button>
-              )}
-            </div>
+                ) : (
+                  <button
+                    onClick={() => setShowCreateBoard(true)}
+                    className="w-full py-3 text-sm font-bold flex items-center justify-center gap-2 transition active:scale-[0.97]"
+                    style={{
+                      borderRadius: "var(--radius-lg)",
+                      border: "2px dashed var(--line-strong)",
+                      color: "var(--wine)",
+                      background: "var(--surface-100)",
+                    }}
+                  >
+                    <Plus size={16} strokeWidth={2.5} /> Buat Board Baru
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

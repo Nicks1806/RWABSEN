@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import type { Settings, DayKey } from "@/lib/types";
+import type { DayKey } from "@/lib/types";
 import { DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
 import { QrCode, FileText as FileTextIcon } from "lucide-react";
 
@@ -14,7 +14,6 @@ interface SettingsForm {
 }
 
 interface Props {
-  settings: Settings | null;
   settingsForm: SettingsForm;
   setSettingsForm: (f: SettingsForm) => void;
   workDays: DayKey[];

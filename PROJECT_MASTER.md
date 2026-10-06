@@ -910,6 +910,9 @@ Baru → Lama:
 
 | Commit | Perubahan |
 |---|---|
+| `14ae744` | fix: jadwal ke-wipe via tombol Jam mobile, push broadcast tanpa target ditolak, race ganti bulan admin (SW v21) |
+| `e135a4d` | perf(admin): fetch izin/reimburse di-scope per bulan + semua pending tetap tampil (SW v20) |
+| `19256e7` | refactor: extract DashboardTab, LeavesTab, KaryawanTab — admin page selesai displit (2876 → ~1050 baris) |
 | `b23719e` | fix: today stats terpisah dari bulan, settings form tidak ke-reset, task edit tidak hilang (realtime), celah radius GPS saat settings telat load (SW v19) |
 | `6eb7019` | fix: 8 bug audit — PDF leave filter OR→AND, CSV timezone WIB, login escape wildcard + SW ready timeout, error check review, double-submit pengajuan/tasks, delete kolom pertama (SW v18) |
 | `92d646f` | refactor: extract AnalyticsTab (+recharts dynamic imports) dari admin page |
@@ -958,6 +961,8 @@ Total ~60+ commits sepanjang project. Lihat `git log --oneline` untuk history le
 | Ketikan form Pengaturan hilang | Refetch on focus/realtime menimpa `settingsForm` | Fix `b23719e` — form diisi sekali via `settingsFormInitRef` |
 | Edit task hilang saat realtime update | `useEffect([task])` reset form tiap object task dibangun ulang | Fix `b23719e` — depend `[task.id]` saja |
 | Stat "Hadir Hari Ini" jadi 0 | Stat today dihitung dari `records` bulan terpilih | Fix `b23719e` — `todayRecords` di-fetch terpisah |
+| Jadwal per-hari karyawan hilang | Modal Jam dibuka tanpa load `schedule` → save null-kan schedule | Fix `14ae744` — `onOpenEditHours` selalu load schedule |
+| Notif terkirim ke semua karyawan | `/api/push/send` tanpa `employee_ids` skip filter | Fix `14ae744` — target wajib, tanpa target = 400 |
 
 ---
 

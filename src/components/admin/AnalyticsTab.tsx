@@ -32,10 +32,13 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
   return (
     <div className="space-y-6">
       {records.length === 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
-          <TrendingUp size={32} className="text-amber-500 mx-auto mb-2" />
-          <p className="font-semibold text-amber-800">Belum ada data absensi</p>
-          <p className="text-xs text-amber-700 mt-1">
+        <div
+          className="rw-card text-center"
+          style={{ background: "var(--warning-tint)", borderColor: "var(--line)" }}
+        >
+          <TrendingUp size={32} className="mx-auto mb-2" style={{ color: "var(--warning)" }} />
+          <p className="font-semibold" style={{ color: "var(--ink)" }}>Belum ada data absensi</p>
+          <p className="text-xs mt-1" style={{ color: "var(--ink-muted)" }}>
             Grafik akan muncul setelah karyawan mulai absen. Pilih bulan lain di Dashboard jika perlu.
           </p>
         </div>
@@ -59,33 +62,42 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
 
           return (
             <>
-              <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-red-500">
-                <div className="flex items-center gap-2 text-red-600 mb-2">
+              <div
+                className="rw-card"
+                style={{ borderLeft: "4px solid var(--danger)" }}
+              >
+                <div className="flex items-center gap-2 mb-2" style={{ color: "var(--danger)" }}>
                   <AlertTriangle size={18} />
                   <p className="text-xs font-semibold">Paling Sering Terlambat</p>
                 </div>
-                <p className="text-lg font-bold">{mostLate?.name || "-"}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{mostLate?.name || "-"}</p>
+                <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                   {mostLate?.lateCount || 0}x terlambat bulan ini
                 </p>
               </div>
-              <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-green-500">
-                <div className="flex items-center gap-2 text-green-600 mb-2">
+              <div
+                className="rw-card"
+                style={{ borderLeft: "4px solid var(--success)" }}
+              >
+                <div className="flex items-center gap-2 mb-2" style={{ color: "var(--success)" }}>
                   <Award size={18} />
                   <p className="text-xs font-semibold">Paling Rajin</p>
                 </div>
-                <p className="text-lg font-bold">{mostPresent?.name || "-"}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{mostPresent?.name || "-"}</p>
+                <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                   {mostPresent?.presentCount || 0} hari hadir
                 </p>
               </div>
-              <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-blue-500">
-                <div className="flex items-center gap-2 text-blue-600 mb-2">
+              <div
+                className="rw-card"
+                style={{ borderLeft: "4px solid var(--wine)" }}
+              >
+                <div className="flex items-center gap-2 mb-2" style={{ color: "var(--wine)" }}>
                   <Timer size={18} />
                   <p className="text-xs font-semibold">Paling Lama di Kantor</p>
                 </div>
-                <p className="text-lg font-bold">{longestHours?.name || "-"}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{longestHours?.name || "-"}</p>
+                <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                   {longestHours?.hours || 0} jam total
                 </p>
               </div>
@@ -95,8 +107,8 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
       </div>
 
       {/* Chart: Monthly Hours per Employee */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
-        <h3 className="font-semibold text-gray-700 mb-4">
+      <div className="rw-card">
+        <h3 className="rw-heading mb-4" style={{ color: "var(--ink)" }}>
           Total Jam Kerja per Karyawan
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -112,14 +124,14 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
-            <Bar dataKey="jam" fill="#8B1A1A" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="jam" fill="#5e0f1e" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Chart: Hadir vs Terlambat */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
-        <h3 className="font-semibold text-gray-700 mb-4">
+      <div className="rw-card">
+        <h3 className="rw-heading mb-4" style={{ color: "var(--ink)" }}>
           Kehadiran vs Keterlambatan
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -140,15 +152,15 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Hadir" fill="#22c55e" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="Terlambat" fill="#ef4444" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Hadir" fill="#2e6b45" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Terlambat" fill="#a8261d" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Chart: Line chart daily attendance trend */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
-        <h3 className="font-semibold text-gray-700 mb-4">
+      <div className="rw-card">
+        <h3 className="rw-heading mb-4" style={{ color: "var(--ink)" }}>
           Tren Kehadiran Harian
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -176,8 +188,8 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="Hadir" stroke="#22c55e" strokeWidth={2} />
-            <Line type="monotone" dataKey="Terlambat" stroke="#ef4444" strokeWidth={2} />
+            <Line type="monotone" dataKey="Hadir" stroke="#2e6b45" strokeWidth={2} />
+            <Line type="monotone" dataKey="Terlambat" stroke="#a8261d" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -185,9 +197,9 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
       {/* Detailed Ranking Tables */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Late Ranking */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-red-500" /> Ranking Keterlambatan
+        <div className="rw-card">
+          <h3 className="rw-heading mb-3 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <AlertTriangle size={16} style={{ color: "var(--danger)" }} /> Ranking Keterlambatan
           </h3>
           <div className="space-y-2">
             {employees
@@ -200,10 +212,10 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
               .map((s, i) => (
                 <div key={s.name} className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
-                    <span className="w-5 text-xs text-gray-400">#{i + 1}</span>
-                    {s.name}
+                    <span className="w-5 text-xs" style={{ color: "var(--ink-muted)" }}>#{i + 1}</span>
+                    <span style={{ color: "var(--ink)" }}>{s.name}</span>
                   </span>
-                  <span className={`font-semibold ${s.lateCount > 0 ? "text-red-600" : "text-gray-400"}`}>
+                  <span className="font-semibold" style={{ color: s.lateCount > 0 ? "var(--danger)" : "var(--ink-muted)" }}>
                     {s.lateCount}x
                   </span>
                 </div>
@@ -212,9 +224,9 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
         </div>
 
         {/* Hours Ranking */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Timer size={16} className="text-blue-500" /> Ranking Jam Kerja
+        <div className="rw-card">
+          <h3 className="rw-heading mb-3 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <Timer size={16} style={{ color: "var(--wine)" }} /> Ranking Jam Kerja
           </h3>
           <div className="space-y-2">
             {employees
@@ -224,17 +236,17 @@ export default function AnalyticsTab({ employees, records, getMonthlyHours, mont
               .map((s, i) => (
                 <div key={s.name} className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
-                    <span className="w-5 text-xs text-gray-400">#{i + 1}</span>
-                    {s.name}
+                    <span className="w-5 text-xs" style={{ color: "var(--ink-muted)" }}>#{i + 1}</span>
+                    <span style={{ color: "var(--ink)" }}>{s.name}</span>
                   </span>
-                  <span className="font-semibold text-primary">{s.hours} jam</span>
+                  <span className="font-semibold" style={{ color: "var(--wine)" }}>{s.hours} jam</span>
                 </div>
               ))}
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-center" style={{ color: "var(--ink-muted)" }}>
         Data bulan {format(new Date(month + "-01"), "MMMM yyyy", { locale: idLocale })}
       </p>
     </div>

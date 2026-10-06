@@ -39,28 +39,25 @@ export default function EditWorkHoursModal({
   onClose,
 }: Props) {
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="rw-overlay flex items-start md:items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="rw-card w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+          <h3 className="rw-heading flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Clock3 size={18} /> Jam Kerja - {employee.name}
           </h3>
-          <button onClick={onClose} className="text-gray-400">
+          <button onClick={onClose} className="ico-circ" style={{ color: "var(--ink-muted)" }}>
             <X size={20} />
           </button>
         </div>
         <form onSubmit={onSave} className="space-y-4">
           {/* Toggle custom schedule */}
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+          <div
+            className="flex items-center justify-between p-3"
+            style={{ background: "var(--surface-300)", borderRadius: "var(--radius-md)" }}
+          >
             <div>
-              <p className="text-sm font-medium">Jadwal Per Hari</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-medium" style={{ color: "var(--ink)" }}>Jadwal Per Hari</p>
+              <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                 Atur jam masuk berbeda setiap hari & hari libur
               </p>
             </div>
@@ -71,13 +68,19 @@ export default function EditWorkHoursModal({
                 onChange={(e) => setUseCustomSchedule(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+              <div
+                className="w-11 h-6 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                style={{ background: useCustomSchedule ? "var(--wine)" : "var(--line-strong)" }}
+              ></div>
             </label>
           </div>
 
           {!useCustomSchedule ? (
             <>
-              <p className="text-xs text-gray-500 bg-amber-50 rounded-lg p-2">
+              <p
+                className="text-xs p-2"
+                style={{ background: "var(--warning-tint)", color: "var(--warning)", borderRadius: "var(--radius-md)" }}
+              >
                 Jam kerja tunggal berlaku semua hari. Default:{" "}
                 <strong>
                   {settings?.work_start} - {settings?.work_end}
@@ -85,55 +88,57 @@ export default function EditWorkHoursModal({
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Jam Masuk</label>
+                  <label className="block text-xs mb-1" style={{ color: "var(--ink-muted)" }}>Jam Masuk</label>
                   <input
                     type="time"
                     value={editStart}
                     onChange={(e) => setEditStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    className="rw-input w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Jam Pulang</label>
+                  <label className="block text-xs mb-1" style={{ color: "var(--ink-muted)" }}>Jam Pulang</label>
                   <input
                     type="time"
                     value={editEnd}
                     onChange={(e) => setEditEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                    className="rw-input w-full"
                   />
                 </div>
               </div>
             </>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                 Centang libur untuk hari tidak masuk. Kosong = pakai default.
               </p>
               {DAY_ORDER.map((day) => {
                 const ds = editSchedule[day] || {};
                 return (
                   <div key={day} className="grid grid-cols-[70px_1fr_1fr_auto] gap-2 items-center text-sm">
-                    <span className="font-medium">{DAY_LABELS[day]}</span>
+                    <span className="font-medium" style={{ color: "var(--ink)" }}>{DAY_LABELS[day]}</span>
                     <input
                       type="time"
                       value={ds.start || ""}
                       disabled={ds.off}
                       onChange={(e) => updateDaySchedule(day, "start", e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
+                      className="rw-input text-xs"
+                      style={{ padding: "4px 8px" }}
                     />
                     <input
                       type="time"
                       value={ds.end || ""}
                       disabled={ds.off}
                       onChange={(e) => updateDaySchedule(day, "end", e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
+                      className="rw-input text-xs"
+                      style={{ padding: "4px 8px" }}
                     />
-                    <label className="flex items-center gap-1 text-xs cursor-pointer">
+                    <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: "var(--ink-muted)" }}>
                       <input
                         type="checkbox"
                         checked={!!ds.off}
                         onChange={(e) => updateDaySchedule(day, "off", e.target.checked)}
-                        className="accent-red-500"
+                        style={{ accentColor: "var(--danger)" }}
                       />
                       Libur
                     </label>
@@ -144,11 +149,7 @@ export default function EditWorkHoursModal({
           )}
 
           {editHoursMsg && (
-            <p
-              className={`text-sm ${
-                editHoursMsg.includes("Gagal") ? "text-red-600" : "text-green-600"
-              }`}
-            >
+            <p className="text-sm" style={{ color: editHoursMsg.includes("Gagal") ? "var(--danger)" : "var(--success)" }}>
               {editHoursMsg}
             </p>
           )}
@@ -161,15 +162,12 @@ export default function EditWorkHoursModal({
                 setEditSchedule({});
                 setUseCustomSchedule(false);
               }}
-              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              className="rw-btn rw-btn--outline flex-1"
               title="Pakai default"
             >
               Reset Default
             </button>
-            <button
-              type="submit"
-              className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
-            >
+            <button type="submit" className="rw-btn rw-btn--primary flex-1">
               Simpan
             </button>
           </div>

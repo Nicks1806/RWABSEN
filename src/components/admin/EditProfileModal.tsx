@@ -24,29 +24,23 @@ export default function EditProfileModal({
   onClose,
 }: Props) {
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="rw-overlay flex items-start md:items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="rw-card w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Avatar name={employee.name} size="md" />
             <div>
-              <h3 className="font-bold text-gray-800">{employee.name}</h3>
-              <p className="text-xs text-gray-500">Profile Karyawan</p>
+              <h3 className="rw-heading" style={{ color: "var(--ink)" }}>{employee.name}</h3>
+              <p className="text-xs" style={{ color: "var(--ink-muted)" }}>Profile Karyawan</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400">
+          <button onClick={onClose} className="ico-circ" style={{ color: "var(--ink-muted)" }}>
             <X size={20} />
           </button>
         </div>
         <form onSubmit={onSave} className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+            <label className="block text-xs mb-1 flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
               <Briefcase size={12} /> Posisi / Role
             </label>
             <input
@@ -55,19 +49,19 @@ export default function EditProfileModal({
               onChange={(e) => setProfileForm({ ...profileForm, position: e.target.value })}
               placeholder="Pilih atau ketik custom..."
               list="position-suggestions"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input w-full"
             />
             <datalist id="position-suggestions">
               {POSITIONS.map((p) => (
                 <option key={p} value={p} />
               ))}
             </datalist>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] mt-1" style={{ color: "var(--ink-muted)" }}>
               Pilih dari daftar atau ketik role baru
             </p>
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+            <label className="block text-xs mb-1 flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
               <Phone size={12} /> Nomor HP
             </label>
             <input
@@ -75,11 +69,11 @@ export default function EditProfileModal({
               value={profileForm.phone}
               onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
               placeholder="+62..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input w-full"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+            <label className="block text-xs mb-1 flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
               <Mail size={12} /> Email
             </label>
             <input
@@ -87,44 +81,37 @@ export default function EditProfileModal({
               value={profileForm.email}
               onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
               placeholder="nama@email.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input w-full"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Alamat</label>
+            <label className="block text-xs mb-1" style={{ color: "var(--ink-muted)" }}>Alamat</label>
             <textarea
               value={profileForm.address}
               onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input w-full"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Tanggal Bergabung</label>
+            <label className="block text-xs mb-1" style={{ color: "var(--ink-muted)" }}>Tanggal Bergabung</label>
             <input
               type="date"
               value={profileForm.join_date}
               onChange={(e) => setProfileForm({ ...profileForm, join_date: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input w-full"
             />
           </div>
           {profileMsg && (
-            <p className={`text-sm ${profileMsg.includes("Gagal") ? "text-red-600" : "text-green-600"}`}>
+            <p className="text-sm" style={{ color: profileMsg.includes("Gagal") ? "var(--danger)" : "var(--success)" }}>
               {profileMsg}
             </p>
           )}
           <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-            >
+            <button type="button" onClick={onClose} className="rw-btn rw-btn--outline flex-1">
               Batal
             </button>
-            <button
-              type="submit"
-              className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
-            >
+            <button type="submit" className="rw-btn rw-btn--primary flex-1">
               Simpan
             </button>
           </div>

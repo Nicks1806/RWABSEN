@@ -1,21 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 import { ToastProvider } from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const viewport: Viewport = {
-  themeColor: "#8B1A1A",
+  themeColor: "#5e0f1e",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover", // iOS: enables safe-area-inset-* env() vars
+  viewportFit: "cover",
 };
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -44,8 +52,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-gray-50">
+    <html lang="id" className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col" style={{ background: "var(--surface-100)", color: "var(--ink)" }}>
         <ErrorBoundary>
           <ToastProvider>
             {children}

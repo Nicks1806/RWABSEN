@@ -19,7 +19,6 @@ import {
   Megaphone,
   ClipboardList,
 } from "lucide-react";
-import Logo from "@/components/Logo";
 import AdminSkeleton from "@/components/admin/AdminSkeleton";
 import SettingsTab from "@/components/admin/SettingsTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
@@ -775,18 +774,25 @@ export default function AdminPage() {
   if (!admin) return <AdminSkeleton />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-20">
+      <header
+        className="sticky top-0 z-20"
+        style={{ background: "var(--surface-200)", boxShadow: "var(--shadow-sm)", borderBottom: "1px solid var(--line)" }}
+      >
         <div className="max-w-5xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Logo size="sm" />
-            <span className="text-xs text-gray-400 border-l border-gray-200 pl-2">Admin</span>
+            <span className="rw-heading" style={{ color: "var(--wine)" }}>RedWine</span>
+            <span
+              className="text-xs pl-2"
+              style={{ color: "var(--ink-muted)", borderLeft: "1px solid var(--line)" }}
+            >Admin</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/tasks")}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              className="flex items-center gap-1 text-sm transition"
+              style={{ color: "var(--ink-muted)" }}
               title="Task Board"
             >
               <ClipboardList size={16} />
@@ -794,7 +800,8 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => router.push("/admin/pengumuman")}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              className="flex items-center gap-1 text-sm transition"
+              style={{ color: "var(--ink-muted)" }}
               title="Pengumuman"
             >
               <Megaphone size={16} />
@@ -802,7 +809,8 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => router.push("/admin/qr")}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition"
+              className="flex items-center gap-1 text-sm transition"
+              style={{ color: "var(--ink-muted)" }}
               title="QR Code Absensi"
             >
               <QrCode size={16} />
@@ -810,7 +818,8 @@ export default function AdminPage() {
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition"
+              className="flex items-center gap-1 text-sm transition"
+              style={{ color: "var(--ink-muted)" }}
             >
               <LogOut size={16} /> <span className="hidden sm:inline">Keluar</span>
             </button>
@@ -819,7 +828,10 @@ export default function AdminPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white border-b sticky top-[52px] z-10">
+      <div
+        className="sticky top-[52px] z-10"
+        style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)" }}
+      >
         <div className="max-w-5xl mx-auto px-2 md:px-4 flex gap-0.5 md:gap-1 overflow-x-auto scrollbar-hide">
           {[
             { key: "dashboard" as Tab, label: "Dashboard", icon: <Clock size={16} /> },
@@ -836,15 +848,23 @@ export default function AdminPage() {
             <button
               key={tab.key}
               onClick={() => switchTab(tab.key)}
-              className={`shrink-0 flex items-center gap-1 md:gap-1.5 px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 transition relative whitespace-nowrap ${
-                activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              } ${isTabPending && activeTab === tab.key ? "opacity-60" : ""}`}
+              className={`shrink-0 flex items-center gap-1 md:gap-1.5 px-3 md:px-4 py-2.5 text-xs md:text-sm font-medium transition relative whitespace-nowrap ${isTabPending && activeTab === tab.key ? "opacity-60" : ""}`}
+              style={{
+                borderRadius: activeTab === tab.key ? "var(--radius-md) var(--radius-md) 0 0" : undefined,
+                background: activeTab === tab.key ? "var(--wine)" : "transparent",
+                color: activeTab === tab.key ? "var(--on-wine)" : "var(--ink-muted)",
+              }}
             >
               {tab.icon} {tab.label}
               {"badge" in tab && tab.badge && tab.badge > 0 ? (
-                <span className="ml-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center">
+                <span
+                  className="ml-1 text-[10px] font-bold px-1.5 py-0.5 min-w-[16px] text-center"
+                  style={{
+                    borderRadius: "var(--radius-full)",
+                    background: activeTab === tab.key ? "var(--on-wine)" : "var(--crimson)",
+                    color: activeTab === tab.key ? "var(--wine)" : "var(--on-wine)",
+                  }}
+                >
                   {tab.badge}
                 </span>
               ) : null}
@@ -855,7 +875,7 @@ export default function AdminPage() {
 
       <main className="max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-6 overflow-x-hidden">
         {loading ? (
-          <div className="text-center py-12 text-gray-400">Memuat data...</div>
+          <div className="text-center py-12" style={{ color: "var(--ink-muted)" }}>Memuat data...</div>
         ) : (
           <>
             {/* DASHBOARD TAB */}
@@ -1045,20 +1065,27 @@ export default function AdminPage() {
       {/* Photo Modal */}
       {photoModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="rw-overlay flex items-center justify-center p-4"
           onClick={() => setPhotoModal(null)}
         >
           <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setPhotoModal(null)}
-              className="absolute -top-3 -right-3 bg-white rounded-full p-1 shadow-lg"
+              className="absolute -top-3 -right-3 p-1"
+              style={{
+                background: "var(--surface-200)",
+                borderRadius: "var(--radius-full)",
+                boxShadow: "var(--shadow-md)",
+                color: "var(--ink)",
+              }}
             >
               <X size={20} />
             </button>
             <img
               src={photoModal}
               alt="Foto Absensi"
-              className="w-full rounded-2xl"
+              className="w-full"
+              style={{ borderRadius: "var(--radius-lg)" }}
             />
           </div>
         </div>

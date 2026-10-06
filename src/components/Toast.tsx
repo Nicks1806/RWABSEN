@@ -32,10 +32,10 @@ const ICONS = {
 };
 
 const COLORS = {
-  success: "bg-green-600",
-  error: "bg-red-600",
-  warning: "bg-amber-600",
-  info: "bg-blue-600",
+  success: "rw-toast--success",
+  error: "rw-toast--error",
+  warning: "rw-toast--warning",
+  info: "rw-toast--info",
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -64,7 +64,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={t.id}
-              className={`${COLORS[t.type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-start gap-3 max-w-sm w-full pointer-events-auto animate-slide-up`}
+              className={`rw-toast ${COLORS[t.type]} pointer-events-auto`}
             >
               <Icon size={20} className="shrink-0 mt-0.5" />
               <span className="text-sm flex-1 whitespace-pre-line">{t.message}</span>

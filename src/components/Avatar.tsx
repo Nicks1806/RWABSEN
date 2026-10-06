@@ -3,27 +3,27 @@ interface AvatarProps {
   photoUrl?: string | null;
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const sizeMap = {
-  xs: "w-6 h-6 text-[10px]",
-  sm: "w-8 h-8 text-xs",
-  md: "w-10 h-10 text-sm",
-  lg: "w-14 h-14 text-base",
+  xs: { wh: 24, fs: 10 },
+  sm: { wh: 32, fs: 12 },
+  md: { wh: 40, fs: 14 },
+  lg: { wh: 56, fs: 16 },
 };
 
-// Color palette - deterministic by name
 const colors = [
-  "bg-rose-500",
-  "bg-amber-500",
-  "bg-emerald-500",
-  "bg-sky-500",
-  "bg-indigo-500",
-  "bg-purple-500",
-  "bg-pink-500",
-  "bg-teal-500",
-  "bg-orange-500",
-  "bg-red-600",
+  "var(--wine)",
+  "var(--sand)",
+  "var(--gold)",
+  "var(--success)",
+  "var(--warning)",
+  "var(--danger)",
+  "#7c5e3c",
+  "#8b6b4a",
+  "#a0522d",
+  "var(--wine-deep)",
 ];
 
 function hashCode(str: string): number {
@@ -35,24 +35,43 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
-export default function Avatar({ name, photoUrl, size = "md", className = "" }: AvatarProps) {
+export default function Avatar({ name, photoUrl, size = "md", className = "", style }: AvatarProps) {
   const initial = (name || "?").trim().charAt(0).toUpperCase();
-  const colorClass = colors[hashCode(name) % colors.length];
+  const bg = colors[hashCode(name) % colors.length];
+  const s = sizeMap[size];
+
+  const base: React.CSSProperties = {
+    width: s.wh,
+    height: s.wh,
+    borderRadius: "var(--radius-full)",
+    flexShrink: 0,
+    boxShadow: "0 0 0 2px #fff, var(--shadow-sm)",
+    overflow: "hidden",
+  };
 
   if (photoUrl) {
     return (
-      <div
-        className={`${sizeMap[size]} rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm ${className}`}
-      >
+      <div className={className} style={{ ...base, ...style }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photoUrl} alt={name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+        <img src={photoUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" decoding="async" />
       </div>
     );
   }
 
   return (
     <div
-      className={`${sizeMap[size]} ${colorClass} rounded-full flex items-center justify-center text-white font-bold shrink-0 ring-2 ring-white shadow-sm ${className}`}
+      className={className}
+      style={{
+        ...base,
+        ...style,
+        background: bg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: s.fs,
+      }}
     >
       {initial}
     </div>

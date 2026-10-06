@@ -38,15 +38,19 @@ export default function LeavesTab({
   return (
     <div className="space-y-4">
       {/* Sub-tab: Izin vs Reimburse */}
-      <div className="bg-white rounded-2xl shadow-sm p-1 grid grid-cols-2 gap-1">
+      <div className="rw-card p-1 grid grid-cols-2 gap-1" style={{ padding: "var(--space-1)" }}>
         <button
           onClick={() => {
             setLeavesSubTab("izin");
             setLeaveFilter("all");
           }}
-          className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
-            leavesSubTab === "izin" ? "bg-primary text-white shadow-sm" : "text-gray-500"
-          }`}
+          className="py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
+          style={{
+            borderRadius: "var(--radius-md)",
+            background: leavesSubTab === "izin" ? "var(--wine)" : "transparent",
+            color: leavesSubTab === "izin" ? "var(--on-wine)" : "var(--ink-muted)",
+            boxShadow: leavesSubTab === "izin" ? "var(--shadow-sm)" : "none",
+          }}
         >
           <FileTextIcon size={16} /> Izin/Cuti ({leaves.filter((l) => l.status === "pending").length})
         </button>
@@ -55,11 +59,15 @@ export default function LeavesTab({
             setLeavesSubTab("reimburse");
             setLeaveFilter("all");
           }}
-          className={`py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
-            leavesSubTab === "reimburse" ? "bg-primary text-white shadow-sm" : "text-gray-500"
-          }`}
+          className="py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
+          style={{
+            borderRadius: "var(--radius-md)",
+            background: leavesSubTab === "reimburse" ? "var(--wine)" : "transparent",
+            color: leavesSubTab === "reimburse" ? "var(--on-wine)" : "var(--ink-muted)",
+            boxShadow: leavesSubTab === "reimburse" ? "var(--shadow-sm)" : "none",
+          }}
         >
-          💰 Reimburse ({reimbs.filter((r) => r.status === "pending").length})
+          Reimburse ({reimbs.filter((r) => r.status === "pending").length})
         </button>
       </div>
 
@@ -76,11 +84,13 @@ export default function LeavesTab({
           <button
             key={f.key}
             onClick={() => setLeaveFilter(f.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
-              leaveFilter === f.key
-                ? "bg-primary text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50 border"
-            }`}
+            className="px-4 py-2 text-sm font-medium whitespace-nowrap transition"
+            style={{
+              borderRadius: "var(--radius-md)",
+              background: leaveFilter === f.key ? "var(--wine)" : "var(--surface-200)",
+              color: leaveFilter === f.key ? "var(--on-wine)" : "var(--ink-muted)",
+              border: leaveFilter === f.key ? "none" : "1px solid var(--line)",
+            }}
           >
             {f.label} ({f.count})
           </button>
@@ -89,29 +99,35 @@ export default function LeavesTab({
 
       {/* Bulk action bar for pending leaves */}
       {leaveFilter === "pending" && leaves.filter((l) => l.status === "pending").length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2 flex-wrap animate-fade-in">
+        <div
+          className="rw-card p-2 flex items-center gap-2 flex-wrap animate-fade-in"
+          style={{ padding: "var(--space-2)" }}
+        >
           <button
             onClick={() => {
               const pendingIds = leaves.filter((l) => l.status === "pending").map((l) => l.id);
               setSelectedLeaveIds(new Set(pendingIds.length === selectedLeaveIds.size ? [] : pendingIds));
             }}
-            className="text-xs font-semibold text-primary hover:underline px-2 py-1"
+            className="text-xs font-semibold px-2 py-1"
+            style={{ color: "var(--wine)" }}
           >
             {selectedLeaveIds.size === leaves.filter((l) => l.status === "pending").length ? "Batal pilih semua" : "Pilih semua"}
           </button>
           {selectedLeaveIds.size > 0 && (
             <>
-              <span className="text-xs text-gray-500">{selectedLeaveIds.size} dipilih</span>
+              <span className="text-xs" style={{ color: "var(--ink-muted)" }}>{selectedLeaveIds.size} dipilih</span>
               <div className="ml-auto flex gap-2">
                 <button
                   onClick={() => onBulkReviewLeaves(Array.from(selectedLeaveIds), "approved")}
-                  className="px-3 py-1.5 bg-gradient-to-br from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                  className="rw-btn rw-btn--sm inline-flex items-center gap-1"
+                  style={{ background: "var(--success)", color: "var(--on-wine)", fontWeight: 700 }}
                 >
                   <CheckCircle size={13} /> Setujui semua
                 </button>
                 <button
                   onClick={() => onBulkReviewLeaves(Array.from(selectedLeaveIds), "rejected")}
-                  className="px-3 py-1.5 bg-gradient-to-br from-rose-500 to-red-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                  className="rw-btn rw-btn--sm rw-btn--danger inline-flex items-center gap-1"
+                  style={{ fontWeight: 700 }}
                 >
                   <X size={13} /> Tolak semua
                 </button>
@@ -132,24 +148,33 @@ export default function LeavesTab({
           })
           .map((leave) => {
             const emp = leave.employees;
-            const typeColor = {
-              cuti: "bg-blue-50 text-blue-700",
-              sakit: "bg-orange-50 text-orange-700",
-              izin: "bg-purple-50 text-purple-700",
-            }[leave.leave_type];
-            const statusColor = {
-              pending: "bg-yellow-50 text-yellow-700",
-              approved: "bg-green-50 text-green-700",
-              rejected: "bg-red-50 text-red-700",
-            }[leave.status];
-            const statusLabel = {
+            const typeStyle: Record<string, { bg: string; color: string }> = {
+              cuti: { bg: "var(--wine-tint)", color: "var(--wine)" },
+              sakit: { bg: "var(--warning-tint)", color: "var(--warning)" },
+              izin: { bg: "var(--surface-300)", color: "var(--ink-muted)" },
+            };
+            const statusStyle: Record<string, { bg: string; color: string }> = {
+              pending: { bg: "var(--warning-tint)", color: "var(--warning)" },
+              approved: { bg: "var(--success-tint)", color: "var(--success)" },
+              rejected: { bg: "var(--danger-tint)", color: "var(--danger)" },
+            };
+            const statusLabel: Record<string, string> = {
               pending: "Menunggu",
               approved: "Disetujui",
               rejected: "Ditolak",
-            }[leave.status];
+            };
+            const ts = typeStyle[leave.leave_type] || typeStyle.izin;
+            const ss = statusStyle[leave.status] || statusStyle.pending;
 
             return (
-              <div key={leave.id} className={`bg-white rounded-2xl p-4 shadow-sm transition-all animate-stagger ${selectedLeaveIds.has(leave.id) ? "ring-2 ring-primary ring-offset-1" : ""}`}>
+              <div
+                key={leave.id}
+                className="rw-card transition-all animate-stagger"
+                style={{
+                  outline: selectedLeaveIds.has(leave.id) ? "2px solid var(--wine)" : "none",
+                  outlineOffset: "1px",
+                }}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
                     {leave.status === "pending" && (
@@ -161,40 +186,48 @@ export default function LeavesTab({
                           if (e.target.checked) next.add(leave.id); else next.delete(leave.id);
                           setSelectedLeaveIds(next);
                         }}
-                        className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+                        className="mt-1 w-4 h-4 cursor-pointer"
+                        style={{ accentColor: "var(--wine)" }}
                         onClick={(e) => e.stopPropagation()}
                         aria-label="Pilih untuk bulk action"
                       />
                     )}
                     <Avatar name={emp?.name || "?"} size="md" />
                     <div className="min-w-0">
-                      <p className="font-semibold">{emp?.name || "-"}</p>
+                      <p className="font-semibold" style={{ color: "var(--ink)" }}>{emp?.name || "-"}</p>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${typeColor}`}>
+                        <span
+                          className="text-[10px] px-2 py-0.5 font-medium capitalize"
+                          style={{ borderRadius: "var(--radius-full)", background: ts.bg, color: ts.color }}
+                        >
                           {leave.leave_type}
                         </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
-                          {statusLabel}
+                        <span
+                          className="text-[10px] px-2 py-0.5 font-medium"
+                          style={{ borderRadius: "var(--radius-full)", background: ss.bg, color: ss.color }}
+                        >
+                          {statusLabel[leave.status]}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
+                      <p className="text-xs mt-1.5" style={{ color: "var(--ink-muted)" }}>
                         {format(new Date(leave.start_date), "dd MMM yyyy", { locale: idLocale })}
                         {leave.start_date !== leave.end_date &&
                           ` - ${format(new Date(leave.end_date), "dd MMM yyyy", { locale: idLocale })}`}
                       </p>
-                      <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{leave.reason}</p>
+                      <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: "var(--ink)" }}>{leave.reason}</p>
                       {leave.attachment_url && (
                         <a
                           href={leave.attachment_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                          className="text-xs mt-1 inline-flex items-center gap-1"
+                          style={{ color: "var(--wine)" }}
                         >
                           <FileTextIcon size={12} /> Lihat lampiran
                         </a>
                       )}
                       {leave.admin_notes && (
-                        <p className="text-xs text-gray-500 mt-2 italic">
+                        <p className="text-xs mt-2 italic" style={{ color: "var(--ink-muted)" }}>
                           Catatan admin: {leave.admin_notes}
                         </p>
                       )}
@@ -204,7 +237,8 @@ export default function LeavesTab({
                     <div className="flex flex-col gap-1.5 shrink-0">
                       <button
                         onClick={() => onReviewLeave(leave.id, "approved")}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                        className="rw-btn rw-btn--sm inline-flex items-center gap-1 font-medium"
+                        style={{ background: "var(--success-tint)", color: "var(--success)" }}
                       >
                         <FileCheck size={14} /> Setujui
                       </button>
@@ -213,7 +247,8 @@ export default function LeavesTab({
                           const notes = prompt("Alasan penolakan (opsional):") || "";
                           onReviewLeave(leave.id, "rejected", notes);
                         }}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                        className="rw-btn rw-btn--sm inline-flex items-center gap-1 font-medium"
+                        style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
                       >
                         <FileX size={14} /> Tolak
                       </button>
@@ -225,7 +260,7 @@ export default function LeavesTab({
           })}
         {leaves.filter((l) => leaveFilter === "all" || l.status === leaveFilter).length ===
           0 && (
-          <div className="bg-white rounded-2xl p-8 text-center text-gray-400">
+          <div className="rw-card p-8 text-center" style={{ color: "var(--ink-muted)" }}>
             Belum ada pengajuan izin
           </div>
         )}
@@ -244,11 +279,13 @@ export default function LeavesTab({
               <button
                 key={f.key}
                 onClick={() => setLeaveFilter(f.key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
-                  leaveFilter === f.key
-                    ? "bg-primary text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border"
-                }`}
+                className="px-4 py-2 text-sm font-medium whitespace-nowrap transition"
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  background: leaveFilter === f.key ? "var(--wine)" : "var(--surface-200)",
+                  color: leaveFilter === f.key ? "var(--on-wine)" : "var(--ink-muted)",
+                  border: leaveFilter === f.key ? "none" : "1px solid var(--line)",
+                }}
               >
                 {f.label} ({f.count})
               </button>
@@ -257,29 +294,35 @@ export default function LeavesTab({
 
           {/* Bulk action bar for pending reimbursements */}
           {leaveFilter === "pending" && reimbs.filter((r) => r.status === "pending").length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2 flex-wrap animate-fade-in">
+            <div
+              className="rw-card p-2 flex items-center gap-2 flex-wrap animate-fade-in"
+              style={{ padding: "var(--space-2)" }}
+            >
               <button
                 onClick={() => {
                   const pendingIds = reimbs.filter((r) => r.status === "pending").map((r) => r.id);
                   setSelectedReimbIds(new Set(pendingIds.length === selectedReimbIds.size ? [] : pendingIds));
                 }}
-                className="text-xs font-semibold text-primary hover:underline px-2 py-1"
+                className="text-xs font-semibold px-2 py-1"
+                style={{ color: "var(--wine)" }}
               >
                 {selectedReimbIds.size === reimbs.filter((r) => r.status === "pending").length ? "Batal pilih semua" : "Pilih semua"}
               </button>
               {selectedReimbIds.size > 0 && (
                 <>
-                  <span className="text-xs text-gray-500">{selectedReimbIds.size} dipilih</span>
+                  <span className="text-xs" style={{ color: "var(--ink-muted)" }}>{selectedReimbIds.size} dipilih</span>
                   <div className="ml-auto flex gap-2">
                     <button
                       onClick={() => onBulkReviewReimbs(Array.from(selectedReimbIds), "approved")}
-                      className="px-3 py-1.5 bg-gradient-to-br from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                      className="rw-btn rw-btn--sm inline-flex items-center gap-1"
+                      style={{ background: "var(--success)", color: "var(--on-wine)", fontWeight: 700 }}
                     >
                       <CheckCircle size={13} /> Setujui semua
                     </button>
                     <button
                       onClick={() => onBulkReviewReimbs(Array.from(selectedReimbIds), "rejected")}
-                      className="px-3 py-1.5 bg-gradient-to-br from-rose-500 to-red-500 text-white rounded-lg text-xs font-bold hover:shadow-md transition inline-flex items-center gap-1"
+                      className="rw-btn rw-btn--sm rw-btn--danger inline-flex items-center gap-1"
+                      style={{ fontWeight: 700 }}
                     >
                       <X size={13} /> Tolak semua
                     </button>
@@ -299,21 +342,29 @@ export default function LeavesTab({
               })
               .map((reimb) => {
                 const emp = reimb.employees;
-                const statusColor = {
-                  pending: "bg-yellow-50 text-yellow-700",
-                  approved: "bg-green-50 text-green-700",
-                  rejected: "bg-red-50 text-red-700",
-                }[reimb.status];
-                const catEmoji = {
+                const statusStyle: Record<string, { bg: string; color: string }> = {
+                  pending: { bg: "var(--warning-tint)", color: "var(--warning)" },
+                  approved: { bg: "var(--success-tint)", color: "var(--success)" },
+                  rejected: { bg: "var(--danger-tint)", color: "var(--danger)" },
+                };
+                const ss = statusStyle[reimb.status] || statusStyle.pending;
+                const catEmoji: Record<string, string> = {
                   umum: "📦",
                   transport: "🚗",
                   makanan: "🍱",
                   medis: "💊",
                   lainnya: "📋",
-                }[reimb.category] || "📋";
+                };
 
                 return (
-                  <div key={reimb.id} className={`bg-white rounded-2xl p-4 shadow-sm transition-all animate-stagger ${selectedReimbIds.has(reimb.id) ? "ring-2 ring-primary ring-offset-1" : ""}`}>
+                  <div
+                    key={reimb.id}
+                    className="rw-card transition-all animate-stagger"
+                    style={{
+                      outline: selectedReimbIds.has(reimb.id) ? "2px solid var(--wine)" : "none",
+                      outlineOffset: "1px",
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         {reimb.status === "pending" && (
@@ -325,46 +376,63 @@ export default function LeavesTab({
                               if (e.target.checked) next.add(reimb.id); else next.delete(reimb.id);
                               setSelectedReimbIds(next);
                             }}
-                            className="mt-1 w-4 h-4 accent-primary cursor-pointer"
+                            className="mt-1 w-4 h-4 cursor-pointer"
+                            style={{ accentColor: "var(--wine)" }}
                             onClick={(e) => e.stopPropagation()}
                             aria-label="Pilih untuk bulk action"
                           />
                         )}
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
-                          {catEmoji}
+                        <div
+                          className="w-10 h-10 flex items-center justify-center text-xl shrink-0"
+                          style={{ borderRadius: "var(--radius-md)", background: "var(--wine-tint)" }}
+                        >
+                          {catEmoji[reimb.category] || "📋"}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold">{emp?.name || "-"}</p>
+                          <p className="font-semibold" style={{ color: "var(--ink)" }}>{emp?.name || "-"}</p>
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 capitalize">
+                            <span
+                              className="rw-badge--neutral text-[10px] px-2 py-0.5 font-medium capitalize"
+                            >
                               {reimb.category}
                             </span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                            <span
+                              className="text-[10px] px-2 py-0.5 font-medium"
+                              style={{ borderRadius: "var(--radius-full)", background: ss.bg, color: ss.color }}
+                            >
                               {reimb.status === "pending" ? "Menunggu" : reimb.status === "approved" ? "Disetujui" : "Ditolak"}
                             </span>
                           </div>
-                          <p className="text-lg font-bold text-primary mt-2">
+                          <p className="text-lg font-bold mt-2" style={{ color: "var(--wine)" }}>
                             Rp {Number(reimb.amount).toLocaleString("id-ID")}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs mt-0.5" style={{ color: "var(--ink-muted)" }}>
                             {format(new Date(reimb.transaction_date), "dd MMM yyyy", { locale: idLocale })}
                           </p>
                           {reimb.description && (
-                            <p className="text-sm text-gray-700 mt-2">{reimb.description}</p>
+                            <p className="text-sm mt-2" style={{ color: "var(--ink)" }}>{reimb.description}</p>
                           )}
                           {reimb.bank_account && (
-                            <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                              <p className="text-[10px] text-blue-600 font-medium uppercase tracking-wide">
+                            <div
+                              className="mt-2 px-3 py-2"
+                              style={{
+                                background: "var(--wine-tint)",
+                                border: "1px solid var(--line)",
+                                borderRadius: "var(--radius-md)",
+                              }}
+                            >
+                              <p className="rw-micro" style={{ color: "var(--wine)" }}>
                                 Rekening Transfer
                               </p>
-                              <p className="text-sm text-blue-900 font-mono font-semibold">
+                              <p className="text-sm font-mono font-semibold" style={{ color: "var(--ink)" }}>
                                 {reimb.bank_account}
                               </p>
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(reimb.bank_account || "");
                                 }}
-                                className="text-[10px] text-blue-600 hover:underline mt-0.5"
+                                className="text-[10px] mt-0.5"
+                                style={{ color: "var(--wine)" }}
                               >
                                 Salin
                               </button>
@@ -375,13 +443,14 @@ export default function LeavesTab({
                               href={reimb.attachment_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                              className="text-xs mt-1 inline-flex items-center gap-1"
+                              style={{ color: "var(--wine)" }}
                             >
                               <FileTextIcon size={12} /> Lihat bukti
                             </a>
                           )}
                           {reimb.admin_notes && (
-                            <p className="text-xs text-gray-500 mt-2 italic">
+                            <p className="text-xs mt-2 italic" style={{ color: "var(--ink-muted)" }}>
                               Catatan admin: {reimb.admin_notes}
                             </p>
                           )}
@@ -391,7 +460,8 @@ export default function LeavesTab({
                         <div className="flex flex-col gap-1.5 shrink-0">
                           <button
                             onClick={() => onReviewReimb(reimb.id, "approved")}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                            className="rw-btn rw-btn--sm inline-flex items-center gap-1 font-medium"
+                            style={{ background: "var(--success-tint)", color: "var(--success)" }}
                           >
                             <FileCheck size={14} /> Setujui
                           </button>
@@ -400,7 +470,8 @@ export default function LeavesTab({
                               const notes = prompt("Alasan penolakan (opsional):") || "";
                               onReviewReimb(reimb.id, "rejected", notes);
                             }}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition inline-flex items-center gap-1 font-medium"
+                            className="rw-btn rw-btn--sm inline-flex items-center gap-1 font-medium"
+                            style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
                           >
                             <FileX size={14} /> Tolak
                           </button>
@@ -411,7 +482,7 @@ export default function LeavesTab({
                 );
               })}
             {reimbs.filter((r) => leaveFilter === "all" || r.status === leaveFilter).length === 0 && (
-              <div className="bg-white rounded-2xl p-8 text-center text-gray-400">
+              <div className="rw-card p-8 text-center" style={{ color: "var(--ink-muted)" }}>
                 Belum ada pengajuan reimburse
               </div>
             )}

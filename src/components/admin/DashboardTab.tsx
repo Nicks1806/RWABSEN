@@ -21,11 +21,11 @@ import {
 import AdminStatCard from "@/components/admin/AdminStatCard";
 import type { Employee, Attendance } from "@/lib/types";
 
-const statusBadge: Record<string, { text: string; color: string }> = {
-  present: { text: "Hadir", color: "bg-green-100 text-green-700" },
-  late: { text: "Terlambat", color: "bg-red-100 text-red-700" },
-  early_leave: { text: "Pulang Awal", color: "bg-yellow-100 text-yellow-700" },
-  absent: { text: "Tidak Hadir", color: "bg-gray-100 text-gray-700" },
+const statusBadge: Record<string, { text: string; bg: string; color: string }> = {
+  present: { text: "Hadir", bg: "var(--success-tint)", color: "var(--success)" },
+  late: { text: "Terlambat", bg: "var(--danger-tint)", color: "var(--danger)" },
+  early_leave: { text: "Pulang Awal", bg: "var(--warning-tint)", color: "var(--warning)" },
+  absent: { text: "Tidak Hadir", bg: "var(--surface-300)", color: "var(--ink-muted)" },
 };
 
 interface RankEntry {
@@ -76,21 +76,34 @@ export default function DashboardTab({
     <div className="space-y-6">
       {/* Late Clock-In Notification */}
       {lateClockIn.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-red-700 mb-2">
+        <div
+          className="p-4"
+          style={{
+            background: "var(--danger-tint)",
+            border: "1px solid var(--danger)",
+            borderRadius: "var(--radius-lg)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2" style={{ color: "var(--danger)" }}>
             <Bell size={18} />
             <h3 className="font-semibold">
               Belum Clock In ({lateClockIn.length})
             </h3>
           </div>
-          <p className="text-xs text-red-600 mb-2">
+          <p className="text-xs mb-2" style={{ color: "var(--danger)" }}>
             Karyawan yang belum absen hari ini setelah jam kerja dimulai
           </p>
           <div className="flex flex-wrap gap-2">
             {lateClockIn.map((emp) => (
               <span
                 key={emp.id}
-                className="bg-white text-red-700 text-xs px-3 py-1 rounded-full border border-red-300"
+                className="text-xs px-3 py-1"
+                style={{
+                  background: "var(--surface-200)",
+                  color: "var(--danger)",
+                  borderRadius: "var(--radius-full)",
+                  border: "1px solid var(--danger)",
+                }}
               >
                 {emp.name}
               </span>
@@ -105,55 +118,55 @@ export default function DashboardTab({
           icon={<Users size={18} />}
           label="Total Karyawan"
           value={totalEmployees}
-          gradient="from-blue-500 to-indigo-500"
-          bg="from-blue-50 via-white to-indigo-50"
-          textColor="text-blue-700"
         />
         <AdminStatCard
           icon={<CheckCircle size={18} />}
           label="Hadir Hari Ini"
           value={presentToday}
-          gradient="from-emerald-500 to-green-500"
-          bg="from-emerald-50 via-white to-green-50"
-          textColor="text-emerald-700"
           liveBadge={`${totalEmployees > 0 ? Math.round((presentToday / totalEmployees) * 100) : 0}%`}
         />
         <AdminStatCard
           icon={<AlertTriangle size={18} />}
           label="Terlambat"
           value={lateToday}
-          gradient="from-amber-500 to-orange-500"
-          bg="from-amber-50 via-white to-orange-50"
-          textColor="text-amber-700"
         />
         <AdminStatCard
           icon={<Clock size={18} />}
           label="Belum Hadir"
           value={totalEmployees - presentToday}
-          gradient="from-rose-500 to-red-500"
-          bg="from-rose-50 via-white to-red-50"
-          textColor="text-rose-700"
         />
       </div>
 
       {/* Clock-Out Reminder Banner */}
       {missingClockOut.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div
+          className="p-4 flex items-center justify-between gap-3 flex-wrap"
+          style={{
+            background: "var(--warning-tint)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius-lg)",
+          }}
+        >
           <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-sm shrink-0">
+            <div
+              className="w-11 h-11 flex items-center justify-center shadow-sm shrink-0"
+              style={{ borderRadius: "var(--radius-md)", background: "var(--warning)", color: "var(--on-wine)" }}
+            >
               <Clock3 size={20} />
             </div>
             <div>
-              <p className="font-bold text-amber-900 text-sm">{missingClockOut.length} karyawan belum clock-out</p>
-              <p className="text-xs text-amber-700">{missingClockOut.slice(0, 3).map((e) => e.name).join(", ")}{missingClockOut.length > 3 ? ` +${missingClockOut.length - 3} lainnya` : ""}</p>
+              <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>{missingClockOut.length} karyawan belum clock-out</p>
+              <p className="text-xs" style={{ color: "var(--ink-muted)" }}>{missingClockOut.slice(0, 3).map((e) => e.name).join(", ")}{missingClockOut.length > 3 ? ` +${missingClockOut.length - 3} lainnya` : ""}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {reminderMsg && <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">{reminderMsg}</span>}
+            {reminderMsg && (
+              <span className="rw-badge--success text-xs font-semibold px-2.5 py-1">{reminderMsg}</span>
+            )}
             <button
               onClick={onSendClockOutReminder}
               disabled={reminderSending}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition disabled:opacity-60"
+              className="rw-btn rw-btn--warning rw-btn--sm inline-flex items-center gap-1.5 font-bold disabled:opacity-60"
             >
               <Bell size={14} />
               {reminderSending ? "Mengirim..." : "Kirim Reminder"}
@@ -166,50 +179,80 @@ export default function DashboardTab({
       {(topRajin.length > 0 || topTelat.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 animate-fade-in">
           {/* Top Rajin */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-green-50 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 text-white flex items-center justify-center">
+          <div className="rw-card overflow-hidden" style={{ padding: 0 }}>
+            <div
+              className="px-4 py-3 flex items-center gap-2"
+              style={{ borderBottom: "1px solid var(--line)", background: "var(--success-tint)" }}
+            >
+              <div
+                className="w-7 h-7 flex items-center justify-center"
+                style={{ borderRadius: "var(--radius-sm)", background: "var(--success)", color: "var(--on-wine)" }}
+              >
                 <Award size={14} />
               </div>
-              <h3 className="font-bold text-sm text-emerald-900">Top Rajin Bulan Ini</h3>
+              <h3 className="font-bold text-sm" style={{ color: "var(--ink)" }}>Top Rajin Bulan Ini</h3>
             </div>
-            <ul className="divide-y divide-gray-100">
+            <ul>
               {topRajin.map((r, idx) => (
-                <li key={r.emp.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                    idx === 0 ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-white" :
-                    idx === 1 ? "bg-gradient-to-br from-gray-300 to-gray-400 text-white" :
-                    "bg-gradient-to-br from-orange-400 to-orange-500 text-white"
-                  }`}>
+                <li
+                  key={r.emp.id}
+                  className="flex items-center gap-3 px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--line)" }}
+                >
+                  <span
+                    className="w-7 h-7 flex items-center justify-center text-xs font-bold"
+                    style={{
+                      borderRadius: "var(--radius-full)",
+                      background: idx === 0 ? "var(--gold)" : idx === 1 ? "var(--line-strong)" : "var(--sand)",
+                      color: "var(--on-wine)",
+                    }}
+                  >
                     {idx + 1}
                   </span>
-                  <p className="flex-1 text-sm font-semibold text-gray-800 truncate">{r.emp.name}</p>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full tabular-nums">{r.present} hari</span>
+                  <p className="flex-1 text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>{r.emp.name}</p>
+                  <span className="rw-badge--success text-xs font-bold px-2 py-0.5 tabular-nums">{r.present} hari</span>
                 </li>
               ))}
-              {topRajin.length === 0 && <li className="px-4 py-6 text-center text-xs text-gray-400">Belum ada data</li>}
+              {topRajin.length === 0 && (
+                <li className="px-4 py-6 text-center text-xs" style={{ color: "var(--ink-muted)" }}>Belum ada data</li>
+              )}
             </ul>
           </div>
 
           {/* Top Telat */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-red-50 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-red-500 text-white flex items-center justify-center">
+          <div className="rw-card overflow-hidden" style={{ padding: 0 }}>
+            <div
+              className="px-4 py-3 flex items-center gap-2"
+              style={{ borderBottom: "1px solid var(--line)", background: "var(--danger-tint)" }}
+            >
+              <div
+                className="w-7 h-7 flex items-center justify-center"
+                style={{ borderRadius: "var(--radius-sm)", background: "var(--danger)", color: "var(--on-wine)" }}
+              >
                 <AlertTriangle size={14} />
               </div>
-              <h3 className="font-bold text-sm text-rose-900">Paling Sering Terlambat</h3>
+              <h3 className="font-bold text-sm" style={{ color: "var(--ink)" }}>Paling Sering Terlambat</h3>
             </div>
-            <ul className="divide-y divide-gray-100">
+            <ul>
               {topTelat.map((r, idx) => (
-                <li key={r.emp.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="w-7 h-7 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
+                <li
+                  key={r.emp.id}
+                  className="flex items-center gap-3 px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--line)" }}
+                >
+                  <span
+                    className="w-7 h-7 flex items-center justify-center text-xs font-bold"
+                    style={{ borderRadius: "var(--radius-full)", background: "var(--danger-tint)", color: "var(--danger)" }}
+                  >
                     {idx + 1}
                   </span>
-                  <p className="flex-1 text-sm font-semibold text-gray-800 truncate">{r.emp.name}</p>
-                  <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full tabular-nums">{r.late}x</span>
+                  <p className="flex-1 text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>{r.emp.name}</p>
+                  <span className="rw-badge--danger text-xs font-bold px-2 py-0.5 tabular-nums">{r.late}x</span>
                 </li>
               ))}
-              {topTelat.length === 0 && <li className="px-4 py-6 text-center text-xs text-gray-400">Tidak ada yang terlambat 🎉</li>}
+              {topTelat.length === 0 && (
+                <li className="px-4 py-6 text-center text-xs" style={{ color: "var(--ink-muted)" }}>Tidak ada yang terlambat</li>
+              )}
             </ul>
           </div>
         </div>
@@ -221,28 +264,30 @@ export default function DashboardTab({
           type="month"
           value={month}
           onChange={(e) => setMonth(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+          className="rw-input text-sm"
         />
         <div className="flex-1 relative md:max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-muted)" }} />
           <input
             type="text"
             placeholder="Cari nama karyawan..."
             value={globalSearch}
             onChange={(e) => setGlobalSearch(e.target.value)}
-            className="w-full text-sm border border-gray-300 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+            className="rw-input w-full text-sm"
+            style={{ paddingLeft: "36px" }}
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={onExportPDF}
-            className="flex-1 md:flex-none flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition"
+            className="rw-btn rw-btn--primary flex-1 md:flex-none flex items-center gap-1.5"
           >
             <FileTextIcon size={16} /> PDF
           </button>
           <button
             onClick={onExportExcel}
-            className="flex-1 md:flex-none flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+            className="rw-btn flex-1 md:flex-none flex items-center gap-1.5"
+            style={{ background: "var(--success)", color: "var(--on-wine)" }}
           >
             <Download size={16} /> Excel
           </button>
@@ -250,33 +295,33 @@ export default function DashboardTab({
       </div>
 
       {/* Monthly Hours Summary */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold text-gray-700">
+      <div className="rw-card overflow-hidden" style={{ padding: 0 }}>
+        <div className="p-4" style={{ borderBottom: "1px solid var(--line)" }}>
+          <h3 className="rw-heading" style={{ color: "var(--ink)" }}>
             Jam Kerja Bulan {format(new Date(month + "-01"), "MMMM yyyy", { locale: idLocale })}
           </h3>
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead style={{ background: "var(--surface-300)" }}>
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Hadir</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Terlambat</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Total Jam</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Nama</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Hadir</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Terlambat</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Total Jam</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {employees
                 .filter((e) => e.role === "employee")
                 .map((emp) => {
                   const stats = empStatsMap.get(emp.id) || { present: 0, late: 0 };
                   return (
-                    <tr key={emp.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium">{emp.name}</td>
-                      <td className="px-4 py-3 text-center">{stats.present}</td>
-                      <td className="px-4 py-3 text-center text-red-600">{stats.late}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-primary">
+                    <tr key={emp.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                      <td className="px-4 py-3 font-medium" style={{ color: "var(--ink)" }}>{emp.name}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: "var(--ink)" }}>{stats.present}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: "var(--danger)" }}>{stats.late}</td>
+                      <td className="px-4 py-3 text-center font-semibold" style={{ color: "var(--wine)" }}>
                         {getMonthlyHours(emp.id)} jam
                       </td>
                     </tr>
@@ -286,21 +331,21 @@ export default function DashboardTab({
           </table>
         </div>
         {/* Mobile Cards for Monthly Hours */}
-        <div className="md:hidden divide-y">
+        <div className="md:hidden">
           {employees
             .filter((e) => e.role === "employee")
             .map((emp) => {
               const stats = empStatsMap.get(emp.id) || { present: 0, late: 0 };
               return (
-                <div key={emp.id} className="p-4 flex items-center justify-between">
+                <div key={emp.id} className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
                   <div>
-                    <p className="font-semibold">{emp.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Hadir: {stats.present} •{" "}
-                      <span className="text-red-600">Terlambat: {stats.late}</span>
+                    <p className="font-semibold" style={{ color: "var(--ink)" }}>{emp.name}</p>
+                    <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
+                      Hadir: {stats.present} {"•"}{" "}
+                      <span style={{ color: "var(--danger)" }}>Terlambat: {stats.late}</span>
                     </p>
                   </div>
-                  <p className="font-bold text-primary">
+                  <p className="font-bold" style={{ color: "var(--wine)" }}>
                     {getMonthlyHours(emp.id)} jam
                   </p>
                 </div>
@@ -310,16 +355,20 @@ export default function DashboardTab({
       </div>
 
       {/* Attendance Table */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+      <div className="rw-card overflow-hidden" style={{ padding: 0 }}>
+        <div
+          className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+          style={{ borderBottom: "1px solid var(--line)" }}
+        >
+          <h3 className="rw-heading flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Filter size={16} /> Detail Absensi
           </h3>
           <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={filterEmployee}
               onChange={(e) => setFilterEmployee(e.target.value)}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input text-sm"
+              style={{ padding: "6px 12px" }}
             >
               <option value="all">Semua Karyawan</option>
               {employees
@@ -333,7 +382,8 @@ export default function DashboardTab({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
+              className="rw-input text-sm"
+              style={{ padding: "6px 12px" }}
             >
               <option value="all">Semua Status</option>
               <option value="present">Hadir</option>
@@ -344,41 +394,46 @@ export default function DashboardTab({
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead style={{ background: "var(--surface-300)" }}>
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Tanggal</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Masuk</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Keluar</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Foto</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Lokasi</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Ket</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Hapus</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Tanggal</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Nama</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Masuk</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Keluar</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Status</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Foto</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Lokasi</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Ket</th>
+                <th className="text-center px-4 py-3 font-medium" style={{ color: "var(--ink-muted)" }}>Hapus</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
-              {filteredRecords.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap">
+            <tbody>
+              {filteredRecords.map((r) => {
+                const badge = statusBadge[r.status];
+                return (
+                <tr key={r.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--ink)" }}>
                     {format(new Date(r.date), "dd/MM")}
                   </td>
-                  <td className="px-4 py-3 font-medium">
+                  <td className="px-4 py-3 font-medium" style={{ color: "var(--ink)" }}>
                     {(r as Attendance & { employees?: { name: string } }).employees?.name || "-"}
                   </td>
-                  <td className="px-4 py-3 text-center text-green-600">
+                  <td className="px-4 py-3 text-center" style={{ color: "var(--success)" }}>
                     {r.clock_in ? format(new Date(r.clock_in), "HH:mm") : "-"}
                   </td>
-                  <td className="px-4 py-3 text-center text-orange-600">
+                  <td className="px-4 py-3 text-center" style={{ color: "var(--warning)" }}>
                     {r.clock_out ? format(new Date(r.clock_out), "HH:mm") : "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        statusBadge[r.status]?.color || ""
-                      }`}
+                      className="text-xs px-2 py-1 font-medium"
+                      style={{
+                        borderRadius: "var(--radius-full)",
+                        background: badge?.bg || "",
+                        color: badge?.color || "",
+                      }}
                     >
-                      {statusBadge[r.status]?.text || r.status}
+                      {badge?.text || r.status}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -386,7 +441,8 @@ export default function DashboardTab({
                       {r.clock_in_photo && (
                         <button
                           onClick={() => setPhotoModal(r.clock_in_photo!)}
-                          className="inline-flex items-center gap-0.5 text-[10px] text-green-600 hover:text-green-800 bg-green-50 px-2 py-1 rounded-lg"
+                          className="inline-flex items-center gap-0.5 text-[10px] px-2 py-1"
+                          style={{ background: "var(--success-tint)", color: "var(--success)", borderRadius: "var(--radius-sm)" }}
                           title="Foto Clock In"
                         >
                           <ImageIcon size={12} /> In
@@ -395,7 +451,8 @@ export default function DashboardTab({
                       {r.clock_out_photo && (
                         <button
                           onClick={() => setPhotoModal(r.clock_out_photo!)}
-                          className="inline-flex items-center gap-0.5 text-[10px] text-orange-600 hover:text-orange-800 bg-orange-50 px-2 py-1 rounded-lg"
+                          className="inline-flex items-center gap-0.5 text-[10px] px-2 py-1"
+                          style={{ background: "var(--warning-tint)", color: "var(--warning)", borderRadius: "var(--radius-sm)" }}
                           title="Foto Clock Out"
                         >
                           <ImageIcon size={12} /> Out
@@ -409,67 +466,80 @@ export default function DashboardTab({
                         href={`https://www.google.com/maps?q=${r.clock_in_lat},${r.clock_in_lng}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700"
+                        style={{ color: "var(--wine)" }}
                         title="Lihat lokasi"
                       >
                         <MapPin size={16} className="inline" />
                       </a>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 max-w-[150px] truncate">
+                  <td className="px-4 py-3 text-xs max-w-[150px] truncate" style={{ color: "var(--ink-muted)" }}>
                     {r.notes || "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => onDeleteAttendance(r.id)}
-                      className="text-red-400 hover:text-red-600 transition"
+                      className="transition"
+                      style={{ color: "var(--danger)" }}
                       title="Hapus"
                     >
                       <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>
         {/* Mobile Cards for Detail Absensi */}
-        <div className="md:hidden divide-y">
+        <div className="md:hidden">
           {filteredRecords.map((r) => {
             const rec = r as Attendance & { employees?: { name: string } };
+            const badge = statusBadge[r.status];
             return (
-              <div key={r.id} className="p-4 space-y-2">
+              <div key={r.id} className="p-4 space-y-2" style={{ borderBottom: "1px solid var(--line)" }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold">{rec.employees?.name || "-"}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-semibold" style={{ color: "var(--ink)" }}>{rec.employees?.name || "-"}</p>
+                    <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
                       {format(new Date(r.date), "EEE, dd MMM", { locale: idLocale })}
                     </p>
                   </div>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      statusBadge[r.status]?.color || ""
-                    }`}
+                    className="text-xs px-2 py-1 font-medium"
+                    style={{
+                      borderRadius: "var(--radius-full)",
+                      background: badge?.bg || "",
+                      color: badge?.color || "",
+                    }}
                   >
-                    {statusBadge[r.status]?.text || r.status}
+                    {badge?.text || r.status}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-green-50 rounded-lg px-2 py-1 text-green-700">
+                  <div
+                    className="px-2 py-1"
+                    style={{ background: "var(--success-tint)", color: "var(--success)", borderRadius: "var(--radius-sm)" }}
+                  >
                     Masuk: {r.clock_in ? format(new Date(r.clock_in), "HH:mm") : "-"}
                   </div>
-                  <div className="bg-orange-50 rounded-lg px-2 py-1 text-orange-700">
+                  <div
+                    className="px-2 py-1"
+                    style={{ background: "var(--warning-tint)", color: "var(--warning)", borderRadius: "var(--radius-sm)" }}
+                  >
                     Keluar: {r.clock_out ? format(new Date(r.clock_out), "HH:mm") : "-"}
                   </div>
                 </div>
                 {r.notes && (
-                  <p className="text-xs text-gray-500">Ket: {r.notes}</p>
+                  <p className="text-xs" style={{ color: "var(--ink-muted)" }}>Ket: {r.notes}</p>
                 )}
                 <div className="flex items-center gap-3 text-xs pt-1">
                   {r.clock_in_photo && (
                     <button
                       onClick={() => setPhotoModal(r.clock_in_photo!)}
-                      className="flex items-center gap-1 text-blue-600"
+                      className="flex items-center gap-1"
+                      style={{ color: "var(--wine)" }}
                     >
                       <ImageIcon size={14} /> Foto
                     </button>
@@ -479,14 +549,16 @@ export default function DashboardTab({
                       href={`https://www.google.com/maps?q=${r.clock_in_lat},${r.clock_in_lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-blue-600"
+                      className="flex items-center gap-1"
+                      style={{ color: "var(--wine)" }}
                     >
                       <MapPin size={14} /> Lokasi
                     </a>
                   )}
                   <button
                     onClick={() => onDeleteAttendance(r.id)}
-                    className="flex items-center gap-1 text-red-500 ml-auto"
+                    className="flex items-center gap-1 ml-auto"
+                    style={{ color: "var(--danger)" }}
                   >
                     <Trash2 size={14} /> Hapus
                   </button>
@@ -497,7 +569,7 @@ export default function DashboardTab({
         </div>
 
         {filteredRecords.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8" style={{ color: "var(--ink-muted)" }}>
             {recordsEmpty ? "Belum ada data" : "Tidak ada data sesuai filter"}
           </div>
         )}

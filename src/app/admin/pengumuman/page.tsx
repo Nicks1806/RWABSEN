@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   Send,
 } from "lucide-react";
-import Logo from "@/components/Logo";
 
 export default function AdminAnnouncementsPage() {
   const router = useRouter();
@@ -195,18 +194,31 @@ export default function AdminAnnouncementsPage() {
   if (!admin) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen animate-fade-in" style={{ background: "var(--surface-100)" }}>
+      {/* ── Header ── */}
+      <header
+        className="sticky top-0 z-10"
+        style={{
+          background: "var(--surface-100)",
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push("/admin")} className="text-gray-500 hover:text-primary">
+            <button
+              onClick={() => router.push("/admin")}
+              className="ico-circ"
+              style={{ color: "var(--ink-muted)" }}
+            >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="font-bold text-gray-800 flex items-center gap-2">
-              <Megaphone size={18} /> Pengumuman
-            </h1>
+            <div>
+              <p className="rw-micro">ADMIN</p>
+              <h1 className="rw-heading flex items-center gap-2">
+                <Megaphone size={18} style={{ color: "var(--wine)" }} /> Pengumuman
+              </h1>
+            </div>
           </div>
-          <Logo size="sm" />
         </div>
       </header>
 
@@ -214,7 +226,8 @@ export default function AdminAnnouncementsPage() {
         {/* Create button */}
         <button
           onClick={openCreate}
-          className="w-full py-3 bg-primary text-white rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-md hover:bg-primary-dark transition"
+          className="rw-btn rw-btn--primary rw-btn--block"
+          style={{ borderRadius: "var(--radius-xl)", fontWeight: 600 }}
         >
           <Plus size={18} /> Buat Pengumuman Baru
         </button>
@@ -222,69 +235,105 @@ export default function AdminAnnouncementsPage() {
         {/* List */}
         <div className="space-y-3">
           {items.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-              <Megaphone size={32} className="text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Belum ada pengumuman</p>
-              <p className="text-xs text-gray-400 mt-1">Klik tombol di atas untuk buat pengumuman pertama</p>
+            <div
+              className="rw-card"
+              style={{ textAlign: "center", padding: "var(--space-8) var(--space-5)" }}
+            >
+              <Megaphone
+                size={32}
+                style={{ color: "var(--line-strong)", margin: "0 auto var(--space-2)" }}
+              />
+              <p style={{ fontSize: 14, color: "var(--ink-muted)" }}>Belum ada pengumuman</p>
+              <p style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: "var(--space-1)", opacity: 0.7 }}>
+                Klik tombol di atas untuk buat pengumuman pertama
+              </p>
             </div>
           ) : (
             items.map((a) => {
-              const colors = {
-                normal: "border-l-blue-400 bg-white",
-                important: "border-l-amber-500 bg-amber-50",
-                urgent: "border-l-red-500 bg-red-50",
-              }[a.priority];
+              const borderColor =
+                a.priority === "urgent"
+                  ? "var(--danger)"
+                  : a.priority === "important"
+                  ? "var(--warning)"
+                  : "var(--sand)";
+              const cardBg =
+                a.priority === "urgent"
+                  ? "var(--danger-tint)"
+                  : a.priority === "important"
+                  ? "var(--warning-tint)"
+                  : "var(--surface-200)";
               return (
                 <div
                   key={a.id}
-                  className={`rounded-2xl shadow-sm border-l-4 p-4 ${colors} ${
-                    !a.is_active ? "opacity-60" : ""
-                  }`}
+                  className="rw-card"
+                  style={{
+                    borderLeft: `4px solid ${borderColor}`,
+                    background: cardBg,
+                    opacity: !a.is_active ? 0.6 : 1,
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-start justify-between gap-2" style={{ marginBottom: "var(--space-1)" }}>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm text-gray-800">{a.title}</p>
+                      <p style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{a.title}</p>
                       {a.priority === "urgent" && (
-                        <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
-                          PENTING
-                        </span>
+                        <span className="rw-badge--danger">PENTING</span>
                       )}
                       {a.priority === "important" && (
-                        <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold">
-                          INFO
-                        </span>
+                        <span className="rw-badge--warning">INFO</span>
                       )}
                       {!a.is_active && (
-                        <span className="text-[10px] bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full font-medium">
+                        <span
+                          style={{
+                            fontSize: 10,
+                            background: "var(--surface-300)",
+                            color: "var(--ink-muted)",
+                            padding: "2px 8px",
+                            borderRadius: "var(--radius-full)",
+                            fontWeight: 500,
+                          }}
+                        >
                           NONAKTIF
                         </span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600 whitespace-pre-wrap">{a.body}</p>
-                  <p className="text-[10px] text-gray-400 mt-2">
+                  <p style={{ fontSize: 12, color: "var(--ink-muted)", whiteSpace: "pre-wrap" }}>{a.body}</p>
+                  <p className="rw-micro" style={{ marginTop: "var(--space-2)" }}>
                     {format(new Date(a.created_at), "dd MMM yyyy • HH:mm", { locale: idLocale })}
                   </p>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2" style={{ marginTop: "var(--space-3)" }}>
                     <button
                       onClick={() => openEdit(a)}
-                      className="flex-1 text-xs py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 inline-flex items-center justify-center gap-1 font-medium"
+                      className="rw-btn rw-btn--outline rw-btn--sm"
+                      style={{
+                        flex: 1,
+                        borderColor: "var(--wine-tint)",
+                        color: "var(--wine)",
+                        background: "var(--wine-tint)",
+                      }}
                     >
                       <Edit3 size={12} /> Edit
                     </button>
                     <button
                       onClick={() => toggleActive(a)}
-                      className={`flex-1 text-xs py-1.5 rounded-lg font-medium ${
-                        a.is_active
-                          ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          : "bg-green-50 text-green-700 hover:bg-green-100"
-                      }`}
+                      className="rw-btn rw-btn--outline rw-btn--sm"
+                      style={{
+                        flex: 1,
+                        borderColor: a.is_active ? "var(--line)" : "var(--success-tint)",
+                        color: a.is_active ? "var(--ink-muted)" : "var(--success)",
+                        background: a.is_active ? "var(--surface-300)" : "var(--success-tint)",
+                      }}
                     >
                       {a.is_active ? "Nonaktifkan" : "Aktifkan"}
                     </button>
                     <button
                       onClick={() => deleteItem(a.id)}
-                      className="text-xs py-1.5 px-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 inline-flex items-center justify-center gap-1 font-medium"
+                      className="rw-btn rw-btn--sm"
+                      style={{
+                        background: "var(--danger-tint)",
+                        color: "var(--danger)",
+                        border: "1px solid var(--danger-tint)",
+                      }}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -296,82 +345,131 @@ export default function AdminAnnouncementsPage() {
         </div>
       </main>
 
-      {/* Form Modal */}
+      {/* ── Form Modal ── */}
       {showForm && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+          className="rw-overlay flex items-end md:items-center justify-center md:p-4"
           onClick={() => !loading && setShowForm(false)}
         >
           <div
-            className="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto"
+            className="rw-sheet animate-slide-up"
+            style={{ maxHeight: "92vh", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 bg-white z-10">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            {/* Drag handle (mobile) */}
+            <div className="md:hidden flex justify-center pt-2 pb-1 sticky top-0 z-10" style={{ background: "var(--surface-200)" }}>
+              <div style={{ width: 40, height: 4, background: "var(--line)", borderRadius: "var(--radius-full)" }} />
             </div>
-            <div className="bg-gradient-to-br from-primary to-primary-dark px-5 pt-4 pb-5 text-white relative">
+
+            {/* Modal header */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, var(--wine), var(--wine-deep))",
+                padding: "var(--space-4) var(--space-5) var(--space-5)",
+                color: "var(--on-wine)",
+                position: "relative",
+              }}
+            >
               <button
                 onClick={() => !loading && setShowForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                className="ico-circ"
+                style={{
+                  position: "absolute",
+                  top: "var(--space-4)",
+                  right: "var(--space-4)",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "var(--on-wine)",
+                }}
               >
                 <X size={18} />
               </button>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: "var(--radius-lg)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Megaphone size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">
+                  <h3 style={{ fontWeight: 700, fontSize: 18 }}>
                     {editing ? "Edit Pengumuman" : "Pengumuman Baru"}
                   </h3>
-                  <p className="text-xs text-white/80">Kirim ke semua karyawan</p>
+                  <p style={{ fontSize: 12, opacity: 0.8 }}>Kirim ke semua karyawan</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={submitForm} className="p-5 space-y-4">
+            {/* Form */}
+            <form onSubmit={submitForm} style={{ padding: "var(--space-5)" }} className="space-y-4">
+              {/* Judul */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Judul</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                  JUDUL
+                </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="Contoh: Libur Idul Fitri"
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                  className="rw-input"
+                  style={{ width: "100%" }}
                   required
                   maxLength={100}
                 />
               </div>
 
+              {/* Isi */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Isi Pengumuman</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                  ISI PENGUMUMAN
+                </label>
                 <textarea
                   value={form.body}
                   onChange={(e) => setForm({ ...form, body: e.target.value })}
                   rows={4}
                   placeholder="Tulis detail pengumuman..."
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white resize-none"
+                  className="rw-input"
+                  style={{ width: "100%", resize: "none" }}
                   required
                 />
               </div>
 
+              {/* Prioritas */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Prioritas</label>
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                  PRIORITAS
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {([
-                    { key: "normal", label: "Biasa", color: "border-blue-400 text-blue-700" },
-                    { key: "important", label: "Info", color: "border-amber-500 text-amber-700" },
-                    { key: "urgent", label: "Penting", color: "border-red-500 text-red-700" },
+                    { key: "normal", label: "Biasa", borderClr: "var(--sand)", textClr: "var(--ink)" },
+                    { key: "important", label: "Info", borderClr: "var(--warning)", textClr: "var(--warning)" },
+                    { key: "urgent", label: "Penting", borderClr: "var(--danger)", textClr: "var(--danger)" },
                   ] as const).map((p) => (
                     <button
                       key={p.key}
                       type="button"
                       onClick={() => setForm({ ...form, priority: p.key })}
-                      className={`py-2 rounded-xl text-xs font-semibold border-l-4 bg-gray-50 transition ${
-                        form.priority === p.key
-                          ? `${p.color} bg-white shadow-md scale-105`
-                          : "border-gray-300 text-gray-500"
-                      }`}
+                      style={{
+                        padding: "var(--space-2)",
+                        borderRadius: "var(--radius-md)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderLeft: `4px solid ${form.priority === p.key ? p.borderClr : "var(--line)"}`,
+                        background: form.priority === p.key ? "var(--surface-200)" : "var(--surface-300)",
+                        color: form.priority === p.key ? p.textClr : "var(--ink-muted)",
+                        boxShadow: form.priority === p.key ? "var(--shadow-sm)" : "none",
+                        transform: form.priority === p.key ? "scale(1.05)" : "scale(1)",
+                        transition: "all 0.15s ease",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
                     >
                       {p.label}
                     </button>
@@ -381,39 +479,78 @@ export default function AdminAnnouncementsPage() {
 
               {/* Period / Jadwal tampil */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Periode Tayang (Opsional)
+                <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                  PERIODE TAYANG (OPSIONAL)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 rounded-xl p-2.5">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">DARI TANGGAL</label>
+                  <div
+                    style={{
+                      background: "var(--surface-300)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-2) var(--space-3)",
+                    }}
+                  >
+                    <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-1)" }}>
+                      DARI TANGGAL
+                    </label>
                     <input
                       type="date"
                       value={form.start_date}
                       onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      style={{
+                        width: "100%",
+                        background: "transparent",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "var(--ink)",
+                        outline: "none",
+                        border: "none",
+                      }}
                     />
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-2.5">
-                    <label className="block text-[10px] text-gray-500 font-medium mb-1">SAMPAI TANGGAL</label>
+                  <div
+                    style={{
+                      background: "var(--surface-300)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-2) var(--space-3)",
+                    }}
+                  >
+                    <label className="rw-micro" style={{ display: "block", marginBottom: "var(--space-1)" }}>
+                      SAMPAI TANGGAL
+                    </label>
                     <input
                       type="date"
                       value={form.end_date}
                       onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none"
+                      style={{
+                        width: "100%",
+                        background: "transparent",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "var(--ink)",
+                        outline: "none",
+                        border: "none",
+                      }}
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">
+                <p className="rw-micro" style={{ marginTop: "var(--space-1)", opacity: 0.7 }}>
                   Kosongkan untuk tampil selamanya. Contoh: promo 10-20 April atau libur 1-7 Mei.
                 </p>
               </div>
 
               {/* Active toggle */}
-              <label className="flex items-center justify-between bg-gray-50 rounded-xl p-3 cursor-pointer">
+              <label
+                className="flex items-center justify-between cursor-pointer"
+                style={{
+                  background: "var(--surface-300)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "var(--space-3)",
+                }}
+              >
                 <div>
-                  <p className="text-sm font-medium">Tampilkan ke Karyawan</p>
-                  <p className="text-[11px] text-gray-500">Nonaktifkan untuk sembunyikan</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>Tampilkan ke Karyawan</p>
+                  <p style={{ fontSize: 11, color: "var(--ink-muted)" }}>Nonaktifkan untuk sembunyikan</p>
                 </div>
                 <input
                   type="checkbox"
@@ -421,17 +558,35 @@ export default function AdminAnnouncementsPage() {
                   onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all relative"></div>
+                <div
+                  className="peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all relative"
+                  style={{
+                    width: 44,
+                    height: 24,
+                    borderRadius: "var(--radius-full)",
+                    background: form.is_active ? "var(--wine)" : "var(--line-strong)",
+                    flexShrink: 0,
+                  }}
+                />
               </label>
 
               {/* Send Notif */}
               {!editing && (
-                <label className="flex items-center justify-between bg-amber-50 rounded-xl p-3 cursor-pointer border border-amber-200">
+                <label
+                  className="flex items-center justify-between cursor-pointer"
+                  style={{
+                    background: "var(--warning-tint)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "var(--space-3)",
+                    border: "1px solid var(--warning)",
+                    borderColor: "color-mix(in srgb, var(--warning) 30%, transparent)",
+                  }}
+                >
                   <div>
-                    <p className="text-sm font-medium flex items-center gap-1">
+                    <p className="flex items-center gap-1" style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
                       <Send size={12} /> Kirim Push Notifikasi
                     </p>
-                    <p className="text-[11px] text-amber-700">Notif ke HP semua karyawan</p>
+                    <p style={{ fontSize: 11, color: "var(--warning)" }}>Notif ke HP semua karyawan</p>
                   </div>
                   <input
                     type="checkbox"
@@ -439,34 +594,52 @@ export default function AdminAnnouncementsPage() {
                     onChange={(e) => setForm({ ...form, sendNotif: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all relative"></div>
+                  <div
+                    className="peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all relative"
+                    style={{
+                      width: 44,
+                      height: 24,
+                      borderRadius: "var(--radius-full)",
+                      background: form.sendNotif ? "var(--wine)" : "var(--line-strong)",
+                      flexShrink: 0,
+                    }}
+                  />
                 </label>
               )}
 
+              {/* Message */}
               {msg && (
                 <div
-                  className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-                    msg.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                  }`}
+                  className="flex items-center gap-2"
+                  style={{
+                    padding: "var(--space-3)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: 14,
+                    background: msg.type === "success" ? "var(--success-tint)" : "var(--danger-tint)",
+                    color: msg.type === "success" ? "var(--success)" : "var(--danger)",
+                  }}
                 >
                   {msg.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
                   <span>{msg.text}</span>
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
+              {/* Actions */}
+              <div className="flex gap-2" style={{ paddingTop: "var(--space-1)" }}>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
                   disabled={loading}
-                  className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium disabled:opacity-50"
+                  className="rw-btn rw-btn--outline"
+                  style={{ flex: 1 }}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] py-3 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+                  className="rw-btn rw-btn--primary"
+                  style={{ flex: 2 }}
                 >
                   {loading ? "Mengirim..." : editing ? "Simpan" : "Publish"}
                 </button>

@@ -38,9 +38,6 @@ import {
   Search,
   FileCheck,
   FileX,
-  Phone,
-  Mail,
-  Briefcase,
   QrCode,
   Megaphone,
   ClipboardList,
@@ -49,6 +46,11 @@ import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import AdminStatCard from "@/components/admin/AdminStatCard";
 import AdminSkeleton from "@/components/admin/AdminSkeleton";
+import SettingsTab from "@/components/admin/SettingsTab";
+import EditProfileModal from "@/components/admin/EditProfileModal";
+import ResetPinModal from "@/components/admin/ResetPinModal";
+import DeleteEmployeeModal from "@/components/admin/DeleteEmployeeModal";
+import EditWorkHoursModal from "@/components/admin/EditWorkHoursModal";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
 import { POSITIONS, getPositionColor } from "@/lib/positions";
 import dynamic from "next/dynamic";
@@ -2227,154 +2229,18 @@ export default function AdminPage() {
 
             {/* SETTINGS TAB */}
             {activeTab === "settings" && (
-              <form onSubmit={saveSettings} className="bg-white rounded-2xl p-5 shadow-sm space-y-4 max-w-lg">
-                <h3 className="font-semibold text-gray-700">Pengaturan Absensi</h3>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Latitude Kantor</label>
-                    <input
-                      type="text"
-                      value={settingsForm.office_lat}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, office_lat: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Longitude Kantor</label>
-                    <input
-                      type="text"
-                      value={settingsForm.office_lng}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, office_lng: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Radius (meter)</label>
-                  <input
-                    type="number"
-                    value={settingsForm.radius_meters}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, radius_meters: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Jam Masuk</label>
-                    <input
-                      type="time"
-                      value={settingsForm.work_start}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, work_start: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Jam Pulang</label>
-                    <input
-                      type="time"
-                      value={settingsForm.work_end}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, work_end: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                {/* Default Work Days */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                    Hari Kerja Default
-                  </label>
-                  <p className="text-[11px] text-gray-400 mb-2">
-                    Hari yang tidak dicentang = hari libur (karyawan tidak perlu absen)
-                  </p>
-                  <div className="grid grid-cols-7 gap-1.5">
-                    {DAY_ORDER.map((day) => {
-                      const active = workDays.includes(day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => {
-                            setWorkDays((prev) =>
-                              active ? prev.filter((d) => d !== day) : [...prev, day]
-                            );
-                          }}
-                          className={`py-2 rounded-lg text-xs font-medium transition ${
-                            active
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                          }`}
-                        >
-                          {DAY_LABELS[day].slice(0, 3)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* QR Code Required */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-primary/5 to-amber-50 rounded-xl p-3 border border-amber-200">
-                  <div>
-                    <p className="text-sm font-semibold flex items-center gap-1.5">
-                      <QrCode size={14} /> Wajib Scan QR Code
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Karyawan harus scan QR di kantor sebelum bisa clock-in
-                    </p>
-                    <p className="text-[10px] text-primary mt-1">
-                      Tampilkan QR di <strong>Menu QR Code</strong> (pojok kanan atas)
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={qrRequired}
-                      onChange={(e) => setQrRequired(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition text-sm"
-                >
-                  Simpan Pengaturan
-                </button>
-                {settingsMsg && (
-                  <p className="text-sm text-green-600">{settingsMsg}</p>
-                )}
-              </form>
-            )}
-
-            {/* Google Sheets Sync - inside settings */}
-            {activeTab === "settings" && (
-              <div className="bg-white rounded-2xl p-5 shadow-sm mt-4 max-w-lg">
-                <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <FileTextIcon size={16} /> Google Sheets Live Sync
-                </h3>
-                <p className="text-xs text-gray-500 mb-3">
-                  Sinkronkan data absensi ke Google Sheets pakai formula <code className="bg-gray-100 px-1 rounded text-[10px]">=IMPORTDATA()</code>.
-                  Data auto-update setiap 1 jam.
-                </p>
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                  <p className="text-xs font-semibold text-gray-600">Langkah:</p>
-                  <ol className="text-xs text-gray-600 list-decimal list-inside space-y-1">
-                    <li>Set env <code className="bg-white px-1 rounded">CSV_EXPORT_KEY</code> di Vercel (nilai bebas, jadikan password)</li>
-                    <li>Di Google Sheets, cell A1 ketik formula:</li>
-                  </ol>
-                  <div className="bg-gray-900 text-green-400 text-[10px] p-2 rounded font-mono break-all">
-                    =IMPORTDATA(&quot;https://absensiredwine.vercel.app/api/attendance-csv?month={month}&amp;key=YOUR_SECRET&quot;)
-                  </div>
-                  <p className="text-[10px] text-gray-400">
-                    Ganti YOUR_SECRET dengan nilai env, dan {"{month}"} dengan format yyyy-MM (misal: 2026-04)
-                  </p>
-                </div>
-              </div>
+              <SettingsTab
+                settings={settings}
+                settingsForm={settingsForm}
+                setSettingsForm={setSettingsForm}
+                workDays={workDays}
+                setWorkDays={setWorkDays}
+                qrRequired={qrRequired}
+                setQrRequired={setQrRequired}
+                onSave={saveSettings}
+                settingsMsg={settingsMsg}
+                month={month}
+              />
             )}
           </>
         )}
@@ -2382,393 +2248,56 @@ export default function AdminPage() {
 
       {/* Edit Profile Modal */}
       {editProfileEmp && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
-          onClick={() => setEditProfileEmp(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Avatar name={editProfileEmp.name} size="md" />
-                <div>
-                  <h3 className="font-bold text-gray-800">{editProfileEmp.name}</h3>
-                  <p className="text-xs text-gray-500">Profile Karyawan</p>
-                </div>
-              </div>
-              <button onClick={() => setEditProfileEmp(null)} className="text-gray-400">
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={saveProfile} className="space-y-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
-                  <Briefcase size={12} /> Posisi / Role
-                </label>
-                <input
-                  type="text"
-                  value={profileForm.position}
-                  onChange={(e) => setProfileForm({ ...profileForm, position: e.target.value })}
-                  placeholder="Pilih atau ketik custom..."
-                  list="position-suggestions"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-                <datalist id="position-suggestions">
-                  {POSITIONS.map((p) => (
-                    <option key={p} value={p} />
-                  ))}
-                </datalist>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  Pilih dari daftar atau ketik role baru
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
-                  <Phone size={12} /> Nomor HP
-                </label>
-                <input
-                  type="tel"
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  placeholder="+62..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
-                  <Mail size={12} /> Email
-                </label>
-                <input
-                  type="email"
-                  value={profileForm.email}
-                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  placeholder="nama@email.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Alamat</label>
-                <textarea
-                  value={profileForm.address}
-                  onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Tanggal Bergabung</label>
-                <input
-                  type="date"
-                  value={profileForm.join_date}
-                  onChange={(e) => setProfileForm({ ...profileForm, join_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              {profileMsg && (
-                <p className={`text-sm ${profileMsg.includes("Gagal") ? "text-red-600" : "text-green-600"}`}>
-                  {profileMsg}
-                </p>
-              )}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditProfileEmp(null)}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditProfileModal
+          employee={editProfileEmp}
+          profileForm={profileForm}
+          setProfileForm={setProfileForm}
+          profileMsg={profileMsg}
+          onSave={saveProfile}
+          onClose={() => setEditProfileEmp(null)}
+        />
       )}
 
       {/* Reset PIN Modal */}
       {resetPinEmp && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setResetPinEmp(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-5 w-full max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">Reset PIN</h3>
-              <button onClick={() => setResetPinEmp(null)} className="text-gray-400">
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={resetPin} className="space-y-3">
-              <div>
-                <label className="text-xs text-gray-500">Karyawan</label>
-                <p className="font-semibold">{resetPinEmp.name}</p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">PIN Sekarang</label>
-                <p className="font-mono text-sm">{resetPinEmp.pin}</p>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">PIN Baru</label>
-                <input
-                  type="text"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  placeholder="Masukkan PIN baru"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                  required
-                  autoFocus
-                />
-              </div>
-              {resetPinMsg && (
-                <p
-                  className={`text-sm ${
-                    resetPinMsg.includes("Gagal") ? "text-red-600" : "text-green-600"
-                  }`}
-                >
-                  {resetPinMsg}
-                </p>
-              )}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setResetPinEmp(null)}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ResetPinModal
+          employee={resetPinEmp}
+          newPin={newPin}
+          setNewPin={setNewPin}
+          resetPinMsg={resetPinMsg}
+          onSave={resetPin}
+          onClose={() => setResetPinEmp(null)}
+        />
       )}
 
       {/* Delete/Deactivate Employee Modal */}
       {deleteEmpTarget && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setDeleteEmpTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-3">
-                <span className="text-3xl">⚠️</span>
-              </div>
-              <h3 className="font-bold text-gray-900 text-lg">Kelola <span className="text-primary">{deleteEmpTarget.name}</span></h3>
-              <p className="text-sm text-gray-600 mt-2">
-                {deleteEmpTarget.is_active
-                  ? "Pilih tindakan untuk karyawan ini"
-                  : "Karyawan ini sedang nonaktif"}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 mt-5">
-              {/* Soft delete — recommended */}
-              {deleteEmpTarget.is_active ? (
-                <button
-                  type="button"
-                  onClick={() => toggleEmployeeActive(deleteEmpTarget)}
-                  className="py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2"
-                >
-                  🔒 Nonaktifkan Karyawan
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toggleEmployeeActive(deleteEmpTarget)}
-                  className="py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2"
-                >
-                  ✓ Aktifkan Kembali
-                </button>
-              )}
-
-              {deleteEmpTarget.is_active && (
-                <p className="text-[11px] text-gray-500 text-center -mt-1 mb-1">
-                  💡 Login terblokir, history absensi tetap aman
-                </p>
-              )}
-
-              {/* Hard delete — danger */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm(`HAPUS PERMANEN ${deleteEmpTarget.name}?\n\nSemua data absensi, cuti, reimburse akan hilang dan TIDAK BISA dikembalikan.\n\nYakin?`)) {
-                    deleteEmployee(deleteEmpTarget.id);
-                  }
-                }}
-                className="py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition flex items-center justify-center gap-2"
-              >
-                <Trash2 size={15} /> Hapus Permanen (tidak bisa dibatalkan)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDeleteEmpTarget(null)}
-                className="py-2.5 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50"
-              >
-                Batal
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteEmployeeModal
+          employee={deleteEmpTarget}
+          onToggleActive={toggleEmployeeActive}
+          onDelete={deleteEmployee}
+          onClose={() => setDeleteEmpTarget(null)}
+        />
       )}
 
       {/* Edit Work Hours Modal */}
       {editHoursEmp && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
-          onClick={() => setEditHoursEmp(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-5 w-full max-w-md my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <Clock3 size={18} /> Jam Kerja - {editHoursEmp.name}
-              </h3>
-              <button onClick={() => setEditHoursEmp(null)} className="text-gray-400">
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={saveWorkHours} className="space-y-4">
-              {/* Toggle custom schedule */}
-              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                <div>
-                  <p className="text-sm font-medium">Jadwal Per Hari</p>
-                  <p className="text-xs text-gray-500">
-                    Atur jam masuk berbeda setiap hari & hari libur
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useCustomSchedule}
-                    onChange={(e) => setUseCustomSchedule(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-300 peer-checked:bg-primary rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                </label>
-              </div>
-
-              {!useCustomSchedule ? (
-                <>
-                  <p className="text-xs text-gray-500 bg-amber-50 rounded-lg p-2">
-                    Jam kerja tunggal berlaku semua hari. Default:{" "}
-                    <strong>
-                      {settings?.work_start} - {settings?.work_end}
-                    </strong>
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Jam Masuk</label>
-                      <input
-                        type="time"
-                        value={editStart}
-                        onChange={(e) => setEditStart(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Jam Pulang</label>
-                      <input
-                        type="time"
-                        value={editEnd}
-                        onChange={(e) => setEditEnd(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500">
-                    Centang libur untuk hari tidak masuk. Kosong = pakai default.
-                  </p>
-                  {DAY_ORDER.map((day) => {
-                    const ds = editSchedule[day] || {};
-                    return (
-                      <div key={day} className="grid grid-cols-[70px_1fr_1fr_auto] gap-2 items-center text-sm">
-                        <span className="font-medium">{DAY_LABELS[day]}</span>
-                        <input
-                          type="time"
-                          value={ds.start || ""}
-                          disabled={ds.off}
-                          onChange={(e) => updateDaySchedule(day, "start", e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
-                        />
-                        <input
-                          type="time"
-                          value={ds.end || ""}
-                          disabled={ds.off}
-                          onChange={(e) => updateDaySchedule(day, "end", e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100"
-                        />
-                        <label className="flex items-center gap-1 text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={!!ds.off}
-                            onChange={(e) => updateDaySchedule(day, "off", e.target.checked)}
-                            className="accent-red-500"
-                          />
-                          Libur
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {editHoursMsg && (
-                <p
-                  className={`text-sm ${
-                    editHoursMsg.includes("Gagal") ? "text-red-600" : "text-green-600"
-                  }`}
-                >
-                  {editHoursMsg}
-                </p>
-              )}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditStart("");
-                    setEditEnd("");
-                    setEditSchedule({});
-                    setUseCustomSchedule(false);
-                  }}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                  title="Pakai default"
-                >
-                  Reset Default
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark"
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditWorkHoursModal
+          employee={editHoursEmp}
+          editStart={editStart}
+          setEditStart={setEditStart}
+          editEnd={editEnd}
+          setEditEnd={setEditEnd}
+          editHoursMsg={editHoursMsg}
+          useCustomSchedule={useCustomSchedule}
+          setUseCustomSchedule={setUseCustomSchedule}
+          editSchedule={editSchedule}
+          updateDaySchedule={updateDaySchedule}
+          setEditSchedule={setEditSchedule}
+          settings={settings}
+          onSave={saveWorkHours}
+          onClose={() => setEditHoursEmp(null)}
+        />
       )}
 
       {/* Photo Modal */}

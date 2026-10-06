@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, useTransition } from
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 import { Employee, Attendance, Settings, DayKey, Schedule, Leave, Reimbursement } from "@/lib/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -46,6 +47,8 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
+import AdminStatCard from "@/components/admin/AdminStatCard";
+import AdminSkeleton from "@/components/admin/AdminSkeleton";
 import { getEffectiveWorkHours, DAY_ORDER, DAY_LABELS } from "@/lib/workHours";
 import { POSITIONS, getPositionColor } from "@/lib/positions";
 import dynamic from "next/dynamic";
@@ -69,6 +72,7 @@ type Tab = "dashboard" | "analytics" | "leaves" | "karyawan" | "settings";
 
 export default function AdminPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [admin, setAdmin] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [isTabPending, startTabTransition] = useTransition();
@@ -438,12 +442,12 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.sent > 0) {
-        alert(`✅ Test notif terkirim ke ${empName}!\n\nKalau tidak muncul di HP, cek:\n1. App sudah install (Add to Home Screen)\n2. Notifikasi tidak di-silence\n3. Service worker aktif`);
+        toast(`Test notif terkirim ke ${empName}!\n\nKalau tidak muncul di HP, cek:\n1. App sudah install (Add to Home Screen)\n2. Notifikasi tidak di-silence\n3. Service worker aktif`, "success", 6000);
       } else {
-        alert(`❌ Gagal kirim.\n\n${data.reason || data.error || "Unknown"}\n\nCek:\n- VAPID env di Vercel\n- Karyawan sudah toggle notif ON`);
+        toast(`Gagal kirim.\n\n${data.reason || data.error || "Unknown"}\n\nCek:\n- VAPID env di Vercel\n- Karyawan sudah toggle notif ON`, "error", 6000);
       }
     } catch (err) {
-      alert(`Error: ${err}`);
+      toast(`Error: ${err}`, "error");
     }
   }
 
@@ -584,7 +588,7 @@ export default function AdminPage() {
       });
     } catch (err) {
       console.error(err);
-      alert("Gagal generate laporan PDF");
+      toast("Gagal generate laporan PDF", "error");
     } finally {
       setReportLoadingId(null);
     }
@@ -2792,83 +2796,3 @@ export default function AdminPage() {
   );
 }
 
-function AdminStatCard({
-  icon,
-  label,
-  value,
-  gradient,
-  bg,
-  textColor,
-  liveBadge,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  gradient: string;
-  bg: string;
-  textColor: string;
-  liveBadge?: string;
-}) {
-  return (
-    <div className={`group relative bg-gradient-to-br ${bg} rounded-2xl p-4 border border-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden`}>
-      <div className="flex items-start justify-between mb-2.5">
-        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} text-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-          {icon}
-        </div>
-        {liveBadge && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            {liveBadge}
-          </span>
-        )}
-      </div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">{label}</p>
-      <p className={`text-2xl md:text-3xl font-extrabold tabular-nums ${textColor} leading-none`}>{value}</p>
-    </div>
-  );
-}
-
-function AdminSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <SkelBar className="h-6 w-48" />
-            <SkelBar className="h-3 w-32" />
-          </div>
-          <SkelBar className="h-9 w-24 rounded-lg" />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {[0,1,2,3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <SkelBar className="h-3 w-20 mb-3" />
-              <SkelBar className="h-8 w-24 mb-1" />
-              <SkelBar className="h-2.5 w-16" />
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
-            <SkelBar className="h-4 w-32" />
-            {[0,1,2,3].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <SkelBar className="w-10 h-10 rounded-full" />
-                <SkelBar className="h-3 flex-1" />
-                <SkelBar className="h-5 w-14 rounded-full" />
-              </div>
-            ))}
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-            <SkelBar className="h-4 w-40 mb-3" />
-            <SkelBar className="h-48 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SkelBar({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-gradient-to-r from-gray-200/70 via-gray-100 to-gray-200/70 rounded-md ${className}`} />;
-}

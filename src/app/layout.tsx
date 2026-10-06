@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
+import { ToastProvider } from "@/components/Toast";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const viewport: Viewport = {
   themeColor: "#8B1A1A",
@@ -44,7 +46,11 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-gray-50">
-        {children}
+        <ErrorBoundary>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ErrorBoundary>
         <PWARegister />
       </body>
     </html>

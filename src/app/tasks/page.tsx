@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 import { Employee, Task } from "@/lib/types";
 import { format, isToday, isPast } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -31,483 +32,33 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  useDroppable,
   closestCenter,
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import Avatar from "@/components/Avatar";
 import TaskDetailModal from "@/components/TaskDetailModal";
+import TaskCard from "@/components/tasks/TaskCard";
+import MobileTaskCard from "@/components/tasks/MobileTaskCard";
+import ColumnDroppable from "@/components/tasks/ColumnDroppable";
+import CardOverlay from "@/components/tasks/CardOverlay";
 import { SkeletonBoard } from "@/components/Skeleton";
 import { canAccessTasks, canAccessBoard, canManageBoards } from "@/lib/permissions";
 import { POSITIONS } from "@/lib/positions";
+import { COL_COLORS, COL_BG, COL_HEADER_BORDER, COL_COLOR_KEYS, CARD_COLORS, BOARD_COLORS, DEFAULT_COLUMNS, getColumnMeta, type ColColor } from "@/lib/boardConfig";
 import type { BoardColumn, Board, BoardMessage } from "@/lib/types";
 import { MessageCircle, Columns3, Send, Upload, Check, Pencil, Users, Sparkles, Search } from "lucide-react";
-
-// Color palette for board columns (top bar accent)
-const COL_COLORS = {
-  rose: "bg-rose-500",
-  amber: "bg-amber-400",
-  emerald: "bg-emerald-500",
-  blue: "bg-blue-500",
-  purple: "bg-purple-500",
-  slate: "bg-slate-500",
-  pink: "bg-pink-500",
-  indigo: "bg-indigo-500",
-  teal: "bg-teal-500",
-} as const;
-type ColColor = keyof typeof COL_COLORS;
-const COL_COLOR_KEYS: ColColor[] = ["rose", "amber", "emerald", "blue", "purple", "slate", "pink", "indigo", "teal"];
-
-// Subtle column background gradients (from-<color>-50 to white)
-const COL_BG: Record<ColColor, string> = {
-  rose: "bg-gradient-to-b from-rose-50 to-white border-rose-200/40",
-  amber: "bg-gradient-to-b from-amber-50 to-white border-amber-200/40",
-  emerald: "bg-gradient-to-b from-emerald-50 to-white border-emerald-200/40",
-  blue: "bg-gradient-to-b from-blue-50 to-white border-blue-200/40",
-  purple: "bg-gradient-to-b from-purple-50 to-white border-purple-200/40",
-  slate: "bg-gradient-to-b from-slate-50 to-white border-slate-200/40",
-  pink: "bg-gradient-to-b from-pink-50 to-white border-pink-200/40",
-  indigo: "bg-gradient-to-b from-indigo-50 to-white border-indigo-200/40",
-  teal: "bg-gradient-to-b from-teal-50 to-white border-teal-200/40",
-};
-const COL_HEADER_BORDER: Record<ColColor, string> = {
-  rose: "border-rose-100/60",
-  amber: "border-amber-100/60",
-  emerald: "border-emerald-100/60",
-  blue: "border-blue-100/60",
-  purple: "border-purple-100/60",
-  slate: "border-slate-100/60",
-  pink: "border-pink-100/60",
-  indigo: "border-indigo-100/60",
-  teal: "border-teal-100/60",
-};
-
-// Map column key → icon + personalized empty state copy
-function getColumnMeta(key: string): { icon: "Inbox" | "Clock" | "CheckCircle2" | "Archive" | "Columns3"; emptyTitle: string; emptySub: string; emptyIcon: "Inbox" | "Coffee" | "CheckCircle2" | "Archive" } {
-  const k = key.toLowerCase();
-  if (k === "brief") return { icon: "Inbox", emptyTitle: "Brief kosong", emptySub: "Tambah task baru untuk dimulai", emptyIcon: "Inbox" };
-  if (k === "today") return { icon: "Clock", emptyTitle: "Santai dulu ✨", emptySub: "Tidak ada task hari ini", emptyIcon: "Coffee" };
-  if (k === "done") return { icon: "CheckCircle2", emptyTitle: "Belum ada yang selesai", emptySub: "Selesaikan task untuk mulai streak", emptyIcon: "CheckCircle2" };
-  if (k === "history") return { icon: "Archive", emptyTitle: "Arsip kosong", emptySub: "Task archived muncul di sini", emptyIcon: "Archive" };
-  return { icon: "Columns3", emptyTitle: "Kolom kosong", emptySub: "Tambah task pertama di sini", emptyIcon: "Inbox" };
-}
-
-const DEFAULT_COLUMNS: BoardColumn[] = [
-  { id: "default-brief", key: "brief", label: "Brief", description: "Belum dikerjakan", color: "rose", position: 0, is_default: true },
-  { id: "default-today", key: "today", label: "Today", description: "Hari ini", color: "amber", position: 1, is_default: true },
-  { id: "default-done", key: "done", label: "Done", description: "Selesai", color: "emerald", position: 2, is_default: true },
-  { id: "default-history", key: "history", label: "History", description: "Arsip", color: "slate", position: 3, is_default: true },
-];
-
-const CARD_COLORS: { key: Task["color"]; dot: string; border: string; pillBg: string; pillText: string }[] = [
-  { key: "red", dot: "bg-rose-500", border: "border-l-rose-500", pillBg: "bg-rose-100", pillText: "text-rose-700" },
-  { key: "yellow", dot: "bg-amber-400", border: "border-l-amber-400", pillBg: "bg-amber-100", pillText: "text-amber-700" },
-  { key: "green", dot: "bg-emerald-500", border: "border-l-emerald-500", pillBg: "bg-emerald-100", pillText: "text-emerald-700" },
-  { key: "blue", dot: "bg-blue-500", border: "border-l-blue-500", pillBg: "bg-blue-100", pillText: "text-blue-700" },
-  { key: "purple", dot: "bg-purple-500", border: "border-l-purple-500", pillBg: "bg-purple-100", pillText: "text-purple-700" },
-  { key: "gray", dot: "bg-gray-400", border: "border-l-gray-400", pillBg: "bg-gray-100", pillText: "text-gray-700" },
-];
-
-const BOARD_COLORS = ["bg-primary", "bg-blue-600", "bg-emerald-600", "bg-amber-500", "bg-purple-600", "bg-pink-600", "bg-indigo-600", "bg-teal-600", "bg-slate-700"];
-
-// ============= Sub-components for dnd-kit =============
-
-function TaskCard({ task, onClick, onRename }: { task: Task; onClick: () => void; onRename: (newTitle: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(task.title);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id,
-    data: { type: "task", task },
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
-  const overdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
-  const todayDue = task.due_date && isToday(new Date(task.due_date));
-  const attachCount = task.attachments?.length || 0;
-  // Auto-cover: explicit cover_url OR first image attachment
-  const coverUrl =
-    task.cover_url ||
-    task.attachments?.find((a) => a.type === "image")?.url ||
-    null;
-  // Labels: union of `labels[]` array + legacy `color` (dedupe)
-  const labelSet = new Set<string>(task.labels || []);
-  if (task.color) labelSet.add(task.color);
-  const labels: string[] = Array.from(labelSet);
-  // Checklist progress
-  const checklist = task.checklist || [];
-  const doneCount = checklist.filter((i) => i.done).length;
-  const totalCount = checklist.length;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
-      className={`group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/20 transition-all overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl ring-2 ring-primary/40" : ""}`}
-    >
-      {/* Drag handle area (top + middle) */}
-      <div
-        {...attributes}
-        {...listeners}
-        onClick={onClick}
-        className="cursor-grab active:cursor-grabbing select-none"
-      >
-        {/* Cover image (Trello-style) */}
-        {coverUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverUrl}
-            alt=""
-            className="w-full h-28 object-cover bg-gray-100"
-            draggable={false}
-          />
-        )}
-        {/* Multi-label pills */}
-        {labels.length > 0 && (
-          <div className="px-3.5 pt-2.5 pb-1 flex gap-1 flex-wrap">
-            {labels.slice(0, 3).map((l) => {
-              const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
-              return (
-                <span
-                  key={l}
-                  className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider ${lc.pillBg || "bg-gray-100"} ${lc.pillText || "text-gray-700"} px-1.5 py-0.5 rounded`}
-                  title={l}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${lc.dot}`} />
-                  {l}
-                </span>
-              );
-            })}
-            {labels.length > 3 && (
-              <span className="text-[9px] text-gray-400 font-bold px-1 py-0.5">+{labels.length - 3}</span>
-            )}
-          </div>
-        )}
-        <div className="px-3.5 pt-2 pb-2">
-          {editing ? (
-            <input
-              type="text"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => { onRename(draft); setEditing(false); }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { onRename(draft); setEditing(false); }
-                if (e.key === "Escape") { setDraft(task.title); setEditing(false); }
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full font-semibold text-sm text-gray-900 bg-white border-b-2 border-primary outline-none px-0.5 py-0.5"
-              autoFocus
-            />
-          ) : (
-            <p
-              className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2"
-              onDoubleClick={(e) => { e.stopPropagation(); setDraft(task.title); setEditing(true); }}
-            >
-              {task.title}
-            </p>
-          )}
-          {task.description && (
-            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
-          )}
-        </div>
-
-        {/* Trello-style badges bar */}
-        <div className="px-3.5 pb-2 flex items-center gap-1.5 flex-wrap">
-          {/* Checklist done button (green when complete) */}
-          {totalCount > 0 && (
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold ${
-                doneCount === totalCount
-                  ? "bg-emerald-500 text-white"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              <CheckCircle2 size={11} />
-              {doneCount}/{totalCount}
-            </span>
-          )}
-          {/* Due date */}
-          {task.due_date && (
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold ${
-                overdue
-                  ? "bg-red-500 text-white"
-                  : todayDue
-                  ? "bg-amber-400 text-white"
-                  : doneCount === totalCount && totalCount > 0
-                  ? "bg-emerald-500 text-white"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              <CalendarIcon size={11} />
-              {format(new Date(task.due_date), "MMM dd", { locale: idLocale })}
-            </span>
-          )}
-          {/* Attachment count */}
-          {attachCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
-              <Paperclip size={11} /> {attachCount}
-            </span>
-          )}
-          {/* Comment count */}
-          {(task.comments?.length || 0) > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
-              💬 {task.comments!.length}
-            </span>
-          )}
-        </div>
-
-        {/* Footer: assignees */}
-        <div className="px-3.5 py-2 flex items-center justify-end gap-1.5">
-          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
-            <div className="flex -space-x-1.5 ml-auto">
-              {task.assigneeObjects.slice(0, 4).map((emp) => (
-                <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
-                  <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-                </div>
-              ))}
-              {task.assigneeObjects.length > 4 && (
-                <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
-                  +{task.assigneeObjects.length - 4}
-                </div>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ColumnDroppable({
-  colKey,
-  children,
-  isOver,
-}: {
-  colKey: string;
-  children: React.ReactNode;
-  isOver: boolean;
-}) {
-  const { setNodeRef } = useDroppable({ id: `col-${colKey}` });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`flex-1 overflow-y-auto px-3 py-3 space-y-2.5 transition-all ${
-        isOver ? "bg-primary/5" : ""
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
-function MobileTaskCard({ task, columns, onClick, onMove, onRename }: {
-  task: Task; columns: BoardColumn[]; onClick: () => void; onMove: (colKey: string) => void; onRename: (t: string) => void;
-}) {
-  void onRename;
-  const [showActions, setShowActions] = useState(false);
-  const [editTitle, setEditTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(task.title);
-  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
-  const coverUrl = task.cover_url || task.attachments?.find((a) => a.type === "image")?.url;
-  const labelSet = new Set<string>(task.labels || []);
-  if (task.color) labelSet.add(task.color);
-  const clTotal = task.checklist?.length || 0;
-  const clDone = task.checklist?.filter((i) => i.done).length || 0;
-  const commentCount = task.comments?.length || 0;
-  const attachCount = task.attachments?.length || 0;
-
-  return (
-    <div
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative"
-    >
-      {/* Cover */}
-      {coverUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt="" className="w-full h-32 object-cover rounded-t-2xl" onClick={onClick} />
-      )}
-
-      <div onClick={onClick} className="px-4 pt-2 pb-2.5">
-        {/* Labels */}
-        {labelSet.size > 0 && (
-          <div className="flex gap-1.5 mb-2">
-            {Array.from(labelSet).map((l) => {
-              const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0];
-              return <span key={l} className={`h-2 w-10 rounded-full ${lc.dot}`} />;
-            })}
-          </div>
-        )}
-        {editTitle ? (
-          <input
-            type="text"
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={() => { onRename(titleDraft); setEditTitle(false); }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { onRename(titleDraft); setEditTitle(false); }
-              if (e.key === "Escape") { setTitleDraft(task.title); setEditTitle(false); }
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full font-bold text-base text-gray-900 bg-white border-b-2 border-primary outline-none"
-            autoFocus
-          />
-        ) : (
-          <p className="font-bold text-base text-gray-900 leading-snug" onDoubleClick={(e) => { e.stopPropagation(); setTitleDraft(task.title); setEditTitle(true); }}>{task.title}</p>
-        )}
-        {task.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>}
-      </div>
-
-      {/* Badges row */}
-      {(task.due_date || clTotal > 0 || commentCount > 0 || attachCount > 0) && (
-        <div className="px-4 pb-2.5 flex items-center gap-2 flex-wrap" onClick={onClick}>
-          {task.due_date && (
-            <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-semibold ${
-              isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
-                ? "bg-red-50 text-red-600 border border-red-100"
-                : isToday(new Date(task.due_date))
-                ? "bg-amber-50 text-amber-600 border border-amber-100"
-                : "bg-gray-50 text-gray-600 border border-gray-100"
-            }`}>
-              <CalendarIcon size={11} />
-              {format(new Date(task.due_date), "dd MMM", { locale: idLocale })}
-            </span>
-          )}
-          {clTotal > 0 && (
-            <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-semibold ${
-              clDone === clTotal ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-gray-50 text-gray-600 border border-gray-100"
-            }`}>
-              <CheckCircle2 size={11} /> {clDone}/{clTotal}
-            </span>
-          )}
-          {commentCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-100 font-semibold">
-              💬 {commentCount}
-            </span>
-          )}
-          {attachCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-100 font-semibold">
-              <Paperclip size={11} /> {attachCount}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-gray-50 flex items-center justify-between">
-        {/* Assignees */}
-        <div className="flex items-center gap-2 min-w-0" onClick={onClick}>
-          {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
-            <>
-              <div className="flex -space-x-1.5">
-                {task.assigneeObjects.slice(0, 4).map((emp) => (
-                  <div key={emp.id} className="ring-2 ring-white rounded-full">
-                    <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-                  </div>
-                ))}
-              </div>
-              {task.assigneeObjects.length <= 2 && (
-                <span className="text-xs text-gray-600 font-medium truncate">
-                  {task.assigneeObjects.map((e) => e.name.split(" ")[0]).join(", ")}
-                </span>
-              )}
-            </>
-          ) : (
-            <span className="text-xs text-gray-400 italic">Belum di-assign</span>
-          )}
-        </div>
-
-        {/* Actions toggle */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setShowActions(!showActions); }}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition text-sm ${
-            showActions ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200"
-          }`}
-        >
-          ···
-        </button>
-      </div>
-
-      {/* Action bottom sheet */}
-      {showActions && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 animate-slide-up safe-bottom">
-            <div className="flex justify-center pt-2.5 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
-
-            {/* Task info header */}
-            <div className="px-5 pt-2 pb-3 flex items-center gap-3 border-b border-gray-100">
-              <div className={`w-1.5 h-10 rounded-full ${cardColor.dot}`} />
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 truncate">{task.title}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  {task.assigneeObjects?.map((e) => e.name.split(" ")[0]).join(", ") || "Belum di-assign"}
-                </p>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); setShowActions(false); }} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* Move to column */}
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Pindah ke kolom</p>
-                <div className="space-y-1.5">
-                  {columns.filter((c) => c.key !== task.status).map((c) => {
-                    const topColor = COL_COLORS[c.color as ColColor] || "bg-gray-400";
-                    return (
-                      <button
-                        key={c.id}
-                        onClick={(e) => { e.stopPropagation(); onMove(c.key); setShowActions(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gray-50 text-sm font-medium text-gray-800 active:scale-[0.98] active:bg-gray-100 transition"
-                      >
-                        <span className={`w-4 h-4 rounded-lg ${topColor} shadow-sm`} />
-                        <span className="flex-1 text-left">{c.label}</span>
-                        <span className="text-gray-400 text-xs">→</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function CardOverlay({ task }: { task: Task }) {
-  const cardColor = CARD_COLORS.find((c) => c.key === task.color) || CARD_COLORS[0];
-  return (
-    <div
-      className={`bg-white rounded-xl shadow-2xl ring-2 ring-primary/40 border-l-4 ${cardColor.border} overflow-hidden w-72 rotate-3 cursor-grabbing`}
-    >
-      <div className="px-3.5 pt-3 pb-2">
-        <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ============= Main page =============
 
 export default function TasksPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [user, setUser] = useState<Employee | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -635,7 +186,7 @@ export default function TasksPage() {
   async function switchBoard(board: Board | null) {
     // Guard: if switching to a specific board, check access
     if (board && !canAccessBoard(user, board)) {
-      alert("Anda tidak punya akses ke board ini.");
+      toast("Anda tidak punya akses ke board ini.", "error");
       return;
     }
     setActiveBoard(board);
@@ -653,7 +204,7 @@ export default function TasksPage() {
       created_by: user.id,
     }).select().single();
     if (error) {
-      alert("Gagal: " + error.message + "\n\nPastikan tabel 'boards' sudah dibuat di Supabase.");
+      toast("Gagal: " + error.message + "\n\nPastikan tabel 'boards' sudah dibuat di Supabase.", "error");
       return;
     }
     // Create default columns for new board
@@ -678,7 +229,7 @@ export default function TasksPage() {
     const { error } = await supabase.from("boards")
       .update({ allowed_roles: newRoles })
       .eq("id", board.id);
-    if (error) { alert("Gagal: " + error.message); return; }
+    if (error) { toast("Gagal: " + error.message, "error"); return; }
     setBoards((prev) => prev.map((b) => b.id === board.id ? { ...b, allowed_roles: newRoles } : b));
     if (activeBoard?.id === board.id) {
       setActiveBoard({ ...activeBoard, allowed_roles: newRoles });
@@ -747,7 +298,7 @@ export default function TasksPage() {
 
   async function sendChatImage(file: File) {
     if (!user || !file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast("Max 5 MB", "warning"); return; }
     setChatUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -757,7 +308,7 @@ export default function TasksPage() {
       const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
       await sendChat(urlData.publicUrl);
     } catch (e) {
-      alert("Upload gagal: " + (e instanceof Error ? e.message : e));
+      toast("Upload gagal: " + (e instanceof Error ? e.message : e), "error");
     } finally {
       setChatUploading(false);
       if (chatFileInputRef.current) chatFileInputRef.current.value = "";
@@ -858,7 +409,7 @@ export default function TasksPage() {
     };
     const { data, error } = await supabase.from("board_columns").insert(newCol).select().single();
     if (error) {
-      alert("Gagal tambah kolom: " + error.message + "\n\nPastikan tabel board_columns sudah dibuat di Supabase.");
+      toast("Gagal tambah kolom: " + error.message + "\n\nPastikan tabel board_columns sudah dibuat di Supabase.", "error");
       return;
     }
     setColumns([...columns, data as BoardColumn]);
@@ -1045,7 +596,7 @@ export default function TasksPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", showForm.task.id);
-      if (error) alert("Gagal: " + error.message);
+      if (error) toast("Gagal: " + error.message, "error");
     } else {
       const { error } = await supabase.from("tasks").insert({
         title: form.title.trim(),
@@ -1058,7 +609,7 @@ export default function TasksPage() {
         created_by: user.id,
         board_id: activeBoard?.id || null,
       });
-      if (error) alert("Gagal: " + error.message);
+      if (error) toast("Gagal: " + error.message, "error");
       else notifyBoardMembers(form.title.trim()); // notify role members on new task
     }
     setLoading(false);
@@ -1105,7 +656,7 @@ export default function TasksPage() {
 
   async function quickAddUploadImage(file: File) {
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast("Max 5 MB", "warning"); return; }
     setQuickAddUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -1114,7 +665,7 @@ export default function TasksPage() {
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
       setQuickAddImage(urlData.publicUrl);
-    } catch (e) { alert("Upload gagal: " + (e instanceof Error ? e.message : e)); }
+    } catch (e) { toast("Upload gagal: " + (e instanceof Error ? e.message : e), "error"); }
     finally {
       setQuickAddUploading(false);
       if (quickAddFileRef.current) quickAddFileRef.current.value = "";

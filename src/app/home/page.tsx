@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getStoredEmployee, clearEmployee, storeEmployee } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 import { Employee, Attendance, Settings, Announcement } from "@/lib/types";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -25,6 +26,7 @@ import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 export default function HomePage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -99,7 +101,7 @@ export default function HomePage() {
           setEmployee(data);
           storeEmployee(data);
           if (!data.is_active) {
-            alert("Akun Anda dinonaktifkan.");
+            toast("Akun Anda dinonaktifkan.", "error");
             clearEmployee();
             router.push("/");
           }

@@ -24,16 +24,19 @@ import {
   User as UserIcon,
   RefreshCw,
 } from "lucide-react";
-import jsQR from "jsqr";
+import type JsQR from "jsqr";
 import { hasFace } from "@/lib/faceDetection";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
+import { useToast } from "@/components/Toast";
 
 export default function AbsenPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const jsQRRef = useRef<typeof JsQR | null>(null);
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
@@ -118,7 +121,7 @@ export default function AbsenPage() {
           setEmployee(data);
           storeEmployee(data); // update localStorage
           if (!data.is_active) {
-            alert("Akun Anda sudah dinonaktifkan. Hubungi admin.");
+            toast("Akun Anda sudah dinonaktifkan. Hubungi admin.", "error");
             clearEmployee();
             router.push("/");
           }
@@ -324,7 +327,7 @@ export default function AbsenPage() {
       const fileName = `${employee.id}/${Date.now()}.jpg`;
       const base64 = capturedPhoto.split(",")[1] || capturedPhoto;
       if (!base64) {
-        alert("Foto tidak valid. Coba ambil ulang.");
+        toast("Foto tidak valid. Coba ambil ulang.", "error");
         setLoading(false);
         return;
       }
@@ -457,6 +460,12 @@ export default function AbsenPage() {
     setScanningQR(true);
     setMessage(null);
     try {
+      if (!jsQRRef.current) {
+        const mod = await import("jsqr");
+        jsQRRef.current = mod.default;
+      }
+      const jsQRFn = jsQRRef.current;
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
@@ -467,7 +476,6 @@ export default function AbsenPage() {
         await videoRef.current.play();
       }
 
-      // Start scanning loop
       qrScanIntervalRef.current = setInterval(async () => {
         if (!videoRef.current || !canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -477,7 +485,7 @@ export default function AbsenPage() {
         if (!ctx) return;
         ctx.drawImage(videoRef.current, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        const code = jsQRFn(imageData.data, imageData.width, imageData.height);
         if (code) {
           const extracted = extractQRToken(code.data);
           if (extracted) {

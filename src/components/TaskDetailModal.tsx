@@ -12,6 +12,7 @@ import {
   Send, CreditCard,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
+import { useToast } from "@/components/Toast";
 
 const CARD_COLORS: { key: Task["color"]; dot: string; label: string }[] = [
   { key: "red", dot: "bg-rose-500", label: "Merah" },
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function TaskDetailModal({ task, currentUser, employees, onClose }: Props) {
+  const { toast } = useToast();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -77,7 +79,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
   // ===== Persistence helpers =====
   async function saveAll() {
-    if (!title.trim()) { alert("Judul wajib diisi"); return; }
+    if (!title.trim()) { toast("Judul wajib diisi", "warning"); return; }
     setSaving(true);
     const { error } = await supabase.from("tasks").update({
       title: title.trim(), description: description.trim() || null,
@@ -86,7 +88,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
       attachments, checklist, comments, updated_at: new Date().toISOString(),
     }).eq("id", task.id);
     setSaving(false);
-    if (error) { alert("Gagal: " + error.message); return; }
+    if (error) { toast("Gagal: " + error.message, "error"); return; }
     onClose();
   }
   async function quickUpdate(patch: Record<string, unknown>) {
@@ -120,8 +122,8 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
   // Attachments
   async function handleImageUpload(file: File) {
-    if (!file.type.startsWith("image/")) { alert("Hanya file gambar"); return; }
-    if (file.size > 5 * 1024 * 1024) { alert("Max 5 MB"); return; }
+    if (!file.type.startsWith("image/")) { toast("Hanya file gambar", "warning"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast("Max 5 MB", "warning"); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -131,7 +133,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
       const { data } = supabase.storage.from("attendance-photos").getPublicUrl(filename);
       const a: TaskAttachment = { id: crypto.randomUUID(), type: "image", url: data.publicUrl, name: file.name, added_at: new Date().toISOString() };
       const u = [...attachments, a]; setAttachments(u); await quickUpdate({ attachments: u });
-    } catch (e) { alert("Upload gagal: " + (e instanceof Error ? e.message : e)); }
+    } catch (e) { toast("Upload gagal: " + (e instanceof Error ? e.message : e), "error"); }
     finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
   }
   async function addLink() {

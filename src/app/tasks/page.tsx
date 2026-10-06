@@ -823,9 +823,15 @@ export default function TasksPage() {
       className="min-h-screen flex flex-col transition-[margin] duration-300 ease-out"
       style={{ background: "var(--surface-100)", marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
     >
-      <header className="sticky top-0 z-20" style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)" }}>
+      <header className="sticky top-0 z-20" style={{ borderBottom: "1px solid var(--line)" }}>
+        {/* Wine accent stripe */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, var(--wine-deep), var(--wine), var(--sand))" }} />
+
         {/* Top row — board name + actions */}
-        <div className="px-4 pt-3 pb-2">
+        <div
+          className="px-4 pt-3 pb-2"
+          style={{ background: "linear-gradient(180deg, var(--wine-tint) 0%, var(--surface-200) 100%)" }}
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -837,7 +843,7 @@ export default function TasksPage() {
                   }
                 }}
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition active:scale-90"
-                style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
+                style={{ background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-sm)" }}
                 aria-label="Kembali"
               >
                 <ArrowLeft size={16} />
@@ -867,7 +873,7 @@ export default function TasksPage() {
                   ) : (
                     <h1
                       className="group font-bold text-base md:text-lg cursor-pointer transition inline-flex items-center gap-2 tracking-tight truncate"
-                      style={{ color: "var(--ink)" }}
+                      style={{ color: "var(--wine-deep)" }}
                       onClick={() => {
                         const currentName = activeBoard ? activeBoard.name : (localStorage.getItem("default_board_name") || "Task Board");
                         setBoardNameDraft(currentName);
@@ -880,8 +886,8 @@ export default function TasksPage() {
                     </h1>
                   )}
                   <span
-                    className="text-[10px] font-semibold tabular-nums px-2 py-0.5 shrink-0"
-                    style={{ color: "var(--wine)", background: "var(--wine-tint)", borderRadius: "var(--radius-full)" }}
+                    className="text-[10px] font-bold tabular-nums px-2.5 py-1 shrink-0"
+                    style={{ color: "var(--on-wine)", background: "var(--wine)", borderRadius: "var(--radius-full)", boxShadow: "var(--shadow-sm)" }}
                   >
                     {tasks.length} task
                   </span>
@@ -889,7 +895,7 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {/* Desktop search */}
               <div className="relative hidden md:block">
                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
@@ -898,8 +904,8 @@ export default function TasksPage() {
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   placeholder="Cari task..."
-                  className="rw-input w-44 text-xs"
-                  style={{ minHeight: 34, paddingLeft: 34, paddingRight: 32 }}
+                  className="rw-input w-48 text-xs"
+                  style={{ minHeight: 36, paddingLeft: 34, paddingRight: 32, background: "var(--surface-100)", boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04)" }}
                 />
                 {searchQ && (
                   <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
@@ -907,9 +913,10 @@ export default function TasksPage() {
                   </button>
                 )}
               </div>
+              <div className="hidden md:block w-px h-6" style={{ background: "var(--line-strong)" }} />
               <button
                 onClick={() => setFilterMine(!filterMine)}
-                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
+                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition active:scale-95"
                 style={filterMine
                   ? { background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-sm)" }
                   : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
@@ -920,7 +927,7 @@ export default function TasksPage() {
               </button>
               <button
                 onClick={() => setFilterOverdue(!filterOverdue)}
-                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
+                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition active:scale-95"
                 style={filterOverdue
                   ? { background: "var(--danger)", color: "#ffffff", boxShadow: "var(--shadow-sm)" }
                   : { background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
@@ -932,8 +939,8 @@ export default function TasksPage() {
               {canManageBoards(user) && !isMobile && (
                 <button
                   onClick={() => setShowAddCol(true)}
-                  className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition active:scale-95"
-                  style={{ background: "var(--surface-100)", color: "var(--ink-muted)", border: "1px solid var(--line)" }}
+                  className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition active:scale-95"
+                  style={{ background: "var(--wine-tint)", color: "var(--wine)", border: "1px solid var(--wine-tint)" }}
                   title="Tambah kolom"
                 >
                   <Plus size={12} /> <span className="hidden sm:inline">Kolom</span>
@@ -944,7 +951,7 @@ export default function TasksPage() {
         </div>
 
         {/* Stats + mobile search row */}
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3" style={{ background: "var(--surface-200)" }}>
           {/* Mobile search */}
           <div className="flex items-center gap-2 mb-2 md:hidden">
             <div className="relative flex-1">
@@ -977,39 +984,40 @@ export default function TasksPage() {
 
           {/* Stats chips */}
           {!isMobile && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div
-                className="inline-flex items-center gap-1.5 px-3 py-1.5"
-                style={{ background: "var(--wine-tint)", borderRadius: "var(--radius-full)" }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5"
+                style={{ background: "var(--wine-tint)", borderRadius: "var(--radius-full)", border: "1px solid rgba(94,15,30,0.1)" }}
               >
-                <UserIcon size={11} style={{ color: "var(--wine)" }} />
-                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Saya</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--wine)" }}>{myCount}</span>
+                <UserIcon size={12} style={{ color: "var(--wine)" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "var(--wine)" }}>Saya</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--wine)", background: "rgba(94,15,30,0.1)", borderRadius: "var(--radius-full)", padding: "1px 6px" }}>{myCount}</span>
               </div>
               <div
-                className="inline-flex items-center gap-1.5 px-3 py-1.5"
-                style={{ background: "var(--warning-tint)", borderRadius: "var(--radius-full)" }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5"
+                style={{ background: "var(--warning-tint)", borderRadius: "var(--radius-full)", border: "1px solid rgba(180,120,0,0.1)" }}
               >
-                <ClockIcon size={11} style={{ color: "var(--warning)" }} />
-                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Today</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--warning)" }}>{todayTasksCount}</span>
+                <ClockIcon size={12} style={{ color: "var(--warning)" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "var(--warning)" }}>Today</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--warning)", background: "rgba(180,120,0,0.1)", borderRadius: "var(--radius-full)", padding: "1px 6px" }}>{todayTasksCount}</span>
               </div>
               <div
-                className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5"
                 style={{
                   background: overdueCount > 0 ? "var(--danger-tint)" : "var(--surface-300)",
                   borderRadius: "var(--radius-full)",
+                  border: overdueCount > 0 ? "1px solid rgba(180,30,30,0.12)" : "1px solid var(--line)",
                 }}
               >
-                <AlertCircle size={11} style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }} />
-                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Overdue</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }}>{overdueCount}</span>
+                <AlertCircle size={12} style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }} />
+                <span className="text-[11px] font-semibold" style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }}>Overdue</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)", background: overdueCount > 0 ? "rgba(180,30,30,0.1)" : "var(--surface-200)", borderRadius: "var(--radius-full)", padding: "1px 6px" }}>{overdueCount}</span>
               </div>
               {(searchQ || filterOverdue || filterMine) && (
                 <button
                   onClick={() => { setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
-                  className="text-[10px] font-medium px-2 py-1 rounded-md transition"
-                  style={{ color: "var(--ink-muted)", background: "var(--surface-300)" }}
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-md transition"
+                  style={{ color: "var(--wine)", background: "var(--wine-tint)" }}
                 >
                   Reset filter
                 </button>

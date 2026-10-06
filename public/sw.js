@@ -1,7 +1,7 @@
 // RedWine Attendance - Service Worker
 // Cache static assets + push notifications + auto-update support
 
-const CACHE_NAME = "redwine-v23";
+const CACHE_NAME = "redwine-v24";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",

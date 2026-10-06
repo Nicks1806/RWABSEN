@@ -40,8 +40,14 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
-      className={`group bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/20 transition-all overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl ring-2 ring-primary/40" : ""}`}
+      style={{
+        ...style,
+        opacity: isDragging ? 0.4 : 1,
+        background: "var(--surface-200)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--radius-lg)",
+      }}
+      className={`group hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden touch-none ${isDragging ? "z-50 shadow-xl" : ""}`}
     >
       <div
         {...attributes}
@@ -54,7 +60,8 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
           <img
             src={coverUrl}
             alt=""
-            className="w-full h-28 object-cover bg-gray-100"
+            className="w-full h-28 object-cover"
+            style={{ background: "var(--surface-300)" }}
             draggable={false}
           />
         )}
@@ -74,7 +81,7 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
               );
             })}
             {labels.length > 3 && (
-              <span className="text-[9px] text-gray-400 font-bold px-1 py-0.5">+{labels.length - 3}</span>
+              <span className="text-[9px] font-bold px-1 py-0.5" style={{ color: "var(--ink-muted)" }}>+{labels.length - 3}</span>
             )}
           </div>
         )}
@@ -90,19 +97,21 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
                 if (e.key === "Escape") { setDraft(task.title); setEditing(false); }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full font-semibold text-sm text-gray-900 bg-white border-b-2 border-primary outline-none px-0.5 py-0.5"
+              className="w-full font-semibold text-sm bg-transparent outline-none px-0.5 py-0.5"
+              style={{ color: "var(--ink)", borderBottom: "2px solid var(--wine)" }}
               autoFocus
             />
           ) : (
             <p
-              className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2"
+              className="font-semibold text-sm leading-snug line-clamp-2"
+              style={{ color: "var(--ink)" }}
               onDoubleClick={(e) => { e.stopPropagation(); setDraft(task.title); setEditing(true); }}
             >
               {task.title}
             </p>
           )}
           {task.description && (
-            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+            <p className="text-xs mt-1.5 line-clamp-2 leading-relaxed" style={{ color: "var(--ink-muted)" }}>{task.description}</p>
           )}
         </div>
 
@@ -112,8 +121,9 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
               className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold ${
                 doneCount === totalCount
                   ? "bg-emerald-500 text-white"
-                  : "bg-gray-100 text-gray-600"
+                  : ""
               }`}
+              style={doneCount !== totalCount ? { background: "var(--surface-300)", color: "var(--ink-muted)" } : undefined}
             >
               <CheckCircle2 size={11} />
               {doneCount}/{totalCount}
@@ -128,20 +138,27 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
                   ? "bg-amber-400 text-white"
                   : doneCount === totalCount && totalCount > 0
                   ? "bg-emerald-500 text-white"
-                  : "bg-gray-100 text-gray-600"
+                  : ""
               }`}
+              style={!overdue && !todayDue && !(doneCount === totalCount && totalCount > 0) ? { background: "var(--surface-300)", color: "var(--ink-muted)" } : undefined}
             >
               <CalendarIcon size={11} />
               {format(new Date(task.due_date), "MMM dd", { locale: idLocale })}
             </span>
           )}
           {attachCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
+            <span
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold"
+              style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
+            >
               <Paperclip size={11} /> {attachCount}
             </span>
           )}
           {(task.comments?.length || 0) > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-600 font-bold">
+            <span
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold"
+              style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
+            >
               💬 {task.comments!.length}
             </span>
           )}
@@ -151,12 +168,15 @@ export default function TaskCard({ task, onClick, onRename }: { task: Task; onCl
           {task.assigneeObjects && task.assigneeObjects.length > 0 ? (
             <div className="flex -space-x-1.5 ml-auto">
               {task.assigneeObjects.slice(0, 4).map((emp) => (
-                <div key={emp.id} className="ring-2 ring-white rounded-full" title={emp.name}>
+                <div key={emp.id} className="rounded-full" style={{ boxShadow: "0 0 0 2px var(--surface-200)" }} title={emp.name}>
                   <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
                 </div>
               ))}
               {task.assigneeObjects.length > 4 && (
-                <div className="w-6 h-6 rounded-full bg-gray-300 ring-2 ring-white flex items-center justify-center text-[9px] font-bold text-gray-700">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                  style={{ background: "var(--surface-300)", color: "var(--ink-muted)", boxShadow: "0 0 0 2px var(--surface-200)" }}
+                >
                   +{task.assigneeObjects.length - 4}
                 </div>
               )}

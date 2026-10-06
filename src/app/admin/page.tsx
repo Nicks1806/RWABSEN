@@ -780,7 +780,7 @@ export default function AdminPage() {
         className="sticky top-0 z-20"
         style={{ background: "var(--surface-200)", boxShadow: "var(--shadow-sm)", borderBottom: "1px solid var(--line)" }}
       >
-        <div className="max-w-5xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="rw-heading" style={{ color: "var(--wine)" }}>RedWine</span>
             <span
@@ -832,7 +832,7 @@ export default function AdminPage() {
         className="sticky top-[52px] z-10"
         style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)" }}
       >
-        <div className="max-w-5xl mx-auto px-2 md:px-4 flex gap-0.5 md:gap-1 overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-2 md:px-4 flex gap-0.5 md:gap-1 overflow-x-auto scrollbar-hide">
           {[
             { key: "dashboard" as Tab, label: "Dashboard", icon: <Clock size={16} /> },
             { key: "analytics" as Tab, label: "Analitik", icon: <TrendingUp size={16} /> },
@@ -873,7 +873,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-6 overflow-x-hidden">
+      <main className="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-6 overflow-x-hidden">
         {loading ? (
           <div className="text-center py-12" style={{ color: "var(--ink-muted)" }}>Memuat data...</div>
         ) : (

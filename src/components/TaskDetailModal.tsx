@@ -157,12 +157,12 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
   const selectedEmps = employees.filter((e) => assigneeIds.includes(e.id));
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-start justify-center md:overflow-y-auto md:pt-16 md:pb-8 md:px-2" onClick={onClose}>
-      <div className="bg-gray-100 w-full max-w-3xl md:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up max-h-[95vh] md:max-h-none overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="rw-overlay fixed inset-0 z-50 flex items-end md:items-start justify-center md:overflow-y-auto md:pt-16 md:pb-8 md:px-2" onClick={onClose}>
+      <div className="w-full max-w-3xl md:rounded-2xl rounded-t-2xl overflow-hidden animate-slide-up max-h-[95vh] md:max-h-none overflow-y-auto" style={{ background: "var(--surface-100)", boxShadow: "var(--shadow-modal)", borderRadius: undefined }} onClick={(e) => e.stopPropagation()}>
 
         {/* Cover image */}
         {coverUrl ? (
-          <div className="relative h-36 md:h-48 bg-gray-200">
+          <div className="relative h-36 md:h-48" style={{ background: "var(--surface-300)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={coverUrl} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -172,41 +172,44 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
         )}
 
         {/* Close button */}
-        <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10">
+        <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: "rgba(0,0,0,0.4)", color: "#ffffff" }}>
           <X size={16} />
         </button>
 
         {/* Title */}
         <div className="px-5 md:px-8 pt-4 pb-2 flex items-start gap-3">
-          <CreditCard size={20} className="text-gray-500 mt-0.5 shrink-0" />
+          <CreditCard size={20} className="mt-0.5 shrink-0" style={{ color: "var(--ink-muted)" }} />
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="flex-1 text-lg font-bold text-gray-900 bg-transparent outline-none border-b-2 border-transparent focus:border-primary transition px-1 py-0.5"
+            className="flex-1 text-lg font-bold bg-transparent outline-none px-1 py-0.5 transition"
+            style={{ color: "var(--ink)", borderBottom: "2px solid transparent" }}
+            onFocus={(e) => { e.currentTarget.style.borderBottomColor = "var(--wine)"; }}
+            onBlur={(e) => { e.currentTarget.style.borderBottomColor = "transparent"; }}
           />
         </div>
 
         {/* Info chips row (Trello-style) */}
-        <div className="px-5 md:px-8 pb-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-600">
+        <div className="px-5 md:px-8 pb-3 flex flex-wrap gap-x-6 gap-y-2 text-xs" style={{ color: "var(--ink-muted)" }}>
           {/* Members */}
           {selectedEmps.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Members</p>
+              <p className="rw-micro mb-1">Members</p>
               <div className="flex -space-x-1.5">
                 {selectedEmps.slice(0, 5).map((e) => (
-                  <div key={e.id} className="ring-2 ring-gray-100 rounded-full" title={e.name}>
+                  <div key={e.id} className="rounded-full" style={{ boxShadow: "0 0 0 2px var(--surface-100)" }} title={e.name}>
                     <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
                   </div>
                 ))}
-                {selectedEmps.length > 5 && <span className="w-7 h-7 rounded-full bg-gray-300 ring-2 ring-gray-100 flex items-center justify-center text-[9px] font-bold">+{selectedEmps.length - 5}</span>}
+                {selectedEmps.length > 5 && <span className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: "var(--surface-300)", color: "var(--ink-muted)", boxShadow: "0 0 0 2px var(--surface-100)" }}>+{selectedEmps.length - 5}</span>}
               </div>
             </div>
           )}
           {/* Labels */}
           {labels.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Labels</p>
+              <p className="rw-micro mb-1">Labels</p>
               <div className="flex gap-1">
                 {labels.map((l) => { const lc = CARD_COLORS.find((c) => c.key === l) || CARD_COLORS[0]; return <span key={l} className={`h-6 w-12 rounded-md ${lc.dot}`} title={lc.label} />; })}
               </div>
@@ -215,8 +218,8 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
           {/* Due date */}
           {dueDate && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Due date</p>
-              <span className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-xs font-medium">
+              <p className="rw-micro mb-1">Due date</p>
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium" style={{ background: "var(--surface-200)", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)" }}>
                 <CalendarIcon size={12} /> {format(new Date(dueDate), "dd MMM yyyy", { locale: idLocale })}
               </span>
             </div>
@@ -225,7 +228,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
         {/* Mobile drag handle */}
         <div className="md:hidden flex justify-center pt-1 pb-0">
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--line-strong)" }} />
         </div>
 
         {/* Two-column layout */}
@@ -236,10 +239,10 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             {/* Description */}
             <section>
-              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ color: "var(--ink)" }}>
                 <AlignLeft size={16} /> Deskripsi
                 {!editingDesc && description && (
-                  <button onClick={() => setEditingDesc(true)} className="ml-auto text-[10px] text-gray-500 hover:text-primary font-medium px-2 py-0.5 bg-gray-100 hover:bg-primary/10 rounded transition">
+                  <button onClick={() => setEditingDesc(true)} className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded transition" style={{ color: "var(--ink-muted)", background: "var(--surface-300)" }}>
                     Edit
                   </button>
                 )}
@@ -247,27 +250,27 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               {editingDesc ? (
                 <div>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
-                    className="w-full px-3 py-3 bg-white border-2 border-primary/30 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary resize-none shadow-sm"
+                    className="rw-input resize-none"
                     autoFocus placeholder="Tulis deskripsi task..."
                   />
                   <div className="flex gap-2 mt-2">
-                    <button onClick={() => setEditingDesc(false)} className="px-4 py-2 bg-primary text-white text-xs rounded-lg font-semibold shadow-sm hover:bg-primary-dark transition">Simpan</button>
-                    <button onClick={() => { setDescription(task.description || ""); setEditingDesc(false); }} className="px-4 py-2 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition">Batal</button>
+                    <button onClick={() => setEditingDesc(false)} className="rw-btn rw-btn--primary rw-btn--sm">Simpan</button>
+                    <button onClick={() => { setDescription(task.description || ""); setEditingDesc(false); }} className="rw-btn rw-btn--ghost rw-btn--sm">Batal</button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => setEditingDesc(true)} className="min-h-[56px] bg-white rounded-xl p-3.5 text-sm text-gray-700 cursor-pointer hover:bg-blue-50/50 border border-gray-200 hover:border-primary/30 transition whitespace-pre-wrap leading-relaxed">
-                  {description || <span className="text-gray-400 italic">Tambahkan deskripsi yang lebih detail...</span>}
+                <div onClick={() => setEditingDesc(true)} className="min-h-[56px] p-3.5 text-sm cursor-pointer transition whitespace-pre-wrap leading-relaxed" style={{ background: "var(--surface-200)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)", color: "var(--ink)" }}>
+                  {description || <span style={{ color: "var(--ink-muted)" }} className="italic">Tambahkan deskripsi yang lebih detail...</span>}
                 </div>
               )}
             </section>
 
             {/* Checklist */}
             <section>
-              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ color: "var(--ink)" }}>
                 <CheckCircle2 size={16} /> Checklist
                 {checklist.length > 0 && (
-                  <span className={`text-[11px] font-semibold ml-auto px-2 py-0.5 rounded-full ${clPct === 100 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                  <span className="text-[11px] font-semibold ml-auto px-2 py-0.5 rounded-full" style={clPct === 100 ? { background: "var(--success-tint)", color: "var(--success)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                     {clDone}/{checklist.length}
                   </span>
                 )}
@@ -275,9 +278,9 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
               {checklist.length > 0 && (
                 <div className="mb-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[11px] text-gray-500 w-8 text-right font-medium">{clPct}%</span>
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className={`h-full transition-all duration-500 rounded-full ${clPct === 100 ? "bg-emerald-500" : "bg-primary"}`} style={{ width: `${clPct}%` }} />
+                    <span className="text-[11px] w-8 text-right font-medium" style={{ color: "var(--ink-muted)" }}>{clPct}%</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--surface-300)" }}>
+                      <div className="h-full transition-all duration-500 rounded-full" style={{ width: `${clPct}%`, background: clPct === 100 ? "var(--success)" : "var(--wine)" }} />
                     </div>
                   </div>
                 </div>
@@ -287,19 +290,22 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
                   <div
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
-                    className={`flex items-center gap-3 py-2.5 px-3 rounded-lg group cursor-pointer transition ${
-                      item.done ? "bg-emerald-50 hover:bg-emerald-100/80" : "bg-white hover:bg-gray-50 border border-gray-100"
-                    }`}
+                    className="flex items-center gap-3 py-2.5 px-3 group cursor-pointer transition"
+                    style={{
+                      borderRadius: "var(--radius-sm)",
+                      ...(item.done
+                        ? { background: "var(--success-tint)" }
+                        : { background: "var(--surface-200)", border: "1px solid var(--line)" }),
+                    }}
                   >
-                    <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${
-                      item.done ? "bg-emerald-500 border-emerald-500" : "bg-white border-gray-300 group-hover:border-primary"
-                    }`}>
+                    <div className="shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition" style={item.done ? { background: "var(--success)", borderColor: "var(--success)" } : { background: "var(--surface-200)", borderColor: "var(--line-strong)" }}>
                       {item.done && <Check size={12} className="text-white" strokeWidth={3} />}
                     </div>
-                    <span className={`flex-1 text-sm ${item.done ? "text-gray-400 line-through" : "text-gray-700"}`}>{item.text}</span>
+                    <span className={`flex-1 text-sm ${item.done ? "line-through" : ""}`} style={{ color: item.done ? "var(--ink-muted)" : "var(--ink)" }}>{item.text}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); removeChecklistItem(item.id); }}
-                      className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-md hover:bg-red-100 text-gray-400 hover:text-red-500 flex items-center justify-center transition"
+                      className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-md flex items-center justify-center transition"
+                      style={{ color: "var(--danger)" }}
                     >
                       <X size={13} />
                     </button>
@@ -310,9 +316,10 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
                 <input id="cl-input" type="text" value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addChecklistItem(); } }}
                   placeholder="Tambah item checklist..."
-                  className="flex-1 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary"
+                  className="rw-input"
+                  style={{ minHeight: 40 }}
                 />
-                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="px-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40 inline-flex items-center gap-1 transition">
+                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="rw-btn rw-btn--primary rw-btn--sm">
                   <Plus size={14} /> Tambah
                 </button>
               </div>
@@ -320,41 +327,41 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             {/* Attachments */}
             <section>
-              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ color: "var(--ink)" }}>
                 <Paperclip size={16} /> Attachment
               </h4>
               {attachments.length > 0 && (
                 <div className="space-y-2 mb-3">
                   {attachments.map((a) => (
-                    <div key={a.id} className="flex items-center gap-3 bg-white rounded-lg p-2 border border-gray-200 group hover:shadow-sm transition">
+                    <div key={a.id} className="flex items-center gap-3 p-2 group transition" style={{ background: "var(--surface-200)", borderRadius: "var(--radius-sm)", border: "1px solid var(--line)" }}>
                       {a.type === "image" ? (
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="w-20 h-14 rounded-md overflow-hidden bg-gray-100 shrink-0 hover:opacity-80">
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="w-20 h-14 rounded-md overflow-hidden shrink-0 hover:opacity-80" style={{ background: "var(--surface-300)" }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={a.url} alt="" className="w-full h-full object-cover" />
                         </a>
                       ) : (
-                        <div className="w-20 h-14 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                          <LinkIcon size={20} className="text-blue-500" />
+                        <div className="w-20 h-14 rounded-md flex items-center justify-center shrink-0" style={{ background: "var(--wine-tint)", border: "1px solid var(--line)" }}>
+                          <LinkIcon size={20} style={{ color: "var(--wine)" }} />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-800 hover:underline truncate block">
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline truncate block" style={{ color: "var(--ink)" }}>
                           {a.name || (a.type === "image" ? "Gambar" : a.url)} <ExternalLink size={10} className="inline" />
                         </a>
-                        <p className="text-[10px] text-gray-400">{format(new Date(a.added_at), "dd MMM yyyy • HH:mm", { locale: idLocale })}</p>
+                        <p className="text-[10px]" style={{ color: "var(--ink-muted)" }}>{format(new Date(a.added_at), "dd MMM yyyy - HH:mm", { locale: idLocale })}</p>
                       </div>
-                      <button onClick={() => removeAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1"><Trash2 size={13} /></button>
+                      <button onClick={() => removeAttachment(a.id)} className="opacity-0 group-hover:opacity-100 transition p-1" style={{ color: "var(--danger)" }}><Trash2 size={13} /></button>
                     </div>
                   ))}
                 </div>
               )}
               {showLinkForm && (
-                <div className="bg-white p-3 rounded-lg border border-gray-200 space-y-2 mb-3">
-                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary" autoFocus />
-                  <input type="text" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="Nama (opsional)" className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-primary" />
+                <div className="rw-card p-3 space-y-2 mb-3">
+                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className="rw-input" style={{ minHeight: 36 }} autoFocus />
+                  <input type="text" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="Nama (opsional)" className="rw-input" style={{ minHeight: 36 }} />
                   <div className="flex gap-2">
-                    <button onClick={addLink} disabled={!linkUrl.trim()} className="px-3 py-1.5 bg-primary text-white text-xs rounded-md font-semibold disabled:opacity-40">Tambah</button>
-                    <button onClick={() => { setShowLinkForm(false); setLinkUrl(""); setLinkName(""); }} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md">Batal</button>
+                    <button onClick={addLink} disabled={!linkUrl.trim()} className="rw-btn rw-btn--primary rw-btn--sm">Tambah</button>
+                    <button onClick={() => { setShowLinkForm(false); setLinkUrl(""); setLinkName(""); }} className="rw-btn rw-btn--ghost rw-btn--sm">Batal</button>
                   </div>
                 </div>
               )}
@@ -363,10 +370,10 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             {/* Activity / Comments */}
             <section>
-              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: "var(--ink)" }}>
                 <MessageSquare size={16} /> Komentar
                 {comments.length > 0 && (
-                  <span className="text-[11px] text-gray-500 font-normal bg-gray-100 px-2 py-0.5 rounded-full">{comments.length}</span>
+                  <span className="text-[11px] font-normal px-2 py-0.5 rounded-full" style={{ color: "var(--ink-muted)", background: "var(--surface-300)" }}>{comments.length}</span>
                 )}
               </h4>
               {/* Input */}
@@ -376,10 +383,12 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
                   <input type="text" value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }}
                     placeholder="Tulis komentar..."
-                    className="w-full px-3.5 py-2.5 pr-11 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary transition"
+                    className="rw-input pr-11"
+                    style={{ minHeight: 40 }}
                   />
                   <button onClick={addComment} disabled={!newCommentText.trim()}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-30 transition"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition"
+                    style={{ background: "var(--wine)", color: "var(--on-wine)" }}
                   >
                     <Send size={13} />
                   </button>
@@ -396,17 +405,18 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
                         <Avatar name={emp?.name || c.byName || "?"} photoUrl={emp?.photo_url} size="sm" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold text-gray-800">{emp?.name || c.byName}</span>
-                            <span className="text-[10px] text-gray-400">{format(new Date(c.at), "dd MMM • HH:mm", { locale: idLocale })}</span>
+                            <span className="text-xs font-bold" style={{ color: "var(--ink)" }}>{emp?.name || c.byName}</span>
+                            <span className="text-[10px]" style={{ color: "var(--ink-muted)" }}>{format(new Date(c.at), "dd MMM - HH:mm", { locale: idLocale })}</span>
                             {isMe && (
                               <button onClick={() => deleteComment(c.id)}
-                                className="opacity-0 group-hover:opacity-100 text-[10px] text-gray-400 hover:text-red-500 transition ml-auto"
+                                className="opacity-0 group-hover:opacity-100 text-[10px] transition ml-auto"
+                                style={{ color: "var(--danger)" }}
                               >
                                 Hapus
                               </button>
                             )}
                           </div>
-                          <div className="bg-white rounded-xl rounded-tl-sm p-3 border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed shadow-sm">
+                          <div className="rounded-xl rounded-tl-sm p-3 text-sm whitespace-pre-wrap break-words leading-relaxed" style={{ background: "var(--surface-200)", border: "1px solid var(--line)", color: "var(--ink)", boxShadow: "var(--shadow-sm)" }}>
                             {c.text}
                           </div>
                         </div>
@@ -419,8 +429,10 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
           </div>
 
           {/* ====== RIGHT: Sidebar ====== */}
-          <div className="w-full md:w-48 shrink-0 pt-4 md:pt-0 space-y-1 border-t md:border-t-0 md:border-l border-gray-200 md:pl-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 hidden md:block">Tambah ke card</p>
+          <div className="w-full md:w-48 shrink-0 pt-4 md:pt-0 space-y-1 md:pl-4" style={{ borderTop: undefined }}>
+            <div className="md:hidden" style={{ borderTop: "1px solid var(--line)" }} />
+            <div className="hidden md:block" style={{ borderLeft: "1px solid var(--line)", position: "absolute", top: 0, bottom: 0, width: 0 }} />
+            <p className="rw-micro mb-2 hidden md:block">Tambah ke card</p>
 
             {/* Mobile: horizontal action chips */}
             <div className="flex md:hidden gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
@@ -433,14 +445,14 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             <div className="hidden md:block"><SidebarBtn icon={<UserIcon size={14} />} label="Members" badge={assigneeIds.length || undefined} active={showMembers} onClick={() => setShowMembers(!showMembers)} /></div>
             {showMembers && (
-              <div className="bg-white rounded-xl border border-gray-200 p-1.5 space-y-0.5 max-h-52 overflow-y-auto shadow-sm mb-1">
+              <div className="rw-card p-1.5 space-y-0.5 max-h-52 overflow-y-auto mb-1">
                 {employees.filter((e) => e.is_active).map((e) => {
                   const sel = assigneeIds.includes(e.id);
                   return (
-                    <button key={e.id} onClick={() => toggleAssignee(e.id)} className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition ${sel ? "bg-primary/8 ring-1 ring-primary/20" : "hover:bg-gray-50"}`}>
+                    <button key={e.id} onClick={() => toggleAssignee(e.id)} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition" style={sel ? { background: "var(--wine-tint)" } : undefined}>
                       <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
-                      <span className={`flex-1 text-left truncate ${sel ? "font-semibold text-gray-900" : "text-gray-700"}`}>{e.name}</span>
-                      {sel && <CheckCircle2 size={14} className="text-primary shrink-0" />}
+                      <span className="flex-1 text-left truncate" style={{ color: sel ? "var(--ink)" : "var(--ink-muted)", fontWeight: sel ? 600 : 400 }}>{e.name}</span>
+                      {sel && <CheckCircle2 size={14} style={{ color: "var(--wine)" }} className="shrink-0" />}
                     </button>
                   );
                 })}
@@ -449,7 +461,7 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
 
             <div className="hidden md:block"><SidebarBtn icon={<Tag size={14} />} label="Labels" badge={labels.length || undefined} active={showLabels} onClick={() => setShowLabels(!showLabels)} /></div>
             {showLabels && (
-              <div className="bg-white rounded-xl border border-gray-200 p-2 space-y-1.5 shadow-sm mb-1">
+              <div className="rw-card p-2 space-y-1.5 mb-1">
                 {CARD_COLORS.map((c) => {
                   const sel = labels.includes(c.key);
                   return (
@@ -465,24 +477,25 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
             <div className="hidden md:block"><SidebarBtn icon={<ListChecks size={14} />} label="Checklist" badge={checklist.length || undefined} onClick={() => document.getElementById("cl-input")?.focus()} /></div>
 
             {/* Deadline inline */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="rw-card overflow-hidden">
               <div className="flex items-center gap-2.5 px-3 py-2.5">
-                <CalendarIcon size={14} className="text-gray-500 shrink-0" />
-                <span className="text-xs font-medium text-gray-700">Deadline</span>
+                <CalendarIcon size={14} style={{ color: "var(--ink-muted)" }} className="shrink-0" />
+                <span className="text-xs font-medium" style={{ color: "var(--ink)" }}>Deadline</span>
               </div>
               <div className="px-3 pb-3">
                 <input
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-800 outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                  className="rw-input"
+                  style={{ minHeight: 36, fontSize: 12 }}
                 />
                 {dueDate && (
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold">
+                    <span className="text-[11px] px-2 py-0.5 rounded-md font-semibold" style={{ background: "var(--wine-tint)", color: "var(--wine)" }}>
                       {format(new Date(dueDate), "EEEE, dd MMM yyyy", { locale: idLocale })}
                     </span>
-                    <button onClick={() => setDueDate("")} className="text-[10px] text-gray-400 hover:text-red-500 transition font-medium">Hapus</button>
+                    <button onClick={() => setDueDate("")} className="text-[10px] font-medium transition" style={{ color: "var(--danger)" }}>Hapus</button>
                   </div>
                 )}
               </div>
@@ -491,14 +504,14 @@ export default function TaskDetailModal({ task, currentUser, employees, onClose 
             <div className="hidden md:block"><SidebarBtn icon={<ImageIcon size={14} />} label={uploading ? "Uploading..." : "Gambar"} badge={attachments.filter((a) => a.type === "image").length || undefined} onClick={() => fileInputRef.current?.click()} /></div>
             <div className="hidden md:block"><SidebarBtn icon={<LinkIcon size={14} />} label="Link" badge={attachments.filter((a) => a.type === "link").length || undefined} active={showLinkForm} onClick={() => setShowLinkForm(!showLinkForm)} /></div>
 
-            <div className="pt-3 mt-2 border-t border-gray-200">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Aksi</p>
+            <div className="pt-3 mt-2" style={{ borderTop: "1px solid var(--line)" }}>
+              <p className="rw-micro mb-2">Aksi</p>
               <SidebarBtn icon={<Trash2 size={14} />} label="Hapus Task" onClick={deleteTask} danger />
             </div>
 
             {/* Save button */}
             <button onClick={saveAll} disabled={saving}
-              className="w-full mt-3 py-3 bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition shadow-md inline-flex items-center justify-center gap-2"
+              className="rw-btn rw-btn--primary rw-btn--block mt-3"
             >
               <Check size={15} /> {saving ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
@@ -513,19 +526,20 @@ function SidebarBtn({ icon, label, onClick, danger, badge, active }: {
   icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean; badge?: number; active?: boolean;
 }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
-      danger
-        ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
-        : active
-        ? "bg-primary/5 text-primary border border-primary/20 ring-1 ring-primary/10"
-        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300"
-    }`}>
+    <button onClick={onClick} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition"
+      style={{
+        borderRadius: "var(--radius-md)",
+        ...(danger
+          ? { background: "var(--danger-tint)", color: "var(--danger)", border: "1px solid var(--danger-tint)" }
+          : active
+          ? { background: "var(--wine-tint)", color: "var(--wine)", border: "1px solid var(--wine-tint)" }
+          : { background: "var(--surface-200)", color: "var(--ink)", border: "1px solid var(--line)" }),
+      }}
+    >
       {icon}
       <span className="flex-1 text-left">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-          danger ? "bg-red-200 text-red-700" : "bg-gray-100 text-gray-600"
-        }`}>{badge}</span>
+        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center" style={danger ? { background: "var(--danger-tint)", color: "var(--danger)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>{badge}</span>
       )}
     </button>
   );
@@ -535,16 +549,15 @@ function MobileChip({ icon, label, count, active, onClick }: {
   icon: React.ReactNode; label: string; count?: number; active?: boolean; onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-medium transition snap-start ${
-      active
-        ? "bg-primary text-white shadow-sm"
-        : "bg-white text-gray-700 border border-gray-200 active:bg-gray-100"
-    }`}>
+    <button onClick={onClick} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-medium transition snap-start"
+      style={active
+        ? { background: "var(--wine)", color: "var(--on-wine)" }
+        : { background: "var(--surface-200)", color: "var(--ink)", border: "1px solid var(--line)" }
+      }
+    >
       {icon} {label}
       {count !== undefined && count > 0 && (
-        <span className={`text-[9px] font-bold px-1 rounded-full min-w-[14px] text-center ${
-          active ? "bg-white/30 text-white" : "bg-gray-100 text-gray-600"
-        }`}>{count}</span>
+        <span className="text-[9px] font-bold px-1 rounded-full min-w-[14px] text-center" style={active ? { background: "rgba(255,255,255,0.3)", color: "var(--on-wine)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>{count}</span>
       )}
     </button>
   );

@@ -820,25 +820,23 @@ export default function TasksPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-rose-50/40 via-white to-amber-50/20 flex flex-col transition-[margin] duration-300 ease-out"
-      style={{ marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
+      className="min-h-screen flex flex-col transition-[margin] duration-300 ease-out"
+      style={{ background: "var(--surface-100)", marginLeft: !isMobile && bottomTab === "message" ? 360 : 0 }}
     >
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-20 shadow-sm">
+      <header className="sticky top-0 z-20" style={{ background: "var(--surface-100)", borderBottom: "1px solid var(--line)", boxShadow: "var(--shadow-sm)" }}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => {
-                  // Fallback to /home when there's no history (PWA launched directly,
-                  // push notification, or first-visit). router.back() silently does nothing
-                  // when history is empty.
                   if (typeof window !== "undefined" && window.history.length > 1) {
                     router.back();
                   } else {
                     router.push("/home");
                   }
                 }}
-                className="w-9 h-9 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-600 flex items-center justify-center transition"
+                className="ico-circ"
+                style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
                 aria-label="Kembali"
               >
                 <ArrowLeft size={18} />
@@ -861,12 +859,14 @@ export default function TasksPage() {
                         }
                         if (e.key === "Escape") setEditingBoardName(false);
                       }}
-                      className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-primary outline-none px-1 min-w-[120px]"
+                      className="font-bold text-lg bg-transparent outline-none px-1 min-w-[120px]"
+                      style={{ color: "var(--ink)", borderBottom: "2px solid var(--wine)" }}
                       autoFocus
                     />
                   ) : (
                     <h1
-                      className="group font-semibold text-lg md:text-xl text-gray-900 cursor-pointer hover:text-primary transition inline-flex items-center gap-2 tracking-tight"
+                      className="group font-semibold text-lg md:text-xl cursor-pointer transition inline-flex items-center gap-2 tracking-tight"
+                      style={{ color: "var(--ink)" }}
                       onClick={() => {
                         const currentName = activeBoard ? activeBoard.name : (localStorage.getItem("default_board_name") || "Task Board");
                         setBoardNameDraft(currentName);
@@ -878,7 +878,7 @@ export default function TasksPage() {
                       <Pencil size={10} className="opacity-0 group-hover:opacity-40 transition" />
                     </h1>
                   )}
-                  <span className="text-[10px] text-primary/70 font-medium tabular-nums border-l border-gray-200 pl-2 ml-0.5">
+                  <span className="text-[10px] font-medium tabular-nums pl-2 ml-0.5" style={{ color: "var(--wine)", borderLeft: "1px solid var(--line)" }}>
                     {tasks.length} task
                   </span>
                 </div>
@@ -887,18 +887,20 @@ export default function TasksPage() {
             <div className="flex items-center gap-2">
               {/* Search */}
               <div className="relative hidden md:block">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
                 <input
                   type="text"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   placeholder="Cari task..."
-                  className="pl-8 pr-8 py-2 w-48 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-white transition"
+                  className="rw-input pl-8 pr-8 py-2 w-48 text-xs font-medium"
+                  style={{ minHeight: 36 }}
                 />
                 {searchQ && (
                   <button
                     onClick={() => setSearchQ("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
                     title="Clear"
                   >
                     <X size={11} />
@@ -907,18 +909,22 @@ export default function TasksPage() {
               </div>
               <button
                 onClick={() => setFilterMine(!filterMine)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
-                  filterMine ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                className="rw-btn rw-btn--sm flex items-center gap-1.5 text-xs"
+                style={filterMine
+                  ? { background: "var(--wine)", color: "var(--on-wine)" }
+                  : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                }
                 title="Toggle filter Tugas Saya"
               >
                 <UserIcon size={13} /> <span className="hidden sm:inline">{filterMine ? "Tugas Saya" : "Semua"}</span>
               </button>
               <button
                 onClick={() => setFilterOverdue(!filterOverdue)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium transition ${
-                  filterOverdue ? "bg-red-500 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                className="rw-btn rw-btn--sm flex items-center gap-1.5 text-xs"
+                style={filterOverdue
+                  ? { background: "var(--danger)", color: "#ffffff" }
+                  : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                }
                 title="Filter overdue"
               >
                 <AlertCircle size={13} /> <span className="hidden sm:inline">Overdue</span>
@@ -926,7 +932,7 @@ export default function TasksPage() {
               {canManageBoards(user) && !isMobile && (
                 <button
                   onClick={() => setShowAddCol(true)}
-                  className="flex items-center gap-1.5 text-xs px-3 py-2 bg-white border border-gray-200 text-gray-600 hover:text-primary hover:border-primary/50 hover:shadow-sm rounded-lg font-semibold transition"
+                  className="rw-btn rw-btn--outline rw-btn--sm flex items-center gap-1.5 text-xs font-semibold"
                   title="Tambah kolom"
                 >
                   <Plus size={13} /> <span className="hidden sm:inline">Kolom</span>
@@ -938,16 +944,17 @@ export default function TasksPage() {
           {/* Mobile search + label chips */}
           <div className="flex items-center gap-2 mb-3 md:mb-2">
             <div className="relative flex-1 md:hidden">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-muted)" }} />
               <input
                 type="text"
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 placeholder="Cari task..."
-                className="pl-9 pr-9 py-2 w-full bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-white"
+                className="rw-input pl-9 pr-9 py-2 w-full text-sm font-medium"
+                style={{ minHeight: 40 }}
               />
               {searchQ && (
-                <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+                <button onClick={() => setSearchQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                   <X size={12} />
                 </button>
               )}
@@ -955,7 +962,8 @@ export default function TasksPage() {
             {(searchQ || filterOverdue || filterMine) && (
               <button
                 onClick={() => { setSearchQ(""); setFilterOverdue(false); setFilterMine(false); }}
-                className="shrink-0 text-[10px] text-gray-500 hover:text-primary font-medium tracking-wide transition pl-1"
+                className="shrink-0 text-[10px] font-medium tracking-wide transition pl-1"
+                style={{ color: "var(--ink-muted)" }}
                 title="Hapus semua filter"
               >
                 Reset
@@ -964,29 +972,29 @@ export default function TasksPage() {
           </div>
 
           {!isMobile && (
-            <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm">
+            <div className="rw-card inline-flex items-center gap-3 px-4 py-1.5">
               <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--wine-tint)", color: "var(--wine)" }}>
                   <UserIcon size={11} />
                 </span>
-                <span className="text-[11px] text-gray-500 font-medium">Saya</span>
-                <span className="text-xs font-bold text-primary tabular-nums">{myCount}</span>
+                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Saya</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--wine)" }}>{myCount}</span>
               </div>
-              <span className="w-px h-3.5 bg-gray-200" />
+              <span className="w-px h-3.5" style={{ background: "var(--line)" }} />
               <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--warning-tint)", color: "var(--warning)" }}>
                   <ClockIcon size={11} />
                 </span>
-                <span className="text-[11px] text-gray-500 font-medium">Today</span>
-                <span className="text-xs font-bold text-amber-700 tabular-nums">{todayTasksCount}</span>
+                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Today</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: "var(--warning)" }}>{todayTasksCount}</span>
               </div>
-              <span className="w-px h-3.5 bg-gray-200" />
+              <span className="w-px h-3.5" style={{ background: "var(--line)" }} />
               <div className="flex items-center gap-1.5">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center ${overdueCount > 0 ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-400"}`}>
+                <span className="w-5 h-5 rounded-full flex items-center justify-center" style={overdueCount > 0 ? { background: "var(--danger-tint)", color: "var(--danger)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                   <AlertCircle size={11} />
                 </span>
-                <span className="text-[11px] text-gray-500 font-medium">Overdue</span>
-                <span className={`text-xs font-bold tabular-nums ${overdueCount > 0 ? "text-red-700" : "text-gray-500"}`}>{overdueCount}</span>
+                <span className="text-[11px] font-medium" style={{ color: "var(--ink-muted)" }}>Overdue</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: overdueCount > 0 ? "var(--danger)" : "var(--ink-muted)" }}>{overdueCount}</span>
               </div>
             </div>
           )}
@@ -1003,17 +1011,17 @@ export default function TasksPage() {
                   <button
                     key={col.id}
                     onClick={() => setMobileTab(idx)}
-                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition snap-start ${
-                      isActive
-                        ? "bg-gray-900 text-white shadow-md"
-                        : "bg-white text-gray-600 border border-gray-200 shadow-sm"
-                    }`}
+                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition snap-start`}
+                    style={{
+                      borderRadius: "var(--radius-md)",
+                      ...(isActive
+                        ? { background: "var(--ink)", color: "var(--surface-100)", boxShadow: "var(--shadow-md)" }
+                        : { background: "var(--surface-200)", color: "var(--ink-muted)", border: "1px solid var(--line)" }),
+                    }}
                   >
                     <span className={`w-2.5 h-2.5 rounded-full ${topBarColor} ${isActive ? "ring-2 ring-white/30" : ""}`} />
                     {col.label}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full min-w-[20px] text-center font-bold ${
-                      isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                    }`}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full min-w-[20px] text-center font-bold" style={isActive ? { background: "rgba(255,255,255,0.2)", color: "var(--surface-100)" } : { background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                       {count}
                     </span>
                   </button>
@@ -1039,8 +1047,8 @@ export default function TasksPage() {
                 {colTasks.length === 0 && (
                   <div className="text-center py-12">
                     <div className={`w-14 h-14 ${COL_COLORS[col.color as ColColor] || "bg-gray-400"} opacity-20 rounded-full mx-auto mb-3`} />
-                    <p className="text-sm text-gray-400 font-medium">Belum ada task</p>
-                    <p className="text-xs text-gray-400 mt-1">Tap + untuk tambah</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--ink-muted)" }}>Belum ada task</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--ink-muted)" }}>Tap + untuk tambah</p>
                   </div>
                 )}
                 {colTasks.map((task) => (
@@ -1057,9 +1065,9 @@ export default function TasksPage() {
                     onRename={(t) => renameTaskInline(task.id, t)}
                   />
                 ))}
-                {/* Quick inline add — ALL FIELDS (no toggle needed) */}
+                {/* Quick inline add */}
                 {quickAddCol === col.key ? (
-                  <div className="bg-white rounded-2xl shadow-lg border-2 border-primary/40 overflow-hidden">
+                  <div className="rw-card overflow-hidden" style={{ border: "2px solid var(--wine)" }}>
                     {/* Title input */}
                     <input
                       type="text"
@@ -1070,7 +1078,8 @@ export default function TasksPage() {
                       }}
                       placeholder="Apa yang mau dikerjakan?"
                       autoFocus
-                      className="w-full px-4 py-3.5 text-base font-bold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none border-b border-gray-100"
+                      className="w-full px-4 py-3.5 text-base font-bold outline-none"
+                      style={{ color: "var(--ink)", background: "transparent", borderBottom: "1px solid var(--line)" }}
                     />
 
                     {/* Description */}
@@ -1079,14 +1088,15 @@ export default function TasksPage() {
                       onChange={(e) => setQuickAddDesc(e.target.value)}
                       rows={2}
                       placeholder="Deskripsi / catatan (opsional)..."
-                      className="w-full px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 outline-none border-b border-gray-100 resize-none"
+                      className="w-full px-4 py-2.5 text-sm outline-none resize-none"
+                      style={{ color: "var(--ink)", background: "transparent", borderBottom: "1px solid var(--line)" }}
                     />
 
                     {/* Assignees */}
                     <div className="px-3 pb-2.5 pt-2.5">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                      <p className="rw-micro mb-1.5 flex items-center gap-1">
                         <UserIcon size={10} /> Assign ke
-                        {quickAddAssignees.length > 0 && <span className="bg-primary text-white px-1.5 py-0.5 rounded-full text-[9px] ml-1 normal-case tracking-normal">{quickAddAssignees.length}</span>}
+                        {quickAddAssignees.length > 0 && <span className="px-1.5 py-0.5 rounded-full text-[9px] ml-1 normal-case tracking-normal" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>{quickAddAssignees.length}</span>}
                       </p>
                       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                         {employees.filter((e) => e.is_active).map((e) => {
@@ -1095,12 +1105,11 @@ export default function TasksPage() {
                             <button
                               key={e.id}
                               onClick={() => setQuickAddAssignees((prev) => sel ? prev.filter((x) => x !== e.id) : [...prev, e.id])}
-                              className={`shrink-0 flex items-center gap-1.5 pl-0.5 pr-2.5 py-0.5 rounded-full border-2 transition ${
-                                sel ? "bg-primary/10 border-primary" : "bg-gray-50 border-transparent"
-                              }`}
+                              className="shrink-0 flex items-center gap-1.5 pl-0.5 pr-2.5 py-0.5 rounded-full border-2 transition"
+                              style={sel ? { background: "var(--wine-tint)", borderColor: "var(--wine)" } : { background: "var(--surface-300)", borderColor: "transparent" }}
                             >
                               <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
-                              <span className={`text-xs font-medium ${sel ? "text-primary" : "text-gray-600"}`}>
+                              <span className="text-xs font-medium" style={{ color: sel ? "var(--wine)" : "var(--ink-muted)" }}>
                                 {e.name.split(" ")[0]}
                               </span>
                             </button>
@@ -1110,33 +1119,36 @@ export default function TasksPage() {
                     </div>
 
                     {/* Deadline */}
-                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5 flex items-center gap-2">
-                      <CalendarIcon size={14} className="text-gray-400 shrink-0" />
+                    <div className="px-3 pb-2.5 pt-2.5 flex items-center gap-2" style={{ borderTop: "1px solid var(--line)" }}>
+                      <CalendarIcon size={14} style={{ color: "var(--ink-muted)" }} className="shrink-0" />
                       <input
                         type="date"
                         value={quickAddDeadline}
                         onChange={(e) => setQuickAddDeadline(e.target.value)}
-                        className="flex-1 text-xs font-medium text-gray-700 outline-none bg-transparent"
+                        className="flex-1 text-xs font-medium outline-none bg-transparent"
+                        style={{ color: "var(--ink)" }}
                       />
                       {quickAddDeadline && (
                         <button
                           onClick={() => setQuickAddDeadline("")}
-                          className="text-gray-400 hover:text-red-500 text-xs font-medium"
+                          className="text-xs font-medium"
+                          style={{ color: "var(--danger)" }}
                         >
-                          × Hapus
+                          x Hapus
                         </button>
                       )}
                     </div>
 
                     {/* Image attachment */}
-                    <div className="px-3 pb-2.5 border-t border-gray-100 pt-2.5">
+                    <div className="px-3 pb-2.5 pt-2.5" style={{ borderTop: "1px solid var(--line)" }}>
                       {quickAddImage ? (
                         <div className="relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={quickAddImage} alt="" className="w-full h-24 object-cover rounded-lg" />
+                          <img src={quickAddImage} alt="" className="w-full h-24 object-cover" style={{ borderRadius: "var(--radius-sm)" }} />
                           <button
                             onClick={() => setQuickAddImage(null)}
-                            className="absolute top-1 right-1 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center"
+                            className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center"
+                            style={{ background: "rgba(0,0,0,0.6)", color: "#ffffff" }}
                           >
                             <X size={14} />
                           </button>
@@ -1145,7 +1157,8 @@ export default function TasksPage() {
                         <button
                           onClick={() => quickAddFileRef.current?.click()}
                           disabled={quickAddUploading}
-                          className="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="w-full py-2.5 text-xs font-medium transition inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          style={{ border: "2px dashed var(--line)", borderRadius: "var(--radius-sm)", color: "var(--ink-muted)" }}
                         >
                           {quickAddUploading ? (
                             <><Upload size={14} className="animate-pulse" /> Upload...</>
@@ -1164,7 +1177,7 @@ export default function TasksPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="border-t border-gray-100 p-2 flex gap-1.5 bg-gray-50/60">
+                    <div className="p-2 flex gap-1.5" style={{ borderTop: "1px solid var(--line)", background: "var(--surface-300)" }}>
                       <button
                         onClick={() => {
                           setQuickAddCol(null);
@@ -1173,14 +1186,14 @@ export default function TasksPage() {
                           setQuickAddDeadline("");
                           setQuickAddImage(null);
                         }}
-                        className="px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition"
+                        className="rw-btn rw-btn--ghost rw-btn--sm px-4"
                       >
                         Tutup
                       </button>
                       <button
                         onClick={() => quickAddText.trim() && quickAddTask(col.key, quickAddText)}
                         disabled={!quickAddText.trim()}
-                        className="flex-1 px-3 py-2.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl text-sm font-bold disabled:opacity-40 shadow-md active:scale-95 transition inline-flex items-center justify-center gap-1.5"
+                        className="rw-btn rw-btn--primary rw-btn--sm flex-1 inline-flex items-center justify-center gap-1.5"
                       >
                         <Plus size={14} strokeWidth={3} /> Tambah Task
                       </button>
@@ -1189,7 +1202,8 @@ export default function TasksPage() {
                 ) : (
                   <button
                     onClick={() => { setQuickAddCol(col.key); setQuickAddText(""); }}
-                    className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-primary bg-white hover:shadow-sm transition border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center gap-1.5 font-medium active:scale-[0.98]"
+                    className="w-full py-3 text-sm font-medium transition flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                    style={{ borderRadius: "var(--radius-md)", border: "2px dashed var(--line)", color: "var(--ink-muted)", background: "var(--surface-200)" }}
                   >
                     <Plus size={16} /> Tambah task
                   </button>
@@ -1212,8 +1226,8 @@ export default function TasksPage() {
         <main className="flex-1 overflow-hidden relative">
           {canDrag && (
             <>
-              <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-gray-50 to-transparent z-10" />
-              <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10" />
+              <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 z-10" style={{ background: "linear-gradient(to right, var(--surface-100), transparent)" }} />
+              <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-8 z-10" style={{ background: "linear-gradient(to left, var(--surface-100), transparent)" }} />
             </>
           )}
           <div className={`h-full px-3 md:px-6 py-5 ${canDrag ? "overflow-x-auto scrollbar-hide flex items-start gap-4 snap-x snap-mandatory" : "overflow-y-auto grid gap-4 auto-rows-min"}`} style={!canDrag ? { gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" } : undefined}>
@@ -1244,7 +1258,7 @@ export default function TasksPage() {
                     isOverThis ? "!border-primary ring-4 ring-primary/20 scale-[1.01] shadow-xl" : "shadow-sm hover:shadow-md"
                   }`}
                 >
-                  <div className={`px-4 py-3 flex items-center justify-between border-b ${colHeaderBorder} sticky top-0 z-10 bg-white/80 backdrop-blur-md group`}>
+                  <div className={`px-4 py-3 flex items-center justify-between border-b ${colHeaderBorder} sticky top-0 z-10 backdrop-blur-md group`} style={{ background: "rgba(255,253,248,0.8)" }}>
                     <div className="flex-1 min-w-0">
                       {editingColId === col.id ? (
                         <input
@@ -1256,32 +1270,35 @@ export default function TasksPage() {
                             if (e.key === "Enter") renameColumn(col.id, editColLabel);
                             if (e.key === "Escape") setEditingColId(null);
                           }}
-                          className="w-full px-2 py-1 bg-white border-2 border-primary rounded-md text-sm font-bold text-gray-900 outline-none"
+                          className="w-full px-2 py-1 text-sm font-bold outline-none"
+                          style={{ background: "var(--surface-200)", border: "2px solid var(--wine)", borderRadius: "var(--radius-sm)", color: "var(--ink)" }}
                           autoFocus
                         />
                       ) : (
                         <button
                           onClick={() => startEditCol(col)}
-                          className="flex items-center gap-2 hover:bg-gray-100/60 -mx-1 px-1 py-0.5 rounded-md transition w-full text-left"
+                          className="flex items-center gap-2 -mx-1 px-1 py-0.5 transition w-full text-left"
+                          style={{ borderRadius: "var(--radius-sm)" }}
                           title="Klik untuk edit nama"
                         >
                           <span className={`w-6 h-6 rounded-md ${topBarColor} text-white flex items-center justify-center shrink-0`}>
                             <ColIcon size={13} />
                           </span>
-                          <h3 className="font-bold text-[15px] text-gray-900 truncate tracking-tight">{col.label}</h3>
+                          <h3 className="font-bold text-[15px] truncate tracking-tight" style={{ color: "var(--ink)" }}>{col.label}</h3>
                           <span className={`text-[10px] text-white px-2 py-0.5 rounded-full font-bold min-w-[22px] text-center shadow-sm ${topBarColor}`}>
                             {colTasks.length}
                           </span>
                         </button>
                       )}
                       {col.description && editingColId !== col.id && (
-                        <p className="text-[10px] text-gray-500 leading-tight mt-0.5 ml-8">{col.description}</p>
+                        <p className="text-[10px] leading-tight mt-0.5 ml-8" style={{ color: "var(--ink-muted)" }}>{col.description}</p>
                       )}
                     </div>
                     {!col.is_default && editingColId !== col.id && (
                       <button
                         onClick={() => deleteColumn(col)}
-                        className="opacity-0 group-hover:opacity-100 transition w-7 h-7 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center"
+                        className="opacity-0 group-hover:opacity-100 transition w-7 h-7 rounded-md flex items-center justify-center"
+                        style={{ color: "var(--danger)" }}
                         title="Hapus kolom"
                       >
                         <Trash2 size={13} />
@@ -1297,8 +1314,8 @@ export default function TasksPage() {
                             <div className={`relative w-12 h-12 ${topBarColor} opacity-20 rounded-full mx-auto mb-3 flex items-center justify-center`}>
                               <EmptyIcon size={20} className="text-white opacity-90" />
                             </div>
-                            <p className="text-xs text-gray-700 font-bold">{colMeta.emptyTitle}</p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">{colMeta.emptySub}</p>
+                            <p className="text-xs font-bold" style={{ color: "var(--ink)" }}>{colMeta.emptyTitle}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-muted)" }}>{colMeta.emptySub}</p>
                           </div>
                         )}
                         {colTasks.map((task) => (
@@ -1310,10 +1327,10 @@ export default function TasksPage() {
                         {colTasks.length === 0 && (
                           <div className="text-center py-10 px-4 pointer-events-none">
                             <div className={`relative w-14 h-14 ${topBarColor} opacity-15 rounded-full mx-auto mb-3 flex items-center justify-center`}>
-                              <Plus size={22} className="text-gray-600 opacity-60" />
+                              <Plus size={22} className="opacity-60" style={{ color: "var(--ink-muted)" }} />
                             </div>
-                            <p className="text-xs text-gray-500 font-semibold">Belum ada task</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Tap + untuk menambah</p>
+                            <p className="text-xs font-semibold" style={{ color: "var(--ink-muted)" }}>Belum ada task</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-muted)" }}>Tap + untuk menambah</p>
                           </div>
                         )}
                         {colTasks.map((task) => (
@@ -1323,7 +1340,8 @@ export default function TasksPage() {
                     )}
                     <button
                       onClick={() => openCreate(col.key)}
-                      className="group/add w-full py-2.5 rounded-xl text-xs text-gray-500 hover:text-primary hover:bg-primary/5 transition-all border border-dashed border-gray-300 hover:border-primary/50 flex items-center justify-center gap-1.5 font-semibold mt-1.5"
+                      className="group/add w-full py-2.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 mt-1.5"
+                      style={{ borderRadius: "var(--radius-md)", border: "1px dashed var(--line)", color: "var(--ink-muted)" }}
                     >
                       <Plus size={13} className="group-hover/add:rotate-90 transition-transform" /> Tambah task
                     </button>
@@ -1332,10 +1350,10 @@ export default function TasksPage() {
               );
             })}
 
-            {/* Inline "Add column" form — only when user triggered from header */}
+            {/* Inline "Add column" form */}
             {canDrag && showAddCol && (
               <div className="shrink-0 w-72 md:w-80 snap-start">
-                <div className="bg-white rounded-2xl border-2 border-primary/30 shadow-md p-3 space-y-2 animate-scale-in">
+                <div className="rw-card p-3 space-y-2 animate-scale-in" style={{ border: "2px solid var(--wine)" }}>
                   <input
                     type="text"
                     value={newColLabel}
@@ -1348,11 +1366,12 @@ export default function TasksPage() {
                       }
                     }}
                     placeholder="Nama kolom..."
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:bg-white"
+                    className="rw-input text-sm font-medium"
+                    style={{ minHeight: 40 }}
                     autoFocus
                   />
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-1.5 uppercase">Warna</p>
+                    <p className="rw-micro mb-1.5">Warna</p>
                     <div className="flex gap-1.5 flex-wrap">
                       {COL_COLOR_KEYS.map((c) => (
                         <button
@@ -1372,14 +1391,14 @@ export default function TasksPage() {
                         setShowAddCol(false);
                         setNewColLabel("");
                       }}
-                      className="flex-1 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      className="rw-btn rw-btn--outline rw-btn--sm flex-1"
                     >
                       Batal
                     </button>
                     <button
                       onClick={addColumn}
                       disabled={!newColLabel.trim()}
-                      className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-semibold disabled:opacity-40"
+                      className="rw-btn rw-btn--primary rw-btn--sm flex-1"
                     >
                       Tambah
                     </button>
@@ -1406,13 +1425,13 @@ export default function TasksPage() {
         ) : boardInner;
       })()}
 
-      {/* Task Bottom Bar — hidden when chat open OR keyboard open on mobile */}
+      {/* Task Bottom Bar */}
       {!(isMobile && (bottomTab === "message" || keyboardOpen)) && (
         <>
       <div className="h-24" />
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
         <div className="max-w-md mx-auto pointer-events-auto">
-          <div className="bg-white/95 backdrop-blur-2xl border border-gray-200/60 rounded-2xl shadow-[0_10px_40px_rgba(139,26,26,0.12)] flex items-center gap-1 p-1.5">
+          <div className="flex items-center gap-1 p-1.5" style={{ background: "rgba(255,253,248,0.95)", backdropFilter: "blur(20px)", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-float)" }}>
             {[
               { key: "switch", label: "Switch", icon: LayoutGrid, active: showBoardSwitcher, onClick: () => setShowBoardSwitcher(!showBoardSwitcher) },
               { key: "board", label: "Board", icon: Columns3, active: bottomTab === "board" && !showBoardSwitcher, onClick: () => { setShowBoardSwitcher(false); setBottomTab("board"); } },
@@ -1423,11 +1442,13 @@ export default function TasksPage() {
                 <button
                   key={item.key}
                   onClick={item.onClick}
-                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl transition-all duration-200 active:scale-90 ${
-                    item.active
-                      ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/30"
-                      : "text-gray-500 hover:bg-gray-50 active:bg-gray-100"
-                  }`}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all duration-200 active:scale-90"
+                  style={{
+                    borderRadius: "var(--radius-md)",
+                    ...(item.active
+                      ? { background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-md)" }
+                      : { color: "var(--ink-muted)" }),
+                  }}
                 >
                   <Icon size={20} strokeWidth={item.active ? 2.5 : 2} />
                   <span className={`text-[10px] ${item.active ? "font-bold" : "font-medium"}`}>{item.label}</span>
@@ -1444,21 +1465,25 @@ export default function TasksPage() {
       {bottomTab === "message" && (
         <>
         <div
-          className="bg-white flex flex-col border-r border-gray-200 shadow-xl fixed z-30"
-          style={isMobile ? { top: 0, left: 0, right: 0, bottom: 0 } : { top: 0, left: 0, bottom: 0, width: 360 }}
+          className="flex flex-col fixed z-30"
+          style={{
+            background: "var(--surface-200)",
+            borderRight: isMobile ? undefined : "1px solid var(--line)",
+            boxShadow: "var(--shadow-float)",
+            ...(isMobile ? { top: 0, left: 0, right: 0, bottom: 0 } : { top: 0, left: 0, bottom: 0, width: 360 }),
+          }}
         >
           {/* Chat header */}
-          {/* Header with search */}
-          <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 shadow-sm">
+          <div className="px-4 pt-3 pb-2" style={{ background: "var(--surface-200)", borderBottom: "1px solid var(--line)", boxShadow: "var(--shadow-sm)" }}>
             <div className="flex items-center gap-3 mb-2">
-              <button onClick={() => setBottomTab("board")} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600">
+              <button onClick={() => setBottomTab("board")} className="ico-circ" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                 <ArrowLeft size={18} />
               </button>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-sm text-gray-900 truncate">
-                  💬 {activeBoard ? activeBoard.name : "General"} Chat
+                <h3 className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
+                  {activeBoard ? activeBoard.name : "General"} Chat
                 </h3>
-                <p className="text-[10px] text-gray-500">{chatMessages.length} pesan</p>
+                <p className="text-[10px]" style={{ color: "var(--ink-muted)" }}>{chatMessages.length} pesan</p>
               </div>
             </div>
             {/* Search bar */}
@@ -1467,11 +1492,12 @@ export default function TasksPage() {
                 type="text"
                 value={chatSearch}
                 onChange={(e) => setChatSearch(e.target.value)}
-                placeholder="🔍 Cari pesan..."
-                className="w-full px-3.5 py-2 bg-gray-100 border-0 rounded-full text-xs outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                placeholder="Cari pesan..."
+                className="rw-input text-xs"
+                style={{ minHeight: 36, borderRadius: "var(--radius-full)", paddingLeft: 14, paddingRight: 36 }}
               />
               {chatSearch && (
-                <button onClick={() => setChatSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs"><X size={12} /></button>
+                <button onClick={() => setChatSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-xs" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}><X size={12} /></button>
               )}
             </div>
           </div>
@@ -1480,9 +1506,9 @@ export default function TasksPage() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {chatMessages.length === 0 && (
               <div className="text-center py-16">
-                <MessageCircle size={40} className="text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-400 font-medium">Belum ada pesan</p>
-                <p className="text-xs text-gray-400 mt-1">Mulai percakapan dengan tim</p>
+                <MessageCircle size={40} className="mx-auto mb-3" style={{ color: "var(--line)" }} />
+                <p className="text-sm font-medium" style={{ color: "var(--ink-muted)" }}>Belum ada pesan</p>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-muted)" }}>Mulai percakapan dengan tim</p>
               </div>
             )}
             {chatMessages
@@ -1496,23 +1522,21 @@ export default function TasksPage() {
                 <div key={m.id} className={`flex gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
                   {!isMe && <Avatar name={emp?.name || m.sender_name || "?"} photoUrl={emp?.photo_url} size="sm" />}
                   <div className={`max-w-[72%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                    {!isMe && <p className="text-[10px] text-gray-500 font-semibold mb-0.5 px-1">{emp?.name || m.sender_name}</p>}
-                    <div className={`rounded-2xl text-sm leading-relaxed overflow-hidden ${
+                    {!isMe && <p className="text-[10px] font-semibold mb-0.5 px-1" style={{ color: "var(--ink-muted)" }}>{emp?.name || m.sender_name}</p>}
+                    <div className="rounded-2xl text-sm leading-relaxed overflow-hidden" style={
                       isImageOnly
-                        ? "bg-transparent p-0"
+                        ? { background: "transparent", padding: 0 }
                         : isMe
-                        ? "bg-primary text-white rounded-br-sm px-3 py-2"
-                        : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm px-3 py-2"
-                    }`}>
+                        ? { background: "var(--wine)", color: "var(--on-wine)", borderBottomRightRadius: 4, padding: "8px 12px" }
+                        : { background: "var(--surface-200)", border: "1px solid var(--line)", color: "var(--ink)", borderBottomLeftRadius: 4, padding: "8px 12px" }
+                    }>
                       {/* Reply preview */}
                       {m.reply_to_id && m.reply_to_text && (
-                        <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 ${
-                          isMe && !isImageOnly ? "bg-white/15 border-white/60" : "bg-gray-50 border-primary/50"
-                        }`}>
-                          <p className={`text-[9px] font-bold ${isMe && !isImageOnly ? "text-white/80" : "text-primary"}`}>
-                            ↩ {m.reply_to_sender}
+                        <div className="mb-1.5 px-2 py-1 rounded-lg border-l-2" style={isMe && !isImageOnly ? { background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.6)" } : { background: "var(--surface-300)", borderColor: "var(--wine)" }}>
+                          <p className="text-[9px] font-bold" style={isMe && !isImageOnly ? { color: "rgba(255,255,255,0.8)" } : { color: "var(--wine)" }}>
+                            &#8617; {m.reply_to_sender}
                           </p>
-                          <p className={`text-[11px] truncate ${isMe && !isImageOnly ? "text-white/70" : "text-gray-500"}`}>
+                          <p className="text-[11px] truncate" style={isMe && !isImageOnly ? { color: "rgba(255,255,255,0.7)" } : { color: "var(--ink-muted)" }}>
                             {m.reply_to_text}
                           </p>
                         </div>
@@ -1533,21 +1557,23 @@ export default function TasksPage() {
                       )}
                     </div>
                     <div className={`flex items-center gap-2 mt-1 px-1 ${isMe ? "justify-end" : ""}`}>
-                      <p className="text-[9px] text-gray-400">
+                      <p className="text-[9px]" style={{ color: "var(--ink-muted)" }}>
                         {format(new Date(m.created_at), "HH:mm", { locale: idLocale })}
                       </p>
                       <button
                         onClick={() => setChatReplyTo(m)}
-                        className="text-[9px] text-gray-400 hover:text-primary font-medium transition"
+                        className="text-[9px] font-medium transition"
+                        style={{ color: "var(--ink-muted)" }}
                       >
-                        ↩
+                        &#8617;
                       </button>
                       {canDelete && (
                         <button
                           onClick={() => deleteChatMessage(m.id)}
-                          className="text-[9px] text-gray-400 hover:text-red-500 font-medium transition"
+                          className="text-[9px] font-medium transition"
+                          style={{ color: "var(--ink-muted)" }}
                         >
-                          🗑
+                          <Trash2 size={9} />
                         </button>
                       )}
                     </div>
@@ -1559,23 +1585,24 @@ export default function TasksPage() {
 
           {/* Reply preview bar */}
           {chatReplyTo && (
-            <div className="bg-primary/5 border-t border-primary/20 px-4 py-2 flex items-center gap-2">
-              <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
-                <p className="text-[10px] font-bold text-primary">↩ Balas {chatReplyTo.sender_name}</p>
-                <p className="text-xs text-gray-600 truncate">{chatReplyTo.text}</p>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ background: "var(--wine-tint)", borderTop: "1px solid var(--wine-tint)" }}>
+              <div className="flex-1 min-w-0 pl-2" style={{ borderLeft: "2px solid var(--wine)" }}>
+                <p className="text-[10px] font-bold" style={{ color: "var(--wine)" }}>&#8617; Balas {chatReplyTo.sender_name}</p>
+                <p className="text-xs truncate" style={{ color: "var(--ink-muted)" }}>{chatReplyTo.text}</p>
               </div>
-              <button onClick={() => setChatReplyTo(null)} className="w-7 h-7 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-500">
+              <button onClick={() => setChatReplyTo(null)} className="ico-circ" style={{ width: 28, height: 28, background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                 <X size={14} />
               </button>
             </div>
           )}
 
           {/* Input */}
-          <div className="bg-white border-t border-gray-200 px-3 py-2.5 flex items-center gap-1.5" style={isMobile ? { paddingBottom: "max(10px, env(safe-area-inset-bottom))" } : undefined}>
+          <div className="px-3 py-2.5 flex items-center gap-1.5" style={{ background: "var(--surface-200)", borderTop: "1px solid var(--line)", paddingBottom: isMobile ? "max(10px, env(safe-area-inset-bottom))" : undefined }}>
             <button
               onClick={() => chatFileInputRef.current?.click()}
               disabled={chatUploading}
-              className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center shrink-0 disabled:opacity-40 transition active:scale-90"
+              className="ico-circ shrink-0 disabled:opacity-40 transition active:scale-90"
+              style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}
               title="Kirim gambar"
             >
               {chatUploading ? <Upload size={16} className="animate-pulse" /> : <ImageIcon size={18} />}
@@ -1593,12 +1620,14 @@ export default function TasksPage() {
               onChange={(e) => setChatText(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
               placeholder={chatReplyTo ? "Ketik balasan..." : "Ketik pesan..."}
-              className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition min-w-0"
+              className="rw-input flex-1 min-w-0 text-sm"
+              style={{ minHeight: 40, borderRadius: "var(--radius-full)" }}
             />
             <button
               onClick={() => sendChat()}
               disabled={!chatText.trim()}
-              className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-white flex items-center justify-center disabled:opacity-40 transition shadow-sm shrink-0 active:scale-90"
+              className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 transition shrink-0 active:scale-90"
+              style={{ background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-sm)" }}
             >
               <Send size={16} />
             </button>
@@ -1609,27 +1638,25 @@ export default function TasksPage() {
 
       {/* Board Switcher Modal */}
       {showBoardSwitcher && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="rw-overlay fixed inset-0 z-50 flex items-start justify-center pt-12 md:pt-20 px-4" onClick={() => setShowBoardSwitcher(false)}>
+          <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto overflow-hidden animate-slide-up" style={{ background: "var(--surface-200)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-modal)" }} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="relative bg-gradient-to-br from-primary via-primary to-primary-dark px-6 pt-6 pb-5 text-white sticky top-0 z-10 overflow-hidden">
-              <div className="absolute -top-4 -right-4 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
-              <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
-              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition active:scale-90 backdrop-blur-sm">
+            <div className="relative px-6 pt-6 pb-5 sticky top-0 z-10 overflow-hidden" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>
+              <button onClick={() => setShowBoardSwitcher(false)} className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90" style={{ background: "rgba(255,255,255,0.2)" }}>
                 <X size={16} strokeWidth={2.5} />
               </button>
               <div className="relative flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.2)" }}>
                   <LayoutGrid size={22} strokeWidth={2} />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg leading-tight">Board Anda</h3>
-                  <p className="text-xs text-white/80 mt-0.5">Pilih atau buat board per divisi</p>
+                  <p className="text-xs mt-0.5" style={{ opacity: 0.8 }}>Pilih atau buat board per divisi</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-b from-white to-gray-50/50">
+            <div>
               {/* Search bar (only if > 3 boards) */}
               {boards.length > 3 && (
                 <div className="px-3 pt-3 pb-1">
@@ -1638,11 +1665,12 @@ export default function TasksPage() {
                       type="text"
                       value={boardSearch}
                       onChange={(e) => setBoardSearch(e.target.value)}
-                      placeholder="🔍 Cari board..."
-                      className="w-full pl-3.5 pr-9 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                      placeholder="Cari board..."
+                      className="rw-input text-sm"
+                      style={{ minHeight: 40, paddingLeft: 14, paddingRight: 36 }}
                     />
                     {boardSearch && (
-                      <button onClick={() => setBoardSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 hover:bg-gray-400 text-white flex items-center justify-center">
+                      <button onClick={() => setBoardSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "var(--surface-300)", color: "var(--ink-muted)" }}>
                         <X size={12} />
                       </button>
                     )}
@@ -1652,26 +1680,29 @@ export default function TasksPage() {
 
               <div className="p-3 space-y-1.5">
               {/* Section label: Default */}
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2 pt-1 pb-1">Utama</p>
+              <p className="rw-micro px-2 pt-1 pb-1">Utama</p>
               {/* Default board */}
               <button
                 onClick={() => switchBoard(null)}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition group ${
-                  !activeBoard ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-2 ring-primary/30 shadow-md" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                }`}
+                className="w-full flex items-center gap-3 p-3 transition group"
+                style={{
+                  borderRadius: "var(--radius-lg)",
+                  ...(!activeBoard
+                    ? { background: "var(--wine-tint)", border: "2px solid var(--wine)" }
+                    : { border: "1px solid transparent" }),
+                }}
               >
-                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary-dark flex items-center justify-center text-white shadow-md shadow-primary/30 shrink-0 overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent" />
+                <div className="relative w-12 h-12 flex items-center justify-center shrink-0 overflow-hidden" style={{ borderRadius: "var(--radius-lg)", background: "var(--wine)", color: "var(--on-wine)", boxShadow: "var(--shadow-md)" }}>
                   <Sparkles size={18} strokeWidth={2.2} className="relative" />
                 </div>
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900">RedWine Board</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5 inline-flex items-center gap-1">
-                    <Sparkles size={9} className="text-primary/60" /> Board utama • Semua divisi
+                  <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>RedWine Board</p>
+                  <p className="text-[10px] mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
+                    <Sparkles size={9} style={{ color: "var(--wine)" }} /> Board utama - Semua divisi
                   </p>
                 </div>
                 {!activeBoard && (
-                  <span className="text-[9px] bg-gradient-to-br from-primary to-primary-dark text-white px-2.5 py-1 rounded-full font-bold shrink-0 shadow-sm">AKTIF</span>
+                  <span className="text-[9px] px-2.5 py-1 rounded-full font-bold shrink-0" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
                 )}
               </button>
 
@@ -1681,31 +1712,32 @@ export default function TasksPage() {
                   .filter((b) => canAccessBoard(user, b))
                   .filter((b) => !boardSearch.trim() || b.name.toLowerCase().includes(boardSearch.toLowerCase()));
                 if (filtered.length === 0) {
-                  if (boardSearch) return <p className="text-center text-xs text-gray-400 py-6">Tidak ada board cocok dengan &quot;{boardSearch}&quot;</p>;
+                  if (boardSearch) return <p className="text-center text-xs py-6" style={{ color: "var(--ink-muted)" }}>Tidak ada board cocok dengan &quot;{boardSearch}&quot;</p>;
                   return null;
                 }
                 return (
                   <>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2 pt-3 pb-1">Board per Divisi</p>
+                    <p className="rw-micro px-2 pt-3 pb-1">Board per Divisi</p>
                     {filtered.map((b) => {
                       const isActive = activeBoard?.id === b.id;
                       const isEditing = editBoardId === b.id;
                       return (
-                  <div key={b.id} className={`rounded-2xl transition ${
-                    isActive ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-2 ring-primary/30 shadow-md" : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                  } ${isEditing ? "ring-2 ring-primary shadow-md bg-white" : ""}`}>
+                  <div key={b.id} className="transition" style={{
+                    borderRadius: "var(--radius-lg)",
+                    ...(isActive ? { background: "var(--wine-tint)", border: "2px solid var(--wine)" } : isEditing ? { background: "var(--surface-200)", border: "2px solid var(--wine)" } : { border: "1px solid transparent" }),
+                  }}>
                     <div className="flex items-center gap-3 p-3">
                       <button onClick={() => switchBoard(b)} className="flex items-center gap-3 flex-1 text-left min-w-0">
-                        <div className={`relative w-12 h-12 rounded-2xl ${b.color} flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0 overflow-hidden`}>
+                        <div className={`relative w-12 h-12 ${b.color} flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden`} style={{ borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}>
                           <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent" />
                           <span className="relative">{b.name.slice(0, 2).toUpperCase()}</span>
                         </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className="text-sm font-bold text-gray-900 truncate">{b.name}</p>
+                          <p className="text-sm font-bold truncate" style={{ color: "var(--ink)" }}>{b.name}</p>
                           {b.allowed_roles && b.allowed_roles.length > 0 ? (
                             <div className="flex items-center gap-1 mt-1 overflow-hidden max-w-full">
-                              <Users size={10} className="text-gray-400 shrink-0" />
-                              <span className="text-[10px] text-gray-500 truncate">
+                              <Users size={10} style={{ color: "var(--ink-muted)" }} className="shrink-0" />
+                              <span className="text-[10px] truncate" style={{ color: "var(--ink-muted)" }}>
                                 {b.allowed_roles.length === 1
                                   ? b.allowed_roles[0]
                                   : `${b.allowed_roles[0]} +${b.allowed_roles.length - 1}`}
@@ -1713,16 +1745,14 @@ export default function TasksPage() {
                             </div>
                           ) : (
                             <div className="inline-flex items-center gap-1 mt-1">
-                              <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-                                🌐 Semua role
-                              </span>
+                              <span className="rw-badge rw-badge--success text-[10px]">Semua role</span>
                             </div>
                           )}
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isActive && (
-                          <span className="text-[9px] bg-gradient-to-br from-primary to-primary-dark text-white px-2.5 py-1 rounded-full font-bold shadow-sm">AKTIF</span>
+                          <span className="text-[9px] px-2.5 py-1 rounded-full font-bold" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>AKTIF</span>
                         )}
                         {canManageBoards(user) && (
                           <>
@@ -1736,18 +1766,19 @@ export default function TasksPage() {
                                   setEditBoardRoles(b.allowed_roles || []);
                                 }
                               }}
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center transition active:scale-90 ${
-                                isEditing
-                                  ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md"
-                                  : "bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100"
-                              }`}
+                              className="ico-circ transition active:scale-90"
+                              style={isEditing
+                                ? { background: "var(--wine)", color: "var(--on-wine)" }
+                                : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                              }
                               title="Edit akses role"
                             >
                               <Pencil size={14} strokeWidth={2.5} />
                             </button>
                             <button
                               onClick={() => deleteBoard(b)}
-                              className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition active:scale-90 border border-red-100"
+                              className="ico-circ transition active:scale-90"
+                              style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
                               title="Hapus board"
                             >
                               <Trash2 size={14} strokeWidth={2.5} />
@@ -1759,20 +1790,21 @@ export default function TasksPage() {
 
                     {/* Inline role editor */}
                     {isEditing && canManageBoards(user) ? (
-                      <div className="border-t border-primary/20 p-4 bg-gradient-to-b from-white to-gray-50/50 rounded-b-xl">
+                      <div className="p-4" style={{ borderTop: "1px solid var(--line)" }}>
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-[11px] font-bold text-gray-700 uppercase tracking-widest flex items-center gap-1.5">
+                            <p className="rw-micro flex items-center gap-1.5">
                               <UserIcon size={12} /> Akses Role
                             </p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              {editBoardRoles.length === 0 ? "🌐 Semua karyawan bisa akses" : `${editBoardRoles.length} role terpilih`}
+                            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
+                              {editBoardRoles.length === 0 ? "Semua karyawan bisa akses" : `${editBoardRoles.length} role terpilih`}
                             </p>
                           </div>
                           {editBoardRoles.length > 0 && (
                             <button
                               onClick={() => setEditBoardRoles([])}
-                              className="text-[10px] text-gray-500 hover:text-red-500 font-medium px-2 py-1 hover:bg-gray-100 rounded"
+                              className="text-[10px] font-medium px-2 py-1 rounded"
+                              style={{ color: "var(--danger)" }}
                             >
                               Reset
                             </button>
@@ -1785,13 +1817,13 @@ export default function TasksPage() {
                               <button
                                 key={role}
                                 onClick={() => setEditBoardRoles(selected ? editBoardRoles.filter((r) => r !== role) : [...editBoardRoles, role])}
-                                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 ${
-                                  selected
-                                    ? "bg-gradient-to-br from-primary to-primary-dark text-white shadow-md shadow-primary/20"
-                                    : "bg-white border border-gray-200 text-gray-600 hover:border-primary/40 hover:bg-primary/5"
-                                }`}
+                                className="rw-btn rw-btn--sm px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-95"
+                                style={selected
+                                  ? { background: "var(--wine)", color: "var(--on-wine)" }
+                                  : { background: "var(--surface-200)", color: "var(--ink-muted)", border: "1px solid var(--line)" }
+                                }
                               >
-                                {selected && "✓ "}{role}
+                                {selected && "&#10003; "}{role}
                               </button>
                             );
                           })}
@@ -1799,13 +1831,13 @@ export default function TasksPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => { setEditBoardId(null); setEditBoardRoles([]); }}
-                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-white transition active:scale-95"
+                            className="rw-btn rw-btn--outline rw-btn--sm flex-1"
                           >
                             Batal
                           </button>
                           <button
                             onClick={() => saveEditBoardRoles(b)}
-                            className="flex-[2] py-2.5 bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl text-xs font-bold shadow-md active:scale-95 transition inline-flex items-center justify-center gap-1.5"
+                            className="rw-btn rw-btn--primary rw-btn--sm flex-[2] inline-flex items-center justify-center gap-1.5"
                           >
                             <Check size={13} strokeWidth={3} /> Simpan Akses
                           </button>
@@ -1823,18 +1855,19 @@ export default function TasksPage() {
 
             {/* Create new board - only for managers */}
             {canManageBoards(user) && (
-            <div className="border-t border-gray-100 p-3">
+            <div className="p-3" style={{ borderTop: "1px solid var(--line)" }}>
               {showCreateBoard ? (
                 <div className="space-y-3">
                   <input
                     type="text" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") createBoard(); if (e.key === "Escape") setShowCreateBoard(false); }}
                     placeholder="Nama board — misal: Sales Team, CS, Design..."
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                    className="rw-input text-sm"
+                    style={{ minHeight: 40 }}
                     autoFocus
                   />
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Warna</p>
+                    <p className="rw-micro mb-1.5">Warna</p>
                     <div className="flex gap-2 flex-wrap">
                       {BOARD_COLORS.map((c) => (
                         <button key={c} onClick={() => setNewBoardColor(c)}
@@ -1847,8 +1880,8 @@ export default function TasksPage() {
                   </div>
                   {/* Role access picker */}
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Akses Role</p>
-                    <p className="text-[10px] text-gray-400 mb-2">Kosongkan = semua bisa akses</p>
+                    <p className="rw-micro mb-1.5">Akses Role</p>
+                    <p className="text-[10px] mb-2" style={{ color: "var(--ink-muted)" }}>Kosongkan = semua bisa akses</p>
                     <div className="flex flex-wrap gap-1.5">
                       {POSITIONS.map((role) => {
                         const selected = newBoardRoles.includes(role);
@@ -1856,27 +1889,28 @@ export default function TasksPage() {
                           <button
                             key={role}
                             onClick={() => setNewBoardRoles(selected ? newBoardRoles.filter((r) => r !== role) : [...newBoardRoles, role])}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                              selected
-                                ? "bg-primary text-white shadow-sm"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            }`}
+                            className="rw-btn rw-btn--sm px-2.5 py-1.5 text-[11px] font-medium transition"
+                            style={selected
+                              ? { background: "var(--wine)", color: "var(--on-wine)" }
+                              : { background: "var(--surface-300)", color: "var(--ink-muted)" }
+                            }
                           >
-                            {selected && "✓ "}{role}
+                            {selected && "&#10003; "}{role}
                           </button>
                         );
                       })}
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); setNewBoardRoles([]); }} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 transition">Batal</button>
-                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="flex-[2] py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-semibold disabled:opacity-40 transition shadow-sm">Buat Board</button>
+                    <button onClick={() => { setShowCreateBoard(false); setNewBoardName(""); setNewBoardRoles([]); }} className="rw-btn rw-btn--outline rw-btn--sm flex-1">Batal</button>
+                    <button onClick={createBoard} disabled={!newBoardName.trim()} className="rw-btn rw-btn--primary rw-btn--sm flex-[2]">Buat Board</button>
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowCreateBoard(true)}
-                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-primary bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary hover:to-primary-dark hover:text-white border-2 border-dashed border-primary/30 hover:border-primary transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                  className="rw-btn rw-btn--outline rw-btn--block py-3.5 text-sm font-bold inline-flex items-center justify-center gap-2 active:scale-95"
+                  style={{ borderStyle: "dashed", color: "var(--wine)" }}
                 >
                   <Plus size={18} strokeWidth={2.5} /> Buat Board Baru
                 </button>
@@ -1904,15 +1938,15 @@ export default function TasksPage() {
         let touchDeltaY = 0;
         return (
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center md:p-4"
+            className="rw-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4"
             onClick={() => !loading && setShowForm({ open: false, status: "brief" })}
           >
             <div
-              className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
-              style={{ maxHeight: "92dvh" }}
+              className="w-full md:max-w-lg rounded-t-3xl md:rounded-2xl overflow-hidden flex flex-col animate-slide-up"
+              style={{ maxHeight: "92dvh", background: "var(--surface-200)", boxShadow: "var(--shadow-modal)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Swipeable top area (handle + header together) */}
+              {/* Swipeable top area */}
               <div
                 className="md:hidden touch-pan-y"
                 onTouchStart={(e) => { touchStartY = e.touches[0].clientY; touchDeltaY = 0; }}
@@ -1923,32 +1957,34 @@ export default function TasksPage() {
                 }}
               >
                 <div className="flex justify-center pt-2.5 pb-1">
-                  <div className="w-14 h-1.5 bg-gray-300 rounded-full" />
+                  <div className="w-14 h-1.5 rounded-full" style={{ background: "var(--line-strong)" }} />
                 </div>
               </div>
-              <div className={`${colBg} mx-4 mt-2 md:mt-4 rounded-xl px-4 py-3 text-white flex items-center justify-between`}>
+              <div className={`${colBg} mx-4 mt-2 md:mt-4 px-4 py-3 text-white flex items-center justify-between`} style={{ borderRadius: "var(--radius-md)" }}>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base">{showForm.task ? "Edit Task" : "Task Baru"}</h3>
-                  <p className="text-xs text-white/70 mt-0.5">{colInfo.label}{colInfo.description ? ` • ${colInfo.description}` : ""}</p>
+                  <p className="text-xs text-white/70 mt-0.5">{colInfo.label}{colInfo.description ? ` - ${colInfo.description}` : ""}</p>
                 </div>
                 <button
                   onClick={() => setShowForm({ open: false, status: "brief" })}
-                  className="w-10 h-10 rounded-full bg-white/25 hover:bg-white/40 text-white flex items-center justify-center transition active:scale-90 shrink-0"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition active:scale-90 shrink-0"
+                  style={{ background: "rgba(255,255,255,0.25)", color: "#ffffff" }}
                   aria-label="Tutup"
                 >
                   <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50/30">
-                {/* Title — clean minimalist card */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <form onSubmit={saveTask} className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Title */}
+                <div className="rw-card p-4">
                   <input
                     type="text"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     placeholder="Apa yang mau dikerjakan?"
-                    className="w-full px-0 py-1 bg-transparent border-0 text-lg font-bold text-gray-900 outline-none transition placeholder:text-gray-400 placeholder:font-medium"
+                    className="w-full px-0 py-1 bg-transparent border-0 text-lg font-bold outline-none transition"
+                    style={{ color: "var(--ink)" }}
                     required
                     autoFocus
                     onKeyDown={(e) => {
@@ -1958,18 +1994,18 @@ export default function TasksPage() {
                       }
                     }}
                   />
-                  <div className="h-px bg-gray-100 my-2.5" />
+                  <div className="h-px my-2.5" style={{ background: "var(--line)" }} />
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-gray-400 flex items-center gap-1">
-                      <span>💡</span> Enter untuk buat langsung
+                    <p className="text-[11px] flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
+                      Enter untuk buat langsung
                     </p>
                     {form.title && (
-                      <span className="text-[10px] text-primary font-semibold">{form.title.length} karakter</span>
+                      <span className="text-[10px] font-semibold" style={{ color: "var(--wine)" }}>{form.title.length} karakter</span>
                     )}
                   </div>
                 </div>
 
-                {/* All fields — no color picker, no toggle */}
+                {/* All fields */}
                 <div className="space-y-4">
 
                 {/* Description */}
@@ -1978,15 +2014,15 @@ export default function TasksPage() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
                   placeholder="Deskripsi / catatan (opsional)..."
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 focus:border-primary focus:bg-white rounded-xl text-sm text-gray-700 outline-none transition resize-none placeholder:text-gray-400"
+                  className="rw-input resize-none"
                 />
 
-                {/* Assignees - compact */}
+                {/* Assignees */}
                 <div>
-                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-1">
+                  <p className="rw-micro mb-2 flex items-center gap-1">
                     <UserIcon size={11} /> Anggota
                     {selectedEmps.length > 0 && (
-                      <span className="bg-primary text-white text-[9px] px-1.5 py-0.5 rounded-full ml-1 font-bold normal-case tracking-normal">{selectedEmps.length}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full ml-1 font-bold normal-case tracking-normal" style={{ background: "var(--wine)", color: "var(--on-wine)" }}>{selectedEmps.length}</span>
                     )}
                   </p>
                   {/* Selected chips */}
@@ -2002,19 +2038,20 @@ export default function TasksPage() {
                               assignee_ids: form.assignee_ids.filter((x) => x !== e.id),
                             })
                           }
-                          className="inline-flex items-center gap-1.5 bg-primary/5 border border-primary/20 rounded-full pl-0.5 pr-2.5 py-0.5 group hover:bg-red-50 hover:border-red-200 transition"
+                          className="inline-flex items-center gap-1.5 rounded-full pl-0.5 pr-2.5 py-0.5 group transition"
+                          style={{ background: "var(--wine-tint)", border: "1px solid var(--wine-tint)" }}
                         >
                           <Avatar name={e.name} photoUrl={e.photo_url} size="xs" />
-                          <span className="text-xs font-medium text-gray-700 group-hover:text-red-600">
+                          <span className="text-xs font-medium" style={{ color: "var(--ink)" }}>
                             {e.name.split(" ")[0]}
                           </span>
-                          <X size={10} className="text-gray-400 group-hover:text-red-500" />
+                          <X size={10} style={{ color: "var(--ink-muted)" }} />
                         </button>
                       ))}
                     </div>
                   )}
                   {/* Picker */}
-                  <div className="space-y-0.5 max-h-36 overflow-y-auto bg-gray-50 rounded-xl border border-gray-200 p-1">
+                  <div className="space-y-0.5 max-h-36 overflow-y-auto p-1" style={{ background: "var(--surface-300)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)" }}>
                     {employees
                       .filter((e) => e.is_active && !form.assignee_ids.includes(e.id))
                       .map((e) => (
@@ -2027,25 +2064,25 @@ export default function TasksPage() {
                               assignee_ids: [...form.assignee_ids, e.id],
                             })
                           }
-                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-white transition"
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition"
                         >
                           <Avatar name={e.name} photoUrl={e.photo_url} size="sm" />
                           <div className="text-left flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{e.name}</p>
-                            {e.position && <p className="text-[10px] text-gray-500 truncate">{e.position}</p>}
+                            <p className="text-sm truncate" style={{ color: "var(--ink)" }}>{e.name}</p>
+                            {e.position && <p className="text-[10px] truncate" style={{ color: "var(--ink-muted)" }}>{e.position}</p>}
                           </div>
-                          <Plus size={14} className="text-gray-400" />
+                          <Plus size={14} style={{ color: "var(--ink-muted)" }} />
                         </button>
                       ))}
                     {employees.filter((e) => e.is_active && !form.assignee_ids.includes(e.id)).length === 0 && (
-                      <p className="text-[11px] text-gray-400 text-center py-2 italic">Semua sudah dipilih</p>
+                      <p className="text-[11px] text-center py-2 italic" style={{ color: "var(--ink-muted)" }}>Semua sudah dipilih</p>
                     )}
                   </div>
                 </div>
 
                 {/* Deadline */}
                 <div>
-                  <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-1">
+                  <p className="rw-micro mb-2 flex items-center gap-1">
                     <CalendarIcon size={11} /> Deadline
                   </p>
                   <div className="flex items-center gap-2">
@@ -2053,47 +2090,50 @@ export default function TasksPage() {
                       type="date"
                       value={form.due_date}
                       onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                      className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-primary focus:bg-white transition"
+                      className="rw-input flex-1"
+                      style={{ minHeight: 40 }}
                     />
                     {form.due_date && (
                       <button
                         type="button"
                         onClick={() => setForm({ ...form, due_date: "" })}
-                        className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center transition"
+                        className="ico-circ"
+                        style={{ background: "var(--surface-300)", color: "var(--danger)" }}
                       >
                         <X size={14} />
                       </button>
                     )}
                   </div>
                   {form.due_date && (
-                    <p className="text-xs text-primary font-medium mt-1.5 px-1">
+                    <p className="text-xs font-medium mt-1.5 px-1" style={{ color: "var(--wine)" }}>
                       {format(new Date(form.due_date), "EEEE, dd MMMM yyyy", { locale: idLocale })}
                     </p>
                   )}
                 </div>
 
-                <p className="text-[10px] text-gray-400 italic flex items-center gap-1">
+                <p className="text-[10px] italic flex items-center gap-1" style={{ color: "var(--ink-muted)" }}>
                   <Paperclip size={10} /> Gambar & link bisa ditambah setelah task dibuat
                 </p>
                 </div>
               </form>
 
-              {/* Footer — sticky, keyboard-aware */}
-              <div className="p-3 border-t border-gray-100 bg-white/95 backdrop-blur-md flex gap-2 shrink-0" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+              {/* Footer */}
+              <div className="p-3 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--line)", background: "var(--surface-200)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
                 <button
                   type="button"
                   onClick={() => setShowForm({ open: false, status: "brief" })}
                   disabled={loading}
-                  className="flex-1 py-3.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition active:scale-95"
+                  className="rw-btn rw-btn--outline flex-1"
                 >
                   Batal
                 </button>
                 <button
                   onClick={saveTask}
                   disabled={loading || !form.title.trim()}
-                  className={`flex-[2] py-3.5 ${colBg} text-white rounded-2xl text-sm font-bold disabled:opacity-50 transition shadow-lg active:scale-95 hover:opacity-90`}
+                  className={`flex-[2] py-3.5 ${colBg} text-white text-sm font-bold disabled:opacity-50 transition active:scale-95`}
+                  style={{ borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}
                 >
-                  {loading ? "Menyimpan..." : showForm.task ? "✓ Simpan" : "+ Buat Task"}
+                  {loading ? "Menyimpan..." : showForm.task ? "Simpan" : "+ Buat Task"}
                 </button>
               </div>
             </div>
@@ -2103,4 +2143,3 @@ export default function TasksPage() {
     </div>
   );
 }
-
